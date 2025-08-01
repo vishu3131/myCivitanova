@@ -1,0 +1,87 @@
+.neon-login-box {
+  position: relative;
+  background: #18181b;
+  border-radius: 24px;
+  box-shadow: 0 0 32px 4px #00fff7, 0 0 0 4px #18181b;
+  padding: 2rem;
+  max-width: 350px;
+  margin: auto;
+  border: 2px solid #222;
+  color: #fff;
+  animation: neon-glow 2s infinite alternate;
+}
+
+@keyframes neon-glow {
+  0% { box-shadow: 0 0 32px 4px #00fff7, 0 0 0 4px #18181b; }
+  100% { box-shadow: 0 0 48px 8px #ff00c8, 0 0 0 4px #18181b; }
+}
+
+.neon-login-box h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.neon-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 16px;
+  border: 2px solid #00fff7;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.neon-input:focus {
+  border: 2px solid #ff00c8;
+}
+
+.neon-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #00fff7 0%, #ff00c8 100%);
+  color: #18181b;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: none;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 8px #00fff7;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.neon-btn:active {
+  background: linear-gradient(90deg, #ff00c8 0%, #00fff7 100%);
+  color: #fff;
+}
+
+.neon-link {
+  color: #00fff7;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+.neon-link.signup {
+  color: #ff00c8;
+  margin-left: 1rem;
+}
+
+.neon-error {
+  color: #ff00c8;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.neon-success {
+  color: #00fff7;
+  margin-bottom: 1rem;
+  text-align: center;
+}

@@ -1,0 +1,454 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  MessageCircle, 
+  AlertTriangle, 
+  Users, 
+  Calendar,
+  MapPin,
+  ThumbsUp,
+  ThumbsDown,
+  Share2,
+  Filter,
+  Search,
+  Plus,
+  TrendingUp,
+  Award,
+  Bell,
+  Home,
+  FileText,
+  Star,
+  Heart,
+  Eye,
+  Clock,
+  Sparkles,
+  Zap,
+  SortDesc,
+  Flame,
+  ChevronDown,
+  RefreshCw,
+  Loader2
+} from 'lucide-react';
+
+import { Sidebar } from '@/components/Sidebar';
+import { BottomNavbar } from '@/components/BottomNavbar';
+import { CreatePostModal } from '@/components/CreatePostModal';
+import { CommunityPostCard } from '@/components/CommunityPostCard';
+import { useCommunity } from '@/hooks/useCommunity';
+import { FetchPostsParams } from '@/lib/communityApi';
+
+const CommunityPage = () => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showNewPost, setShowNewPost] = useState(false);
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  
+  // Hook per la gestione della community
+  const {
+    posts,
+    loading,
+    error,
+    currentUser,
+    fetchPosts,
+    createPost,
+    fetchComments,
+    addComment,
+    toggleReaction,
+    sharePost,
+    deletePost
+  } = useCommunity();
+
+  // Carica i post all'avvio e quando cambiano i filtri
+  useEffect(() => {
+    const params: FetchPostsParams = {
+      type: activeTab === 'all' ? undefined : activeTab,
+      category: selectedCategory || undefined,
+      search: searchQuery || undefined,
+      sortBy: sortBy,
+      limit: 20
+    };
+    
+    fetchPosts(params);
+  }, [activeTab, selectedCategory, searchQuery, sortBy, fetchPosts]);
+
+  // Gestori eventi
+  const handleCreatePost = async (postData: any) => {
+    try {
+      await createPost(postData);
+      // I post vengono aggiornati automaticamente dall'hook
+    } catch (error) {
+      console.error('Errore nella creazione del post:', error);
+      throw error;
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    try {
+      await toggleReaction(postId, 'like');
+    } catch (error) {
+      console.error('Errore nel like:', error);
+    }
+  };
+
+  const handleDislike = async (postId: string) => {
+    try {
+      await toggleReaction(postId, 'dislike');
+    } catch (error) {
+      console.error('Errore nel dislike:', error);
+    }
+  };
+
+  const handleShare = async (postId: string, shareType: 'internal' | 'facebook' | 'twitter' | 'whatsapp' | 'email' | 'link') => {
+    try {
+      await sharePost(postId, shareType);
+    } catch (error) {
+      console.error('Errore nella condivisione:', error);
+    }
+  };
+
+  const handleComment = async (postId: string, content: string, parentId?: string) => {
+    try {
+      await addComment({ post_id: postId, content, parent_id: parentId });
+    } catch (error) {
+      console.error('Errore nel commento:', error);
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    try {
+      await deletePost(postId);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione:', error);
+    }
+  };
+
+  const handleRefresh = () => {
+    const params: FetchPostsParams = {
+      type: activeTab === 'all' ? undefined : activeTab,
+      category: selectedCategory || undefined,
+      search: searchQuery || undefined,
+      sortBy: sortBy,
+      limit: 20
+    };
+    
+    fetchPosts(params);
+  };
+
+  // Configurazione tabs
+  const tabs = [
+    { id: 'all', label: 'Tutto', icon: Home, count: posts.length },
+    { id: 'report', label: 'Segnalazioni', icon: AlertTriangle, count: posts.filter(p => p.type === 'report').length },
+    { id: 'discussion', label: 'Forum', icon: MessageCircle, count: posts.filter(p => p.type === 'discussion').length },
+    { id: 'event', label: 'Eventi', icon: Calendar, count: posts.filter(p => p.type === 'event').length },
+    { id: 'group', label: 'Gruppi', icon: Users, count: posts.filter(p => p.type === 'group').length },
+  ];
+
+  const sortOptions = [
+    { id: 'recent', label: 'Più Recenti', icon: Clock },
+    { id: 'popular', label: 'Più Popolari', icon: TrendingUp },
+    { id: 'trending', label: 'In Tendenza', icon: Flame }
+  ];
+
+  const categories = [
+    'Generale',
+    'Trasporti', 
+    'Ambiente',
+    'Sicurezza',
+    'Eventi',
+    'Servizi',
+    'Turismo',
+    'Sport',
+    'Cultura'
+  ];
+
+  return (
+    <div className="min-h-screen bg-black">
+      <Sidebar />
+      
+      <div className="lg:ml-64">
+        {/* Header */}
+        <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-sm border-b border-white/10">
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Community</h1>
+                <p className="text-white/60 text-sm">Connettiti con la tua città</p>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                
+                <button
+                  onClick={() => setShowNewPost(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-accent text-dark-400 rounded-lg font-medium hover:bg-accent/90 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Nuovo Post</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cerca nella community..."
+                className="w-full bg-dark-300/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/40 focus:ring-2 focus:ring-accent focus:border-transparent"
+              />
+            </div>
+
+            {/* Tabs */}
+            <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-accent text-dark-400'
+                        : 'text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span className="text-sm font-medium">{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        activeTab === tab.id
+                          ? 'bg-dark-400/20 text-dark-400'
+                          : 'bg-white/10 text-white/60'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="px-4 py-3 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {/* Category Filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-dark-300/50 border border-white/10 rounded-lg px-3 py-1 text-white text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
+              >
+                <option value="">Tutte le categorie</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sort Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="flex items-center space-x-2 px-3 py-1 bg-dark-300/50 border border-white/10 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <SortDesc className="w-4 h-4" />
+                <span className="text-sm">
+                  {sortOptions.find(opt => opt.id === sortBy)?.label}
+                </span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              <AnimatePresence>
+                {showSortMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                    className="absolute right-0 top-10 bg-dark-400 rounded-lg shadow-xl border border-white/10 py-2 min-w-[160px] z-20"
+                  >
+                    {sortOptions.map((option) => {
+                      const IconComponent = option.icon;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            setSortBy(option.id as any);
+                            setShowSortMenu(false);
+                          }}
+                          className={`w-full px-4 py-2 text-left hover:bg-white/10 flex items-center space-x-2 text-sm ${
+                            sortBy === option.id ? 'text-accent' : 'text-white'
+                          }`}
+                        >
+                          <IconComponent className="w-4 h-4" />
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 pb-20">
+          {/* Quick Post Creator (Facebook-style) */}
+          {currentUser && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-dark-300/50 backdrop-blur-sm rounded-xl border border-white/10 p-4 mb-6"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
+                  {currentUser.avatar ? (
+                    <img 
+                      src={currentUser.avatar} 
+                      alt={currentUser.display_name} 
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-accent font-semibold text-sm">
+                      {currentUser.display_name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => setShowNewPost(true)}
+                  className="flex-1 bg-dark-400/50 border border-white/10 rounded-full px-4 py-3 text-left text-white/60 hover:bg-dark-400/70 hover:border-white/20 transition-all"
+                >
+                  Cosa stai pensando, {currentUser.display_name?.split(' ')[0]}?
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setShowNewPost(true)}
+                    className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm">Discussione</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowNewPost(true)}
+                    className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    <span className="text-sm">Segnalazione</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowNewPost(true)}
+                    className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 text-green-400" />
+                    <span className="text-sm">Evento</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Posts Feed */}
+          <div className="space-y-6">
+            {loading && posts.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 text-accent animate-spin mx-auto mb-4" />
+                  <p className="text-white/60">Caricamento post...</p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <h3 className="text-white font-semibold mb-2">Errore nel caricamento</h3>
+                <p className="text-white/60 mb-4">{error}</p>
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 py-2 bg-accent text-dark-400 rounded-lg font-medium hover:bg-accent/90 transition-colors"
+                >
+                  Riprova
+                </button>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageCircle className="w-12 h-12 text-white/40 mx-auto mb-4" />
+                <h3 className="text-white font-semibold mb-2">Nessun post trovato</h3>
+                <p className="text-white/60 mb-4">
+                  {searchQuery || selectedCategory 
+                    ? 'Prova a modificare i filtri di ricerca'
+                    : 'Sii il primo a condividere qualcosa!'
+                  }
+                </p>
+                {currentUser && (
+                  <button
+                    onClick={() => setShowNewPost(true)}
+                    className="px-4 py-2 bg-accent text-dark-400 rounded-lg font-medium hover:bg-accent/90 transition-colors"
+                  >
+                    Crea il primo post
+                  </button>
+                )}
+              </div>
+            ) : (
+              posts.map((post) => (
+                <CommunityPostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={currentUser}
+                  onLike={handleLike}
+                  onDislike={handleDislike}
+                  onShare={handleShare}
+                  onComment={handleComment}
+                  onDelete={handleDelete}
+                  fetchComments={fetchComments}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Load More */}
+          {posts.length > 0 && !loading && (
+            <div className="text-center mt-8">
+              <button
+                onClick={handleRefresh}
+                className="px-6 py-3 bg-dark-300/50 border border-white/10 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                Carica altri post
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      <CreatePostModal
+        isOpen={showNewPost}
+        onClose={() => setShowNewPost(false)}
+        onSubmit={handleCreatePost}
+        currentUser={currentUser}
+      />
+
+      <BottomNavbar />
+    </div>
+  );
+};
+
+export default CommunityPage;
