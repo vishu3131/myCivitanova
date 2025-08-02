@@ -41,6 +41,55 @@ import { useToast } from '@/components/Toast';
 import { useCommunity } from '@/hooks/useCommunity';
 import { FetchPostsParams } from '@/lib/communityApi';
 
+const fakePosts = [
+  {
+    id: 'fake-1',
+    created_at: new Date().toISOString(),
+    type: 'discussion',
+    title: 'Post di Prova 1 (Test)',
+    content: 'Questo è il contenuto del primo post di prova. Serve per verificare il layout e la responsività dei componenti della community. Immagini e interazioni sono disabilitate.',
+    author_name: 'Utente Test',
+    author_avatar: 'https://i.pravatar.cc/150?u=fake1',
+    likes_count: 15,
+    dislikes_count: 2,
+    comments_count: 5,
+    views_count: 120,
+    tags: ['test', 'layout', 'frontend'],
+    is_pinned: true,
+  },
+  {
+    id: 'fake-2',
+    created_at: new Date(Date.now() - 86400000).toISOString(), // Ieri
+    type: 'report',
+    title: 'Segnalazione di Prova (Test)',
+    content: 'Questa è una segnalazione fittizia per testare la visualizzazione di diversi tipi di post. La categoria è "Ambiente" e lo stato è "In Lavorazione".',
+    author_name: 'Cittadino Modello',
+    author_avatar: 'https://i.pravatar.cc/150?u=fake2',
+    likes_count: 42,
+    dislikes_count: 1,
+    comments_count: 12,
+    views_count: 250,
+    category: 'Ambiente',
+    status: 'in-progress',
+    location: 'Parco Pubblico',
+  },
+  {
+    id: 'fake-3',
+    created_at: new Date(Date.now() - 172800000).toISOString(), // 2 giorni fa
+    type: 'event',
+    title: 'Evento di Test: Concerto in Piazza',
+    content: 'Un evento di prova per mostrare come appaiono gli annunci di eventi. Questo post include un\'immagine di esempio.',
+    author_name: 'Organizzatore Eventi',
+    author_avatar: 'https://i.pravatar.cc/150?u=fake3',
+    likes_count: 120,
+    dislikes_count: 3,
+    comments_count: 35,
+    views_count: 1500,
+    images: ['https://source.unsplash.com/random/800x600/?concert'],
+    tags: ['musica', 'test', 'evento'],
+  },
+];
+
 const CommunityPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -468,17 +517,17 @@ const CommunityPage = () => {
                 )}
               </div>
             ) : (
-              posts.map((post) => (
+              (posts.length > 0 ? posts : fakePosts).map((post) => (
                 <CommunityPostCard
                   key={post.id}
-                  post={post}
+                  post={post as any}
                   currentUser={currentUser}
-                  onLike={handleLike}
-                  onDislike={handleDislike}
-                  onShare={handleShare}
-                  onComment={handleComment}
-                  onDelete={handleDelete}
-                  fetchComments={fetchComments}
+                  onLike={post.id.startsWith('fake-') ? async () => {} : handleLike}
+                  onDislike={post.id.startsWith('fake-') ? async () => {} : handleDislike}
+                  onShare={post.id.startsWith('fake-') ? async () => {} : handleShare}
+                  onComment={post.id.startsWith('fake-') ? async () => {} : handleComment}
+                  onDelete={post.id.startsWith('fake-') ? async () => {} : handleDelete}
+                  fetchComments={post.id.startsWith('fake-') ? async () => [] : fetchComments}
                 />
               ))
             )}

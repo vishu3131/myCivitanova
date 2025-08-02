@@ -3,6 +3,7 @@
 import { Glasses } from 'lucide-react';
 
 export const ARTeaser = () => {
+  
   return (
     <section className="py-8 px-4">
       <div className="max-w-7xl mx-auto">

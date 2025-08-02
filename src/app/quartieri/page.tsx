@@ -20,7 +20,7 @@ const QuartierePage = () => {
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
           <h2 className="text-3xl font-bold mb-4 text-accent">{selectedQuartiere}</h2>
           <p className="text-gray-300">
-            Le informazioni dettagliate per il quartiere "{selectedQuartiere}" saranno disponibili a breve.
+            Le informazioni dettagliate per il quartiere &quot;{selectedQuartiere}&quot; saranno disponibili a breve.
             Stiamo lavorando per offrirti la migliore esperienza possibile.
           </p>
         </div>

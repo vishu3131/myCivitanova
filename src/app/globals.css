@@ -383,12 +383,92 @@ body {
   }
 }
 
+/* Bus section animations */
+@keyframes bus-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bus-card-hover {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1.01);
+  }
+}
+
+@keyframes bus-icon-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.6s ease-out;
 }
 
 .animate-slide-up {
   animation: slide-up 0.8s ease-out 0.2s both;
+}
+
+.animate-bus-slide-in {
+  animation: bus-slide-in 0.6s ease-out;
+}
+
+.bus-card-interactive:hover {
+  animation: bus-card-hover 0.3s ease-out;
+}
+
+.bus-icon-animated {
+  animation: bus-icon-pulse 2s ease-in-out infinite;
+}
+
+/* Bus section responsive improvements */
+@media (max-width: 480px) {
+  .bus-section-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .bus-card-mobile {
+    padding: 0.75rem;
+  }
+  
+  .bus-actions-mobile {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .bus-action-btn-mobile {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .bus-section-mobile {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .bus-card-mobile {
+    padding: 0.5rem;
+  }
 }
 
 /* Pulse glow animation for center button */

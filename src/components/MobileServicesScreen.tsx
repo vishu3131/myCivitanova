@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
-import { ArrowLeft, Search, FileText, CreditCard, Phone, MapPin, Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { BusScheduleWidget } from './BusScheduleWidget';
+import { ArrowLeft, Search, FileText, CreditCard, Phone, MapPin, Clock, ChevronRight, AlertCircle, Bus, Navigation, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const serviceCategories = [
-  { id: 'all', label: 'Tutti', count: 18 },
+  { id: 'all', label: 'Tutti', count: 20 },
   { id: 'documents', label: 'Documenti', count: 6 },
   { id: 'payments', label: 'Pagamenti', count: 4 },
+  { id: 'transport', label: 'Trasporti', count: 2 },
   { id: 'other-numbers', label: 'Altri Numeri', count: 8 },
 ];
 
@@ -79,6 +81,28 @@ const services = [
     time: 'Immediato',
     cost: 'Gratuito',
     color: 'from-teal-500 to-teal-600'
+  },
+  {
+    id: 7,
+    title: 'Orari Autobus',
+    category: 'transport',
+    icon: Bus,
+    description: 'Consulta gli orari e le fermate degli autobus urbani',
+    status: 'available',
+    time: 'Tempo reale',
+    cost: 'Gratuito',
+    color: 'from-blue-500 to-blue-600'
+  },
+  {
+    id: 8,
+    title: 'Parcheggi Pubblici',
+    category: 'transport',
+    icon: MapPin,
+    description: 'Trova parcheggi disponibili in città',
+    status: 'available',
+    time: 'Immediato',
+    cost: 'Variabile',
+    color: 'from-indigo-500 to-indigo-600'
   }
 ];
 
@@ -94,6 +118,7 @@ export function MobileServicesScreen() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showOtherNumbers, setShowOtherNumbers] = useState(false);
+  const [showBusSchedules, setShowBusSchedules] = useState(false);
 
   const otherNumbers = [
     { label: 'Carabinieri', numbers: ['+39 0733 825300'] },
@@ -133,12 +158,41 @@ export function MobileServicesScreen() {
       alert('Servizio temporaneamente non disponibile');
       return;
     }
-    // Handle service navigation
+    
+    // Handle specific services
+    if (service.id === 7) { // Orari Autobus service
+      setShowBusSchedules(true);
+      return;
+    }
+    
+    // Handle other service navigation
     console.log('Opening service:', service.title);
   };
 
   const handleQuickCall = (number: string) => {
     window.location.href = `tel:${number}`;
+  };
+
+  const handleBusAction = (action: string) => {
+    switch (action) {
+      case 'stops':
+        console.log('Opening bus stops map');
+        // TODO: Navigate to bus stops page
+        break;
+      case 'routes':
+        console.log('Opening bus routes');
+        // TODO: Navigate to bus routes page
+        break;
+      case 'alerts':
+        console.log('Opening bus alerts');
+        // TODO: Navigate to bus alerts page
+        break;
+      case 'schedules':
+        setShowBusSchedules(true);
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -183,26 +237,39 @@ export function MobileServicesScreen() {
           </div>
 
           {/* Categories */}
-          <div className="flex gap-2 mb-4">
-            {serviceCategories.map(cat => (
-              cat.id === 'other-numbers' ? (
+          <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+            {serviceCategories.map(cat => {
+              if (cat.id === 'other-numbers') {
+                return (
+                  <button
+                    key={cat.id}
+                    className={`px-4 py-2 rounded-full font-bold shadow whitespace-nowrap ${activeCategory === cat.id ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300'}`}
+                    onClick={() => setShowOtherNumbers(true)}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              }
+              
+              const getActiveColor = () => {
+                switch (cat.id) {
+                  case 'transport': return 'bg-blue-600 text-white';
+                  case 'payments': return 'bg-green-600 text-white';
+                  case 'documents': return 'bg-purple-600 text-white';
+                  default: return 'bg-gray-600 text-white';
+                }
+              };
+              
+              return (
                 <button
                   key={cat.id}
-                  className={`px-4 py-2 rounded-full font-bold shadow ${activeCategory === cat.id ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300'}`}
-                  onClick={() => setShowOtherNumbers(true)}
-                >
-                  {cat.label}
-                </button>
-              ) : (
-                <button
-                  key={cat.id}
-                  className={`px-4 py-2 rounded-full font-bold shadow ${activeCategory === cat.id ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-300'}`}
+                  className={`px-4 py-2 rounded-full font-bold shadow whitespace-nowrap ${activeCategory === cat.id ? getActiveColor() : 'bg-gray-800 text-gray-300'}`}
                   onClick={() => setActiveCategory(cat.id)}
                 >
                   {cat.label} <span className="ml-1 text-xs bg-black/30 px-2 py-1 rounded-full">{cat.count}</span>
                 </button>
-              )
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -232,6 +299,126 @@ export function MobileServicesScreen() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Bus Schedules Section */}
+        <div className="px-6 mb-6 animate-bus-slide-in bus-section-mobile">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-white text-lg font-bold flex items-center gap-2">
+              <Bus className="w-5 h-5 text-blue-400 bus-icon-animated" />
+              Orari Autobus
+            </h2>
+            <button
+              onClick={() => setShowBusSchedules(true)}
+              className="text-blue-400 text-sm font-medium hover:text-blue-300 transition-colors duration-200"
+            >
+              Vedi tutti
+            </button>
+          </div>
+          
+          <div 
+            className="rounded-2xl p-5 border"
+            style={{
+              background: 'rgba(59, 130, 246, 0.08)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.1)',
+            }}
+          >
+            {/* Quick Route Cards */}
+            <div className="grid grid-cols-1 gap-3 mb-4">
+              {/* Route Card Template - Empty for now */}
+              <button
+                onClick={() => setShowBusSchedules(true)}
+                className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left w-full bus-card-interactive group bus-card-mobile"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Bus className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">Linee Principali</h3>
+                      <p className="text-white/60 text-xs">Centro - Stazione - Mare</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors duration-200" />
+                </div>
+                
+                <div className="flex items-center gap-4 text-xs text-white/70">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Prossimo: --:--</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Navigation className="w-3 h-3" />
+                    <span>In tempo reale</span>
+                  </div>
+                </div>
+              </button>
+
+              {/* Weekend/Holiday Schedule Card */}
+              <button
+                onClick={() => setShowBusSchedules(true)}
+                className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left w-full bus-card-interactive group bus-card-mobile"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">Orari Festivi</h3>
+                      <p className="text-white/60 text-xs">Weekend e giorni festivi</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors duration-200" />
+                </div>
+                
+                <div className="flex items-center gap-4 text-xs text-white/70">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Orario ridotto</span>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* Quick Actions for Bus Services */}
+            <div className="grid grid-cols-3 gap-2 bus-actions-mobile">
+              <button 
+                onClick={() => handleBusAction('stops')}
+                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
+              >
+                <MapPin className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                <span className="text-white text-xs font-medium">Fermate</span>
+              </button>
+              
+              <button 
+                onClick={() => handleBusAction('routes')}
+                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
+              >
+                <Navigation className="w-4 h-4 text-green-400 mx-auto mb-1" />
+                <span className="text-white text-xs font-medium">Percorsi</span>
+              </button>
+              
+              <button 
+                onClick={() => handleBusAction('alerts')}
+                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
+              >
+                <AlertCircle className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+                <span className="text-white text-xs font-medium">Avvisi</span>
+              </button>
+            </div>
+
+            {/* Info Message */}
+            <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <p className="text-blue-300 text-xs text-center">
+                📍 Gli orari degli autobus verranno aggiornati a breve con informazioni in tempo reale
+              </p>
+            </div>
           </div>
         </div>
 
@@ -335,6 +522,12 @@ export function MobileServicesScreen() {
           </div>
         </div>
       )}
+
+      {/* Bus Schedule Widget */}
+      <BusScheduleWidget
+        isOpen={showBusSchedules}
+        onClose={() => setShowBusSchedules(false)}
+      />
 
       <BottomNavbar />
     </div>
