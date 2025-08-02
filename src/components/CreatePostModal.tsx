@@ -82,14 +82,14 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
   };
 
   const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      handleInputChange('tags', [...formData.tags, tagInput.trim()]);
+    if (tagInput.trim() && !(formData.tags || []).includes(tagInput.trim())) {
+      handleInputChange('tags', [...(formData.tags || []), tagInput.trim()]);
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    handleInputChange('tags', formData.tags.filter(tag => tag !== tagToRemove));
+    handleInputChange('tags', (formData.tags || []).filter(tag => tag !== tagToRemove));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +99,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setImagePreview(prev => [...prev, imageUrl]);
-        handleInputChange('images', [...formData.images, imageUrl]);
+        handleInputChange('images', [...(formData.images || []), imageUrl]);
       };
       reader.readAsDataURL(file);
     });
@@ -107,7 +107,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
 
   const handleRemoveImage = (index: number) => {
     setImagePreview(prev => prev.filter((_, i) => i !== index));
-    handleInputChange('images', formData.images.filter((_, i) => i !== index));
+    handleInputChange('images', (formData.images || []).filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -375,9 +375,9 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
                 <div>
                   <label className="block text-white font-medium mb-2">Tag</label>
                   <div className="space-y-3">
-                    {formData.tags.length > 0 && (
+                    {(formData.tags || []).length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {formData.tags.map((tag, index) => (
+                        {(formData.tags || []).map((tag, index) => (
                           <span
                             key={index}
                             className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm flex items-center space-x-2"

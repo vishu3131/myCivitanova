@@ -11,6 +11,7 @@ import { NewsFeed } from '@/components/NewsFeed';
 import { SuggestionsWidget } from '@/components/SuggestionsWidget';
 import { MobileHomeScreen } from '@/components/MobileHomeScreen';
 import { TourARWidget } from '@/components/TourARWidget';
+import RiveAnimationWidget from '@/components/RiveAnimationWidget';
 
 export default function Home() {
   // Stato per tracciare se la sidebar è aperta o chiusa
@@ -81,6 +82,14 @@ export default function Home() {
                 <div>
                   {/* Tour AR Widget */}
                   <TourARWidget />
+                  
+                  {/* Rive Animation Widget */}
+                  <RiveAnimationWidget 
+                    title="Animazione Civitanova"
+                    description="Interagisci con l'animazione"
+                    className="mb-6"
+                  />
+                  
                   {/* Widget Statistiche */}
                   <QuickStats />
                   {/* Gamification Widget */}

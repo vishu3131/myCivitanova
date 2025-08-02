@@ -108,7 +108,7 @@ export class CommunityAPI {
   /**
    * Crea un nuovo post
    */
-  static async createPost(postData: CreatePostData): Promise<CommunityPost> {
+  static async createPost(postData: CreatePostData & { user_id: string }): Promise<CommunityPost> {
     try {
       const { data, error } = await supabase
         .from('community_posts')
@@ -121,8 +121,7 @@ export class CommunityAPI {
           location: postData.location,
           category: postData.category,
           tags: postData.tags || [],
-          visibility: postData.visibility || 'public',
-          metadata: postData.metadata || {}
+          visibility: postData.visibility || 'public'
         }])
         .select(`
           *,
@@ -263,6 +262,8 @@ export class CommunityAPI {
         author_avatar: comment.profiles?.avatar,
         author_role: comment.profiles?.role,
         likes_count: 0, // TODO: Implementare conteggio reazioni commenti
+        dislikes_count: 0,
+        is_solution: false,
         replies: (comment.replies || []).map((reply: any) => ({
           id: reply.id,
           post_id: reply.post_id,
@@ -276,7 +277,9 @@ export class CommunityAPI {
           author_name: reply.profiles?.display_name,
           author_avatar: reply.profiles?.avatar,
           author_role: reply.profiles?.role,
-          likes_count: 0
+          likes_count: 0,
+          dislikes_count: 0,
+          is_solution: false
         }))
       }));
     } catch (error) {
@@ -288,7 +291,7 @@ export class CommunityAPI {
   /**
    * Aggiunge un commento a un post
    */
-  static async addComment(commentData: CreateCommentData): Promise<CommunityComment> {
+  static async addComment(commentData: CreateCommentData & { user_id: string }): Promise<CommunityComment> {
     try {
       const { data, error } = await supabase
         .from('community_comments')
@@ -328,6 +331,8 @@ export class CommunityAPI {
         author_avatar: data.profiles?.avatar,
         author_role: data.profiles?.role,
         likes_count: 0,
+        dislikes_count: 0,
+        is_solution: false,
         replies: []
       };
     } catch (error) {
@@ -486,8 +491,7 @@ export class CommunityAPI {
       status: rawPost.status,
       visibility: rawPost.visibility,
       is_pinned: rawPost.is_pinned,
-      priority: rawPost.priority,
-      metadata: rawPost.metadata || {},
+      is_locked: rawPost.is_locked || false,
       created_at: rawPost.created_at,
       updated_at: rawPost.updated_at,
       author_name: rawPost.author_name,
@@ -498,9 +502,7 @@ export class CommunityAPI {
       comments_count: rawPost.comments_count || 0,
       shares_count: rawPost.shares_count || 0,
       views_count: rawPost.views_count || 0,
-      engagement_score: rawPost.engagement_score || 0,
-      trending_score: rawPost.trending_score || 0,
-      user_reaction: null // Verrà popolato separatamente se necessario
+      user_reaction: undefined // Verrà popolato separatamente se necessario
     };
   }
 
@@ -547,8 +549,8 @@ export class CommunityAPI {
         totalUsers: totalUsers || 0,
         totalReactions: totalReactions || 0,
         totalComments: totalComments || 0,
-        postsByType: postsByType || {},
-        postsByStatus: postsByStatus || {}
+        postsByType: (postsByType as unknown as Record<string, number>) || {},
+        postsByStatus: (postsByStatus as unknown as Record<string, number>) || {}
       };
     } catch (error) {
       console.error('Errore API getCommunityStats:', error);

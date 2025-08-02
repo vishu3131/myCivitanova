@@ -43,6 +43,7 @@ export interface CommunityComment {
   likes_count: number;
   dislikes_count: number;
   is_solution: boolean;
+  is_edited?: boolean;
   created_at: string;
   updated_at: string;
   // Dati dell'autore
@@ -123,7 +124,7 @@ export const useCommunity = () => {
           result.posts.map(async (post) => {
             try {
               const userReaction = await CommunityAPI.getUserReaction(post.id, currentUser.id);
-              return { ...post, user_reaction: userReaction };
+              return { ...post, user_reaction: userReaction || undefined };
             } catch (error) {
               console.error('Errore nel recupero reazione utente:', error);
               return post;
@@ -230,7 +231,7 @@ export const useCommunity = () => {
                 updatedPost.user_reaction = 'dislike';
               }
             } else if (result.action === 'removed') {
-              updatedPost.user_reaction = null;
+              updatedPost.user_reaction = undefined;
             }
 
             return updatedPost;

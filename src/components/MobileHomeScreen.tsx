@@ -18,6 +18,7 @@ import { TouristSpotWidget } from './TouristSpotWidget';
 import { XPWidget } from './XPWidget';
 import ReportModal from './CommunityReportModal';
 import SocialWidgetsContainer from './SocialWidgetsContainer';
+import RiveAnimationWidget from './RiveAnimationWidget';
 import { supabase } from '@/utils/supabaseClient';
 
 export function MobileHomeScreen() {
@@ -107,6 +108,15 @@ export function MobileHomeScreen() {
             <div className="col-span-2">
               <TourARWidget />
             </div>
+          </div>
+          
+          {/* Rive Animation Widget Row */}
+          <div className="grid grid-cols-1 gap-2">
+            <RiveAnimationWidget 
+              title="❤️ Civitanova"
+              description="Tocca per animare"
+              className="bg-dark-300/50 backdrop-blur-sm border border-white/10 card-glow"
+            />
           </div>
           {/* Middle Row - Mixed Sizes */}
           <div className="grid grid-cols-4 gap-2">
