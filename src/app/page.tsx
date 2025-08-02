@@ -15,7 +15,7 @@ import RiveAnimationWidget from '@/components/RiveAnimationWidget';
 
 export default function Home() {
   // Stato per tracciare se la sidebar è aperta o chiusa
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Effetto per ascoltare un evento personalizzato dalla sidebar
   useEffect(() => {

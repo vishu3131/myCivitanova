@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    appDir: true,
+    esmExternals: 'loose',
   },
   webpack: (config, { isServer }) => {
     // Risolve i problemi con i moduli WebSocket in ambiente browser
@@ -33,10 +33,6 @@ const nextConfig = {
     ];
 
     return config;
-  },
-  // Risolve i problemi con le dipendenze esterne
-  experimental: {
-    esmExternals: 'loose',
   },
 };
 

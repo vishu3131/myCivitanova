@@ -63,5 +63,12 @@ coverage/
 database/
 database locale/
 *.sql
-*.js
+# Setup and test scripts (exclude these specific files)
+add-password-field.js
+debug-signup.js
+init-badge-system.js
+setup-database.js
+test-*.js
 !next.config.js
+!tailwind.config.js
+!postcss.config.js

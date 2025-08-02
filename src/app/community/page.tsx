@@ -46,6 +46,7 @@ const CommunityPage = () => {
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Hook per la gestione della community
   const {
@@ -61,6 +62,21 @@ const CommunityPage = () => {
     sharePost,
     deletePost
   } = useCommunity();
+
+  // Effetto per ascoltare un evento personalizzato dalla sidebar
+  useEffect(() => {
+    const handleSidebarToggle = (e: CustomEvent) => {
+      setIsSidebarOpen(e.detail.isOpen);
+    };
+    
+    // Aggiungi event listener per l'evento personalizzato
+    window.addEventListener('sidebarToggle' as any, handleSidebarToggle as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('sidebarToggle' as any, handleSidebarToggle as EventListener);
+    };
+  }, []);
 
   // Carica i post all'avvio e quando cambiano i filtri
   useEffect(() => {
@@ -169,7 +185,12 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-black">
       <Sidebar />
       
-      <div className="lg:ml-64">
+      <div 
+        className={`
+          transition-all duration-500 ease-in-out
+          ${isSidebarOpen ? 'ml-16 md:ml-20 lg:ml-24' : 'ml-0'}
+        `}
+      >
         {/* Header */}
         <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-sm border-b border-white/10">
           <div className="px-4 py-4">
