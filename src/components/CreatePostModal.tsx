@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -21,6 +21,7 @@ import {
   Send
 } from 'lucide-react';
 import { CreatePostData } from '@/hooks/useCommunity';
+import PostCreateLoginRequiredModal from './PostCreateLoginRequiredModal';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -72,10 +73,19 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
   const [tagInput, setTagInput] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState<string[]>([]);
+  const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isOpen && !currentUser) {
+      setShowLoginRequiredModal(true);
+    } else {
+      setShowLoginRequiredModal(false);
+    }
+  }, [isOpen, currentUser]);
 
   const handleInputChange = (field: keyof CreatePostData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -140,6 +150,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
     setCurrentStep(1);
     setTagInput('');
     setImagePreview([]);
+    setShowLoginRequiredModal(false);
     onClose();
   };
 
@@ -150,6 +161,10 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
   const selectedVisibility = visibilityOptions.find(vis => vis.id === formData.visibility);
 
   if (!isOpen) return null;
+
+  if (showLoginRequiredModal) {
+    return <PostCreateLoginRequiredModal onClose={handleClose} />;
+  }
 
   return (
     <AnimatePresence>

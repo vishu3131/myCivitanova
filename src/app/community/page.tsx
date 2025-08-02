@@ -36,6 +36,8 @@ import { Sidebar } from '@/components/Sidebar';
 import { BottomNavbar } from '@/components/BottomNavbar';
 import { CreatePostModal } from '@/components/CreatePostModal';
 import { CommunityPostCard } from '@/components/CommunityPostCard';
+import LoginModal from '@/components/LoginModal';
+import { useToast } from '@/components/Toast';
 import { useCommunity } from '@/hooks/useCommunity';
 import { FetchPostsParams } from '@/lib/communityApi';
 
@@ -47,6 +49,9 @@ const CommunityPage = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Toast system
+  const { showToast, ToastContainer } = useToast();
   
   // Hook per la gestione della community
   const {
@@ -102,43 +107,76 @@ const CommunityPage = () => {
     }
   };
 
+  // Gestisce il tentativo di aprire il modal di creazione post
+  const handleNewPostClick = () => {
+    setShowNewPost(true);
+  };
+
   const handleLike = async (postId: string) => {
+    if (!currentUser) {
+      showToast('Effettua il login per mettere like ai post', 'info');
+      return;
+    }
     try {
       await toggleReaction(postId, 'like');
     } catch (error) {
       console.error('Errore nel like:', error);
+      showToast('Errore nel mettere like al post', 'error');
     }
   };
 
   const handleDislike = async (postId: string) => {
+    if (!currentUser) {
+      showToast('Effettua il login per mettere dislike ai post', 'info');
+      return;
+    }
     try {
       await toggleReaction(postId, 'dislike');
     } catch (error) {
       console.error('Errore nel dislike:', error);
+      showToast('Errore nel mettere dislike al post', 'error');
     }
   };
 
   const handleShare = async (postId: string, shareType: 'internal' | 'facebook' | 'twitter' | 'whatsapp' | 'email' | 'link') => {
+    if (!currentUser && shareType === 'internal') {
+      showToast('Effettua il login per condividere internamente', 'info');
+      return;
+    }
     try {
       await sharePost(postId, shareType);
+      showToast('Post condiviso con successo!', 'success');
     } catch (error) {
       console.error('Errore nella condivisione:', error);
+      showToast('Errore nella condivisione del post', 'error');
     }
   };
 
   const handleComment = async (postId: string, content: string, parentId?: string) => {
+    if (!currentUser) {
+      showToast('Effettua il login per commentare i post', 'info');
+      return;
+    }
     try {
       await addComment({ post_id: postId, content, parent_id: parentId });
+      showToast('Commento aggiunto con successo!', 'success');
     } catch (error) {
       console.error('Errore nel commento:', error);
+      showToast('Errore nell\'aggiunta del commento', 'error');
     }
   };
 
   const handleDelete = async (postId: string) => {
+    if (!currentUser) {
+      showToast('Effettua il login per eliminare i post', 'info');
+      return;
+    }
     try {
       await deletePost(postId);
+      showToast('Post eliminato con successo!', 'success');
     } catch (error) {
       console.error('Errore nell\'eliminazione:', error);
+      showToast('Errore nell\'eliminazione del post', 'error');
     }
   };
 
@@ -210,7 +248,7 @@ const CommunityPage = () => {
                 </button>
                 
                 <button
-                  onClick={() => setShowNewPost(true)}
+                  onClick={handleNewPostClick}
                   className="flex items-center space-x-2 px-4 py-2 bg-accent text-dark-400 rounded-lg font-medium hover:bg-accent/90 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -351,7 +389,7 @@ const CommunityPage = () => {
                 </div>
                 
                 <button
-                  onClick={() => setShowNewPost(true)}
+                  onClick={handleNewPostClick}
                   className="flex-1 bg-dark-400/50 border border-white/10 rounded-full px-4 py-3 text-left text-white/60 hover:bg-dark-400/70 hover:border-white/20 transition-all"
                 >
                   Cosa stai pensando, {currentUser.display_name?.split(' ')[0]}?
@@ -361,7 +399,7 @@ const CommunityPage = () => {
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => setShowNewPost(true)}
+                    onClick={handleNewPostClick}
                     className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <MessageCircle className="w-4 h-4 text-blue-400" />
@@ -369,7 +407,7 @@ const CommunityPage = () => {
                   </button>
                   
                   <button
-                    onClick={() => setShowNewPost(true)}
+                    onClick={handleNewPostClick}
                     className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <AlertTriangle className="w-4 h-4 text-red-400" />
@@ -377,7 +415,7 @@ const CommunityPage = () => {
                   </button>
                   
                   <button
-                    onClick={() => setShowNewPost(true)}
+                    onClick={handleNewPostClick}
                     className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <Calendar className="w-4 h-4 text-green-400" />
@@ -466,6 +504,10 @@ const CommunityPage = () => {
         onSubmit={handleCreatePost}
         currentUser={currentUser}
       />
+
+
+      {/* Toast Container */}
+      <ToastContainer />
 
       <BottomNavbar />
     </div>
