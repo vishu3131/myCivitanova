@@ -101,7 +101,7 @@ export function CommunityPostCard({
   const [isLiking, setIsLiking] = useState(false);
   const [isDisliking, setIsDisliking] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
   const [showFullContent, setShowFullContent] = useState(false);
   
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -394,8 +394,7 @@ export function CommunityPostCard({
                 <img
                   src={post.images[0] || ''}
                   alt="Post image"
-                  className="w-full max-h-96 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setExpandedImage(post.images![0] || '')}
+                  className="w-full max-h-96 object-cover rounded-lg"
                 />
               </div>
             ) : (
@@ -405,8 +404,7 @@ export function CommunityPostCard({
                     <img
                       src={image}
                       alt={`Post image ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => setExpandedImage(image)}
+                      className="w-full h-32 object-cover rounded-lg"
                     />
                     {index === 3 && post.images!.length > 4 && (
                       <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
@@ -731,34 +729,7 @@ export function CommunityPostCard({
         )}
       </AnimatePresence>
 
-      {/* Modal Immagine Espansa */}
-      <AnimatePresence>
-        {expandedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
-            onClick={() => setExpandedImage(null)}
-          >
-            <motion.img
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              src={expandedImage}
-              alt="Expanded image"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <button
-              onClick={() => setExpandedImage(null)}
-              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </motion.div>
   );
 }
