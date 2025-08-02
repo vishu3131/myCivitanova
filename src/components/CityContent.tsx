@@ -76,7 +76,7 @@ export function CityContent() {
       {/* Description */}
       <div className="mb-8">
         <p className="text-white/80 leading-relaxed">
-          Civitanova Marche è una perla dell'Adriatico. Con il suo mix di arte, mare e cultura contemporanea, 
+          Civitanova Marche è una perla dell&apos;Adriatico. Con il suo mix di arte, mare e cultura contemporanea, 
           la città invita ogni visitatore a esplorare i suoi quartieri vivaci e la sua anima marittima. 
           Scopri la storia che vive tra le sue vie.
         </p>

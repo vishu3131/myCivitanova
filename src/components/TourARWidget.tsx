@@ -53,7 +53,7 @@ export const TourARWidget = () => {
         </div>
         <h2 className="text-xl md:text-2xl font-heading font-bold mb-1 text-white drop-shadow">Augmented Reality Tourist Guide</h2>
         <p className="text-white/90 mb-2 text-base max-w-xl">
-          Presto potrai esplorare Civitanova Marche con tour interattivi in realtà aumentata! Scopri monumenti, storie e curiosità direttamente dal tuo smartphone, per un'esperienza immersiva e innovativa.
+          Presto potrai esplorare Civitanova Marche con tour interattivi in realtà aumentata! Scopri monumenti, storie e curiosità direttamente dal tuo smartphone, per un&apos;esperienza immersiva e innovativa.
         </p>
         <ul className="w-full max-w-lg mb-2">
           {features.map((f, i) => (

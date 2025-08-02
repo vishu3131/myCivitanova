@@ -31,7 +31,7 @@ export function ARTeaserSection() {
           
           <p className="text-white/80 max-w-lg mb-6">
             Scopri Civitanova Marche attraverso la tua fotocamera. Punta il telefono verso monumenti, 
-            luoghi d'interesse e scopri informazioni, storia e curiosità in tempo reale.
+            luoghi d&apos;interesse e scopri informazioni, storia e curiosità in tempo reale.
           </p>
           
           <div className="flex flex-wrap gap-4">
@@ -80,7 +80,7 @@ export function ARTeaserSection() {
               <ul className="space-y-2 mb-4">
                 <li className="flex items-start">
                   <span className="text-[#2A9D8F] mr-2">✓</span>
-                  <span>Riconoscimento automatico di monumenti e luoghi d'interesse</span>
+                  <span>Riconoscimento automatico di monumenti e luoghi d&apos;interesse</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-[#2A9D8F] mr-2">✓</span>
