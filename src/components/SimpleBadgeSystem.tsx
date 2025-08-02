@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { demoBadges, DemoXPSystem } from '@/data/demoData';
@@ -43,12 +43,7 @@ export function SimpleBadgeSystem({ userId, compact = false }: SimpleBadgeSystem
     legendary: 'bg-yellow-500/20 text-yellow-400'
   };
 
-  useEffect(() => {
-    loadAvailableBadges();
-    initializeDemoMode();
-  }, []);
-
-  const initializeDemoMode = () => {
+  const initializeDemoMode = useCallback(() => {
     // Se non c'è userId o il database non è disponibile, usa la modalità demo
     if (!userId) {
       setDemoMode(true);
@@ -72,9 +67,12 @@ export function SimpleBadgeSystem({ userId, compact = false }: SimpleBadgeSystem
         rank_position: stats.rank_position
       });
     }
-  };
+  }, [userId]);
 
-
+  useEffect(() => {
+    loadAvailableBadges();
+    initializeDemoMode();
+  }, [initializeDemoMode]);
 
   const loadAvailableBadges = async () => {
     try {

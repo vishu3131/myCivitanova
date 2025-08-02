@@ -170,7 +170,7 @@ export const useCommunity = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentUser, fetchPosts]);
+  }, [currentUser]);
 
   // Carica i commenti di un post
   const fetchComments = useCallback(async (postId: string): Promise<CommunityComment[]> => {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 
 export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
   // Ottieni l'ora corrente per personalizzare il saluto
@@ -29,10 +30,12 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
   return (
     <section className="relative h-[300px] md:h-[350px] lg:h-[400px] rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-accent to-dark-200 card-glow">
       <div className="absolute inset-0">
-        <img
+        <Image
           src="https://source.unsplash.com/random/1200x600/?civitanova,marche,seafront"
           alt="Civitanova Marche"
-          className="w-full h-full object-cover opacity-30"
+          fill
+          className="object-cover opacity-30"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-accent/40 to-dark-200/60"></div>
       </div>

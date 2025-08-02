@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface UsePullToRefreshOptions {
   onRefresh: () => Promise<void>;
@@ -28,7 +28,7 @@ export function usePullToRefresh({
     }
   };
 
-  const handleTouchMove = (e: TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isPulling || window.scrollY > 0) return;
 
     currentY.current = e.touches[0].clientY;
@@ -38,9 +38,9 @@ export function usePullToRefresh({
       e.preventDefault();
       setPullDistance(Math.min(distance, threshold * 1.5));
     }
-  };
+  }, [isPulling, resistance, threshold]);
 
-  const handleTouchEnd = async () => {
+  const handleTouchEnd = useCallback(async () => {
     if (!isPulling) return;
 
     setIsPulling(false);
@@ -55,7 +55,7 @@ export function usePullToRefresh({
     }
 
     setPullDistance(0);
-  };
+  }, [isPulling, pullDistance, threshold, isRefreshing, onRefresh]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -70,7 +70,7 @@ export function usePullToRefresh({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isPulling, pullDistance, threshold, isRefreshing]);
+  }, [isPulling, pullDistance, threshold, isRefreshing, handleTouchMove, handleTouchEnd]);
 
   return {
     containerRef,
