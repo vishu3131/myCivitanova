@@ -39,6 +39,24 @@ body {
   border-radius: 10px;
 }
 
+@layer base {
+  body {
+    @apply text-sm sm:text-base;
+  }
+
+  h1, .h1 {
+    @apply text-2xl sm:text-3xl font-bold font-heading;
+  }
+
+  h2, .h2 {
+    @apply text-xl sm:text-2xl font-semibold font-heading;
+  }
+
+  h3, .h3 {
+    @apply text-lg sm:text-xl font-semibold font-heading;
+  }
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }

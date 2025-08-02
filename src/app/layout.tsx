@@ -4,7 +4,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { CircularDevNavigation } from '@/components/CircularDevNavigation';
 import { BottomNavbar } from '@/components/BottomNavbar';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
@@ -19,7 +19,9 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata = {
   title: 'Civitanova Marche App',
   description: 'Applicazione ufficiale della città di Civitanova Marche',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+  'apple-mobile-web-app-capable': 'yes',
+  'apple-touch-fullscreen': 'yes',
 };
 
 export default function RootLayout({
@@ -28,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className="font-sans">
+    <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body className="font-sans bg-black text-white">
         <PageTransition>
           {children}
         </PageTransition>

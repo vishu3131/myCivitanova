@@ -179,7 +179,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-dark-400 rounded-xl shadow-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          className="bg-dark-400 rounded-xl shadow-2xl border border-white/10 w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -226,13 +226,13 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
           </div>
 
           {/* Content */}
-          <div className="p-4 overflow-y-auto max-h-[60vh]">
+          <div className="p-3 sm:p-4 overflow-y-auto flex-1">
             {currentStep === 1 ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Tipo di Post */}
                 <div>
-                  <label className="block text-white font-medium mb-3">Tipo di post</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-white font-medium mb-2 sm:mb-3">Tipo di post</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {postTypes.map((type) => {
                       const IconComponent = type.icon;
                       return (
@@ -468,7 +468,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/10 bg-dark-300/30">
+          <div className="p-3 sm:p-4 border-t border-white/10 bg-dark-300/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {currentStep === 2 && (

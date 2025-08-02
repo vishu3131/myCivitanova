@@ -229,7 +229,7 @@ export function CommunityPostCard({
       className="bg-dark-300/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-accent/30 transition-all duration-300"
     >
       {/* Header del Post */}
-      <div className="p-4 pb-0">
+      <div className="p-3 sm:p-4 pb-0">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
             {/* Avatar */}
@@ -355,12 +355,12 @@ export function CommunityPostCard({
       </div>
 
       {/* Contenuto del Post */}
-      <div className="px-4 pb-3">
-        <h2 className="text-white font-semibold text-lg mb-2 leading-tight">
+      <div className="px-3 sm:px-4 pb-3">
+        <h2 className="text-white font-semibold text-base sm:text-lg mb-2 leading-tight">
           {post.title}
         </h2>
         
-        <div className="text-white/80 text-sm leading-relaxed">
+        <div className="text-white/80 text-sm sm:text-base leading-relaxed">
           <p className="whitespace-pre-wrap">{displayContent}</p>
           {shouldTruncate && (
             <button
@@ -398,13 +398,13 @@ export function CommunityPostCard({
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                 {post.images.slice(0, 4).map((image, index) => (
                   <div key={index} className="relative">
                     <img
                       src={image}
                       alt={`Post image ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-28 sm:h-32 object-cover rounded-lg"
                     />
                     {index === 3 && post.images!.length > 4 && (
                       <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
@@ -462,44 +462,44 @@ export function CommunityPostCard({
       )}
 
       {/* Pulsanti Azione */}
-      <div className="px-4 py-3 border-t border-white/10">
-        <div className="flex items-center justify-between">
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-white/10">
+        <div className="flex items-center justify-around sm:justify-between">
           <div className="flex items-center space-x-1">
             {/* Like */}
             <button
               onClick={handleLike}
               disabled={isLiking || !currentUser}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all ${
                 post.user_reaction === 'like'
                   ? 'bg-blue-500/20 text-blue-400'
                   : 'text-white/60 hover:text-blue-400 hover:bg-blue-500/10'
               } ${isLiking ? 'opacity-50' : ''}`}
             >
               <ThumbsUp className={`w-4 h-4 ${isLiking ? 'animate-pulse' : ''}`} />
-              <span className="text-sm font-medium">Mi piace</span>
+              <span className="hidden sm:inline text-sm font-medium">Mi piace</span>
             </button>
 
             {/* Dislike */}
             <button
               onClick={handleDislike}
               disabled={isDisliking || !currentUser}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all ${
                 post.user_reaction === 'dislike'
                   ? 'bg-red-500/20 text-red-400'
                   : 'text-white/60 hover:text-red-400 hover:bg-red-500/10'
               } ${isDisliking ? 'opacity-50' : ''}`}
             >
               <ThumbsDown className={`w-4 h-4 ${isDisliking ? 'animate-pulse' : ''}`} />
-              <span className="text-sm font-medium">Non mi piace</span>
+              <span className="hidden sm:inline text-sm font-medium">Non mi piace</span>
             </button>
 
             {/* Commenta */}
             <button
               onClick={handleToggleComments}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white/60 hover:text-accent hover:bg-accent/10 transition-all"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg text-white/60 hover:text-accent hover:bg-accent/10 transition-all"
             >
               <MessageCircle className="w-4 h-4" />
-              <span className="text-sm font-medium">Commenta</span>
+              <span className="hidden sm:inline text-sm font-medium">Commenta</span>
             </button>
           </div>
 

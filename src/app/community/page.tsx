@@ -223,15 +223,16 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-black">
       <Sidebar />
       
-      <div 
+      <div
         className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'ml-16 md:ml-20 lg:ml-24' : 'ml-0'}
+          pb-16 md:pb-0
         `}
       >
         {/* Header */}
         <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-sm border-b border-white/10">
-          <div className="px-4 py-4">
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-white">Community</h1>
@@ -365,7 +366,7 @@ const CommunityPage = () => {
         </div>
 
         {/* Content */}
-        <div className="p-4 pb-20">
+        <div className="p-4 sm:p-6 lg:p-8 pb-20">
           {/* Quick Post Creator (Facebook-style) */}
           {currentUser && (
             <motion.div
