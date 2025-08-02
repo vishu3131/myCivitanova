@@ -389,18 +389,18 @@ export function CommunityPostCard({
         {/* Immagini */}
         {post.images && post.images.length > 0 && (
           <div className="mt-3">
-            {post.images?.length === 1 ? (
+            {post.images.length === 1 ? (
               <div className="relative">
                 <img
-                  src={post.images?.[0] || ''}
+                  src={post.images[0] || ''}
                   alt="Post image"
                   className="w-full max-h-96 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setExpandedImage(post.images?.[0] || '')}
+                  onClick={() => setExpandedImage(post.images![0] || '')}
                 />
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {post.images?.slice(0, 4).map((image, index) => (
+                {post.images.slice(0, 4).map((image, index) => (
                   <div key={index} className="relative">
                     <img
                       src={image}
@@ -408,10 +408,10 @@ export function CommunityPostCard({
                       className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={() => setExpandedImage(image)}
                     />
-                    {index === 3 && (post.images?.length || 0) > 4 && (
+                    {index === 3 && post.images!.length > 4 && (
                       <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
                         <span className="text-white font-semibold">
-                          +{(post.images?.length || 0) - 4}
+                          +{post.images!.length - 4}
                         </span>
                       </div>
                     )}
