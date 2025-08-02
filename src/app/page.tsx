@@ -12,6 +12,7 @@ import { SuggestionsWidget } from '@/components/SuggestionsWidget';
 import { MobileHomeScreen } from '@/components/MobileHomeScreen';
 import { TourARWidget } from '@/components/TourARWidget';
 import RiveAnimationWidget from '@/components/RiveAnimationWidget';
+import { TailwindTest } from '@/components/TailwindTest';
 
 export default function Home() {
   // Stato per tracciare se la sidebar è aperta o chiusa
@@ -34,6 +35,9 @@ export default function Home() {
 
   return (
     <>
+      {/* Test component per verificare Tailwind */}
+      <TailwindTest />
+      
       {/* Mobile View - Show new immersive interface */}
       <div className="block md:hidden">
         <MobileHomeScreen />

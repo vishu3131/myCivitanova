@@ -3,6 +3,8 @@ const nextConfig = {
   experimental: {
     esmExternals: 'loose',
   },
+  // Assicura che i CSS siano processati correttamente
+  swcMinify: true,
   webpack: (config, { isServer }) => {
     // Risolve i problemi con i moduli WebSocket in ambiente browser
     if (!isServer) {
