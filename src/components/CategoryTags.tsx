@@ -10,7 +10,7 @@ const categories = [
   { id: 'events', label: 'Eventi', icon: Calendar, path: '/eventi' },
   { id: 'culture', label: 'Cultura', icon: Building, path: '/esplora' },
   { id: 'shopping', label: 'Shopping', icon: ShoppingBag, path: '/esplora' },
-  { id: 'districts', label: 'Quartieri', icon: Home, path: '/esplora' },
+  { id: 'districts', label: 'Quartieri', icon: Home, path: '/quartieri' },
 ];
 
 export function CategoryTags() {

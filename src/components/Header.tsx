@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-export function Header() {
+export function Header({ title }: { title?: string }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
   const toggleUserMenu = () => {
@@ -24,7 +24,7 @@ export function Header() {
               CM
             </div>
             <div className="hidden md:block">
-              <h1 className="text-lg font-heading font-medium text-[#264653]">Civitanova Marche</h1>
+              <h1 className="text-lg font-heading font-medium text-[#264653]">{title || 'Civitanova Marche'}</h1>
               <p className="text-xs text-gray-500">Smart City App</p>
             </div>
           </Link>

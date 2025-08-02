@@ -636,3 +636,7 @@ div.navbar-fixed {
 .nav-item-transition:active {
   transform: scale(0.95);
 }
+
+.group:hover .animate-scroll-loop {
+  animation-play-state: paused;
+}
