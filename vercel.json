@@ -1,6 +1,3 @@
 {
-  "framework": "nextjs",
-  "engines": {
-    "node": "18.x"
-  }
+  "framework": "nextjs"
 }
