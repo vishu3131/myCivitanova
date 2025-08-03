@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
@@ -28,39 +28,105 @@ export function CircularDevNavigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [showRipple, setShowRipple] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   const router = useRouter();
   const { triggerHaptic } = useHapticFeedback();
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    const timeouts = timeoutRefs.current;
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
+
+  // Close menu when clicking outside or on route change
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setIsOpen(false);
+      setSelectedIcon(null);
+      setIsAnimating(false);
+    };
+
+    // Listen for route changes
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
+  const handleNavigation = useCallback((path: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    triggerHaptic('medium');
+    setSelectedIcon(path);
+    
+    const timeout = setTimeout(() => {
+      router.push(path);
+      setIsOpen(false);
+      setSelectedIcon(null);
+    }, 300);
+    
+    timeoutRefs.current.push(timeout);
+  }, [router, triggerHaptic]);
+
+  const handleCentralClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent multiple rapid clicks
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    triggerHaptic('heavy');
+    setShowRipple(true);
+    
+    const rippleTimeout = setTimeout(() => setShowRipple(false), 600);
+    const animationTimeout = setTimeout(() => setIsAnimating(false), 300);
+    
+    timeoutRefs.current.push(rippleTimeout, animationTimeout);
+    
+    setIsOpen(!isOpen);
+    
+    // Reset selected icon when closing
+    if (isOpen) {
+      setSelectedIcon(null);
+    }
+  }, [triggerHaptic, isOpen, isAnimating]);
+
+  const handleBackdropClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(false);
+    setSelectedIcon(null);
+  }, []);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      setIsOpen(false);
+      setSelectedIcon(null);
+    }
+  }, []);
+
+  // Calculate positions for semicircle layout
+  const getIconPosition = useCallback((index: number, total: number) => {
+    const angle = (Math.PI / (total - 1)) * index; // Semicircle from 0 to π
+    // Reduce radius on mobile devices
+    const radius = typeof window !== 'undefined' && window.innerWidth < 768 ? 90 : 120;
+    const x = Math.cos(angle) * radius;
+    const y = -Math.sin(angle) * radius; // Negative for upward semicircle
+    return { x, y };
+  }, []);
 
   // Only show in development
   if (process.env.NODE_ENV === 'production') {
     return null;
   }
-
-  const handleNavigation = (path: string) => {
-    triggerHaptic('medium');
-    setSelectedIcon(path);
-    setTimeout(() => {
-      router.push(path);
-      setIsOpen(false);
-      setSelectedIcon(null);
-    }, 300);
-  };
-
-  const handleCentralClick = () => {
-    triggerHaptic('heavy');
-    setShowRipple(true);
-    setTimeout(() => setShowRipple(false), 600);
-    setIsOpen(!isOpen);
-  };
-
-  // Calculate positions for semicircle layout
-  const getIconPosition = (index: number, total: number) => {
-    const angle = (Math.PI / (total - 1)) * index; // Semicircle from 0 to π
-    const radius = 120;
-    const x = Math.cos(angle) * radius;
-    const y = -Math.sin(angle) * radius; // Negative for upward semicircle
-    return { x, y };
-  };
 
   return (
     <>
@@ -72,9 +138,17 @@ export function CircularDevNavigation() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 backdrop-blur-md bg-black/20"
-            style={{ zIndex: 9995 }}
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 backdrop-blur-md bg-black/30 cursor-pointer touch-manipulation"
+            style={{ 
+              zIndex: 9995,
+              WebkitTapHighlightColor: 'transparent'
+            }}
+            onClick={handleBackdropClick}
+            onTouchEnd={handleBackdropClick}
+            onKeyDown={handleKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-label="Close navigation menu"
           />
         )}
       </AnimatePresence>
@@ -83,7 +157,7 @@ export function CircularDevNavigation() {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 9996 }}>
-            {[...Array(30)].map((_, i) => (
+            {[...Array(typeof window !== 'undefined' && window.innerWidth < 768 ? 15 : 30)].map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute rounded-full"
@@ -101,7 +175,7 @@ export function CircularDevNavigation() {
                 animate={{ 
                   opacity: [0, 0.8, 0],
                   scale: [0, 1.5, 0],
-                  y: [null, -100],
+                  y: typeof window !== 'undefined' ? [Math.random() * window.innerHeight, Math.random() * window.innerHeight - 100] : [0, -100],
                   rotate: [0, 360],
                 }}
                 transition={{
@@ -157,8 +231,17 @@ export function CircularDevNavigation() {
       {/* Central Button */}
       <motion.button
         onClick={handleCentralClick}
-        className="fixed bottom-24 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden"
-        style={{ zIndex: 9997 }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleCentralClick(e as any);
+        }}
+        onKeyDown={handleKeyDown}
+        className="fixed bottom-24 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-400 touch-manipulation"
+        style={{ 
+          zIndex: 9997,
+          WebkitTapHighlightColor: 'transparent'
+        }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         animate={isOpen ? { 
@@ -174,6 +257,8 @@ export function CircularDevNavigation() {
           repeatType: "reverse",
           duration: 2
         }}
+        aria-label={isOpen ? "Close development navigation" : "Open development navigation"}
+        aria-expanded={isOpen}
       >
         {/* Animated gradient background */}
         <motion.div
@@ -253,6 +338,8 @@ export function CircularDevNavigation() {
           <div 
             className="fixed bottom-24 right-6"
             style={{ zIndex: 9996 }}
+            role="navigation"
+            aria-label="Development navigation menu"
           >
             {pages.map((page, index) => {
               const IconComponent = page.icon;
@@ -261,10 +348,16 @@ export function CircularDevNavigation() {
               return (
                 <motion.button
                   key={page.path}
-                  onClick={() => handleNavigation(page.path)}
-                  className="absolute w-14 h-14 rounded-full flex items-center justify-center shadow-xl overflow-hidden"
+                  onClick={(e) => handleNavigation(page.path, e)}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleNavigation(page.path);
+                  }}
+                  className="absolute w-14 h-14 rounded-full flex items-center justify-center shadow-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/50 touch-manipulation"
                   style={{
                     background: `linear-gradient(135deg, ${page.color}, ${page.color}dd)`,
+                    WebkitTapHighlightColor: 'transparent'
                   }}
                   initial={{ 
                     scale: 0,
@@ -302,6 +395,7 @@ export function CircularDevNavigation() {
                     boxShadow: `0 0 25px ${page.color}80`,
                   }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label={`Navigate to ${page.name}`}
                 >
                   {/* Glow effect for each icon */}
                   <motion.div
