@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Star, MapPin, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 interface TouristSpot {
   id: number;
@@ -198,15 +199,17 @@ export function TouristSpotWidget() {
         >
           {touristSpots.map((spot) => (
             <div key={spot.id} className="w-full h-full flex-shrink-0 relative">
-              <img 
+              <Image 
                 src={spot.image}
                 alt={spot.name}
-                className={`w-full h-full object-cover pointer-events-none ${
+                fill
+                className={`object-cover pointer-events-none ${
                   spot.name === "Pista Ciclabile di Civitanova Marche" 
                     ? "pista-ciclabile-crop" 
                     : ""
                 }`}
                 draggable={false}
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
             </div>

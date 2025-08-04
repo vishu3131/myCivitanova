@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { BadgeList } from './BadgeList';
 
 export interface PublicProfileProps {
@@ -21,10 +22,12 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({ user, isFollowing,
     <div className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-xl p-6 shadow-xl max-w-lg mx-auto">
       <div className="flex flex-col items-center">
         <div className="relative mb-4">
-          <img
+          <Image
             src={user.avatar_url || 'https://ui-avatars.com/api/?name=' + (user.full_name || 'User')}
             alt="Avatar"
-            className="w-28 h-28 rounded-full border-4 border-blue-500 shadow-lg"
+            width={112}
+            height={112}
+            className="rounded-full border-4 border-blue-500 shadow-lg"
             style={{ borderColor: user.theme?.borderColor || '#3b82f6' }}
           />
         </div>

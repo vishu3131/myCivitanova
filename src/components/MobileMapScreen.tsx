@@ -5,6 +5,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { ArrowLeft, Search, Filter, Navigation, MapPin, Star, Clock, Layers } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 type Place = {
@@ -61,10 +62,12 @@ export function MobileMapScreen() {
         <div className="relative h-screen">
           {/* Map Background - Using a static image for demo */}
           <div className="absolute inset-0 bg-gray-800">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               alt="Mappa Civitanova"
-              className="w-full h-full object-cover opacity-60"
+              fill
+              className="object-cover opacity-60"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           </div>
@@ -188,10 +191,12 @@ export function MobileMapScreen() {
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-start gap-4 mb-4">
-                  <img
+                  <Image
                     src={selectedPlace.image || '/placeholder.png'}
                     alt={selectedPlace.name || 'Luogo'}
-                    className="w-20 h-20 rounded-2xl object-cover bg-gray-700"
+                    width={80}
+                    height={80}
+                    className="rounded-2xl object-cover bg-gray-700"
                     onError={(e) => {
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
                     }}

@@ -5,7 +5,8 @@ import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { SearchModal } from './SearchModal';
-import { ArrowLeft, Search, Filter, MapPin, Star, Clock, Users } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Star, MapPin, Clock, Users } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 const categories = [
@@ -152,10 +153,12 @@ export function MobileExploreScreen() {
               >
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={place.image}
                     alt={place.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   

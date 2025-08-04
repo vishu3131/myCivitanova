@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { User } from 'lucide-react';
 import { PrivacyToggle } from './PrivacyToggle';
 import { BadgeList } from './BadgeList';
@@ -29,10 +30,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
     <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl p-6 shadow-lg max-w-md mx-auto">
       <div className="flex flex-col items-center">
         <div className="relative mb-4">
-          <img
+          <Image
             src={user.avatar_url || 'https://ui-avatars.com/api/?name=' + (user.full_name || 'User')}
             alt="Avatar"
-            className="w-24 h-24 rounded-full border-4 border-purple-500 shadow-lg"
+            width={96}
+            height={96}
+            className="rounded-full border-4 border-purple-500 shadow-lg"
           />
           {/* Cornice animata e badge livello */}
           <span className="absolute bottom-0 right-0 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-bold animate-pulse">
