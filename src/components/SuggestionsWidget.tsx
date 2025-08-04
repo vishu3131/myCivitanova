@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface SuggestionCardProps {
   title: string;
@@ -18,7 +19,7 @@ function SuggestionCard({ title, description, image, rating, category, onClick }
       onClick={onClick}
     >
       <div className="relative h-40">
-        <img src={image} alt={title} className="w-full h-full object-cover" />
+        <Image src={image} alt={title} className="w-full h-full object-cover" fill sizes="100vw" />
         <div className="absolute top-2 left-2 bg-dark-300/90 backdrop-blur-sm text-xs font-medium px-2 py-1 rounded-full text-white">
           {category}
         </div>

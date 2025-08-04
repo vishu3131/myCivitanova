@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { Clock, ArrowRight } from 'lucide-react';
 
 interface NewsItemProps {
@@ -16,7 +17,7 @@ function NewsItem({ title, time, category, categoryColor, image }: NewsItemProps
     <div className="flex items-start space-x-3 p-3 rounded-xl hover:bg-dark-300/50 transition-colors cursor-pointer">
       {image && (
         <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-          <img src={image} alt={title} className="w-full h-full object-cover" />
+          <Image src={image} alt={title} className="w-full h-full object-cover" fill sizes="64px" />
         </div>
       )}
       <div className="flex-1">

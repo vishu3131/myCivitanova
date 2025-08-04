@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { WeatherWidget } from './WeatherWidget';
 import { ServicesWidget } from './ServicesWidget';
 
@@ -32,10 +33,12 @@ export function CityContent() {
       <div className="mb-8">
         <div className="image-grid">
           <div className="image-grid-main rounded-xl overflow-hidden shadow-md relative">
-            <img 
+            <Image 
               src="https://source.unsplash.com/random/800x600/?civitanova,marche,port" 
               alt="Porto di Civitanova Marche" 
               className="w-full h-full object-cover"
+              fill
+              sizes="100vw"
             />
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
               <div className="flex items-center text-white text-sm">
@@ -45,10 +48,12 @@ export function CityContent() {
             </div>
           </div>
           <div className="image-grid-secondary rounded-xl overflow-hidden relative shadow-md">
-            <img 
+            <Image 
               src="https://source.unsplash.com/random/400x300/?civitanova,marche,beach" 
               alt="Lungomare di Civitanova Marche" 
               className="w-full h-full object-cover"
+              fill
+              sizes="50vw"
             />
             <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
               <div className="flex items-center text-white text-xs">
@@ -58,10 +63,12 @@ export function CityContent() {
             </div>
           </div>
           <div className="image-grid-secondary rounded-xl overflow-hidden relative shadow-md">
-            <img 
+            <Image 
               src="https://source.unsplash.com/random/400x300/?civitanova,marche,historic" 
               alt="Centro storico di Civitanova Marche" 
               className="w-full h-full object-cover"
+              fill
+              sizes="50vw"
             />
             <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
               <div className="flex items-center text-white text-xs">
@@ -107,23 +114,25 @@ export function CityContent() {
             </div>
             
             <div className="h-40 rounded-lg overflow-hidden mt-4">
-              <img 
-                src="https://source.unsplash.com/random/800x400/?civitanova,marche,old,town" 
-                alt="Centro Storico di Civitanova Marche" 
-                className="w-full h-full object-cover"
-              />
+              <Image 
+              src="https://source.unsplash.com/random/800x400/?civitanova,marche,old,town" 
+              alt="Centro Storico di Civitanova Marche" 
+              className="w-full h-full object-cover"
+              fill
+              sizes="100vw"
+            />
             </div>
             
             <div className="mt-4 flex items-center justify-between">
               <div className="flex -space-x-2">
                 <div className="w-8 h-8 rounded-full border-2 border-dark-300 overflow-hidden">
-                  <img src="https://i.pravatar.cc/100?img=1" alt="User" className="w-full h-full object-cover" />
+                  <Image src="https://i.pravatar.cc/100?img=1" alt="User" className="w-full h-full object-cover" width={32} height={32} />
                 </div>
                 <div className="w-8 h-8 rounded-full border-2 border-dark-300 overflow-hidden">
-                  <img src="https://i.pravatar.cc/100?img=2" alt="User" className="w-full h-full object-cover" />
+                  <Image src="https://i.pravatar.cc/100?img=2" alt="User" className="w-full h-full object-cover" width={32} height={32} />
                 </div>
                 <div className="w-8 h-8 rounded-full border-2 border-dark-300 overflow-hidden">
-                  <img src="https://i.pravatar.cc/100?img=3" alt="User" className="w-full h-full object-cover" />
+                  <Image src="https://i.pravatar.cc/100?img=3" alt="User" className="w-full h-full object-cover" width={32} height={32} />
                 </div>
               </div>
               <div className="text-textSecondary text-sm">

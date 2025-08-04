@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 
 interface BadgeProps {
   icon: string;
@@ -34,7 +35,7 @@ function LeaderboardItem({ position, name, points, avatar, isCurrentUser }: Lead
         {position}
       </div>
       <div className="w-8 h-8 rounded-full overflow-hidden mr-3">
-        <img src={avatar} alt={name} className="w-full h-full object-cover" />
+        <Image src={avatar} alt={name} className="w-full h-full object-cover" fill sizes="32px" />
       </div>
       <div className="flex-1">
         <p className="text-white font-medium text-sm">{name}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, 
@@ -426,10 +427,12 @@ const CommunityPage = () => {
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
                   {currentUser.avatar ? (
-                    <img 
+                    <Image 
                       src={currentUser.avatar} 
                       alt={currentUser.display_name} 
                       className="w-full h-full rounded-full object-cover"
+                      fill
+                      sizes="40px"
                     />
                   ) : (
                     <span className="text-accent font-semibold text-sm">

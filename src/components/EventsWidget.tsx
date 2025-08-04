@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
 
 interface EventProps {
@@ -15,7 +16,7 @@ function Event({ title, date, location, attendees, image }: EventProps) {
   return (
     <div className="flex items-center space-x-4 p-3 rounded-xl hover:bg-dark-300/50 transition-colors cursor-pointer">
       <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-        <img src={image} alt={title} className="w-full h-full object-cover" />
+        <Image src={image} alt={title} className="w-full h-full object-cover" fill sizes="64px" />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-white font-medium truncate">{title}</h3>

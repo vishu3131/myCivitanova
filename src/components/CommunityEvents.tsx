@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
   Calendar, 
@@ -267,10 +268,12 @@ const CommunityEvents = () => {
             {/* Event Image */}
             <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 relative">
               {event.image ? (
-                <img 
+                <Image 
                   src={event.image} 
                   alt={event.title}
                   className="w-full h-full object-cover"
+                  fill
+                  sizes="100vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -327,10 +330,12 @@ const CommunityEvents = () => {
 
               {/* Organizer */}
               <div className="flex items-center space-x-2 mb-4">
-                <img 
+                <Image 
                   src={event.organizer.avatar} 
                   alt={event.organizer.name}
                   className="w-6 h-6 rounded-full"
+                  width={24}
+                  height={24}
                 />
                 <span className="text-sm text-gray-700">{event.organizer.name}</span>
                 {event.organizer.verified && (
@@ -387,4 +392,4 @@ const CommunityEvents = () => {
   );
 };
 
-export default CommunityEvents; 
+export default CommunityEvents;

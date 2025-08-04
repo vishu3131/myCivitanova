@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -287,10 +288,12 @@ const CommunityGroups = () => {
               {/* Group Header */}
               <div className="h-32 bg-gradient-to-br from-blue-400 to-purple-500 relative">
                 {group.coverImage ? (
-                  <img 
+                  <Image 
                     src={group.coverImage} 
                     alt={group.name}
                     className="w-full h-full object-cover"
+                    fill
+                    sizes="100vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -323,10 +326,12 @@ const CommunityGroups = () => {
               {/* Group Content */}
               <div className="p-6">
                 <div className="flex items-start space-x-4 mb-4">
-                  <img 
+                  <Image 
                     src={group.avatar} 
                     alt={group.name}
                     className="w-16 h-16 rounded-lg object-cover"
+                    width={64}
+                    height={64}
                   />
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -422,4 +427,4 @@ const CommunityGroups = () => {
   );
 };
 
-export default CommunityGroups; 
+export default CommunityGroups;

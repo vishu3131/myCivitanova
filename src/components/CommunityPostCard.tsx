@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
@@ -235,10 +236,12 @@ export function CommunityPostCard({
             {/* Avatar */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
               {post.author_avatar ? (
-                <img 
+                <Image 
                   src={post.author_avatar} 
                   alt={post.author_name} 
                   className="w-full h-full rounded-full object-cover"
+                  width={40}
+                  height={40}
                 />
               ) : (
                 <span className="text-accent font-semibold text-sm">
@@ -391,20 +394,24 @@ export function CommunityPostCard({
           <div className="mt-3">
             {post.images.length === 1 ? (
               <div className="relative">
-                <img
+                <Image
                   src={post.images[0] || ''}
                   alt="Post image"
                   className="w-full max-h-96 object-cover rounded-lg"
+                  width={600}
+                  height={400}
                 />
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                 {post.images.slice(0, 4).map((image, index) => (
                   <div key={index} className="relative">
-                    <img
+                    <Image
                       src={image}
                       alt={`Post image ${index + 1}`}
                       className="w-full h-28 sm:h-32 object-cover rounded-lg"
+                      width={300}
+                      height={200}
                     />
                     {index === 3 && post.images!.length > 4 && (
                       <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">

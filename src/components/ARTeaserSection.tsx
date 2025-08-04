@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 export function ARTeaserSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,10 +70,12 @@ export function ARTeaserSection() {
               </div>
               
               <div className="aspect-video bg-gray-200 rounded-lg mb-4 overflow-hidden">
-                <img 
+                <Image 
                   src="https://cdn.dribbble.com/users/1197989/screenshots/5585685/media/af6d6cedf4b7fb39eb454a5d5e6f8a4b.gif" 
                   alt="AR Preview" 
                   className="w-full h-full object-cover"
+                  fill
+                  sizes="100vw"
                 />
               </div>
               

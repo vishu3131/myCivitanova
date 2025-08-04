@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 
 interface Badge {
@@ -41,15 +41,15 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
     common: 'bg-gray-500',
     rare: 'bg-blue-500',
     epic: 'bg-purple-500',
-    legendary: 'bg-yellow-500'
-  };
+      legendary: 'bg-yellow-500'
+   }, []);
 
   const rarityGlow = {
     common: 'shadow-gray-500/50',
     rare: 'shadow-blue-500/50',
     epic: 'shadow-purple-500/50',
-    legendary: 'shadow-yellow-500/50'
-  };
+      legendary: 'shadow-yellow-500/50'
+   };
 
   useEffect(() => {
     if (userId) {
@@ -57,9 +57,9 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
       loadUserStats();
       loadAvailableBadges();
     }
-  }, [userId]);
+  }, [userId, loadUserBadges, loadUserStats, loadAvailableBadges]);
 
-  const loadUserBadges = async () => {
+  const loadUserBadges = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('user_badges')
@@ -95,9 +95,9 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
     } catch (error) {
       console.error('Errore caricamento badge utente:', error);
     }
-  };
+  }, [userId]);
 
-  const loadAvailableBadges = async () => {
+  const loadAvailableBadges = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('badge_types')
@@ -110,9 +110,9 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
     } catch (error) {
       console.error('Errore caricamento badge disponibili:', error);
     }
-  };
+  }, []);
 
-  const loadUserStats = async () => {
+  const loadUserStats = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('user_stats_complete')
@@ -127,7 +127,7 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const addXP = async (activityName: string, metadata: any = {}) => {
     try {
