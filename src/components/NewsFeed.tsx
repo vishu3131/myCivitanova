@@ -40,10 +40,10 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
   };
   
   // Remove animation states
-  const [userReaction, setUserReaction] = useState(null); // 'like', 'dislike', or null
+  const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(null); // 'like', 'dislike', or null
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
-  const [comments, setComments] = useState([]);
+  const [comments, setComments] = useState<Array<{ id: number; text: string }>>([]);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   // Remove isAnimating states
@@ -123,10 +123,10 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
       </div>
       <div className="flex justify-around mt-4">
         <button onClick={handleLike} className={`flex items-center text-black ${userReaction === 'like' ? 'text-blue-500' : ''}`}>
-          <ThumbsUp className="w-5 h-5 mr-1" /> {likes}
+          <ThumbsUp className="w-5 h-5 mr-1 text-yellow-400" /> {likes}
         </button>
         <button onClick={handleDislike} className={`flex items-center text-black ${userReaction === 'dislike' ? 'text-red-500' : ''}`}>
-          <ThumbsDown className="w-5 h-5 mr-1 relative z-10" /> {dislikes}
+          <ThumbsDown className="w-5 h-5 mr-1 text-yellow-400 relative z-10" /> {dislikes}
         </button>
         <button onClick={handleCommentToggle} className="flex items-center text-black relative overflow-hidden">
           <motion.div
@@ -136,7 +136,7 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
             transition={{ duration: 1, ease: 'easeInOut' }}
             style={{ clipPath: 'circle(100% at 50% 50%)', mixBlendMode: 'multiply' }}
           />
-          <MessageCircle className="w-5 h-5 mr-1 relative z-10" /> {comments.length}
+          <MessageCircle className="w-5 h-5 mr-1 text-yellow-400 relative z-10" /> {comments.length}
         </button>
         <button onClick={handleShare} className="flex items-center text-black relative overflow-hidden">
           <motion.div
@@ -146,7 +146,7 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
             transition={{ duration: 1, ease: 'easeInOut' }}
             style={{ clipPath: 'circle(100% at 50% 50%)', mixBlendMode: 'multiply' }}
           />
-          <Share2 className="w-5 h-5 relative z-10" />
+          <Share2 className="w-5 h-5 text-yellow-400 relative z-10" />
         </button>
       </div>
       <AnimatePresence>

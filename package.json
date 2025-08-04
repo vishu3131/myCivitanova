@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@rive-app/react-canvas": "^4.22.1",
     "@supabase/supabase-js": "^2.38.0",
     "date-fns": "^4.1.0",

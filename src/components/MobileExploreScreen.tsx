@@ -208,17 +208,17 @@ export function MobileExploreScreen() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
-  const { triggerHapticFeedback } = useHapticFeedback();
+  const { triggerHaptic } = useHapticFeedback();
 
   const handleRefresh = async () => {
-    triggerHapticFeedback('light');
+    triggerHaptic('light');
     setLoading(true);
     const { data, error } = await supabase.from('places').select('*');
     if (!error && data) setPlaces(data as Place[]);
     setLoading(false);
   };
 
-  usePullToRefresh(handleRefresh);
+  const pullToRefreshProps = usePullToRefresh({ onRefresh: handleRefresh });
 
   useEffect(() => {
     // Use demo data if Supabase is not configured or for development
@@ -244,7 +244,7 @@ export function MobileExploreScreen() {
   });
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div ref={pullToRefreshProps.containerRef} className="min-h-screen bg-black relative overflow-hidden">
       <StatusBar />
       
       <div className="content-with-navbar">
