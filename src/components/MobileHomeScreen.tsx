@@ -20,6 +20,7 @@ import ReportModal from './CommunityReportModal';
 import SocialWidgetsContainer from './SocialWidgetsContainer';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
 import { supabase } from '@/utils/supabaseClient';
+import Link from 'next/link';
 
 export function MobileHomeScreen() {
   const [showNews, setShowNews] = useState(false);
@@ -240,15 +241,17 @@ export function MobileHomeScreen() {
               </button>
             </div>
             {/* News - Small */}
-            <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10" onClick={() => setShowNews(true)} style={{cursor:'pointer'}}>
-              <div className="text-center">
-                <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-xs text-red-400">📰</span>
+            <Link href="/news">
+              <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 cursor-pointer">
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-xs text-red-400">📰</span>
+                  </div>
+                  <div className="text-white font-medium text-xs">News</div>
+                  <div className="text-red-400 text-xs">3</div>
                 </div>
-                <div className="text-white font-medium text-xs">News</div>
-                <div className="text-red-400 text-xs">3</div>
               </div>
-            </div>
+            </Link>
           </div>
           {/* Live Updates - Medium */}
           <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 card-glow border border-white/10">

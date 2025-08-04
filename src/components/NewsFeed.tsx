@@ -1,6 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ThumbsUp, ThumbsDown, MessageCircle, Share2 } from 'lucide-react';
 
 interface NewsItemProps {
   title: string;
@@ -37,21 +39,81 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
     }
   };
   
+  // Remove animation states
+  const [userReaction, setUserReaction] = useState(null); // 'like', 'dislike', or null
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [comments, setComments] = useState([]);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  // Remove isAnimating states
+  const [isAnimatingLike, setIsAnimatingLike] = useState(false);
+  const [isAnimatingDislike, setIsAnimatingDislike] = useState(false);
+  const [isAnimatingComment, setIsAnimatingComment] = useState(false);
+  const [isAnimatingShare, setIsAnimatingShare] = useState(false);
+
+  const handleLike = () => {
+    if (userReaction === 'like') {
+      setLikes(likes - 1);
+      setUserReaction(null);
+    } else {
+      if (userReaction === 'dislike') {
+        setDislikes(dislikes - 1);
+      }
+      setLikes(likes + 1);
+      setUserReaction('like');
+    }
+    setIsAnimatingLike(true);
+    setTimeout(() => setIsAnimatingLike(false), 1000);
+  };
+
+  const handleDislike = () => {
+    if (userReaction === 'dislike') {
+      setDislikes(dislikes - 1);
+      setUserReaction(null);
+    } else {
+      if (userReaction === 'like') {
+        setLikes(likes - 1);
+      }
+      setDislikes(dislikes + 1);
+      setUserReaction('dislike');
+    }
+    setIsAnimatingDislike(true);
+    setTimeout(() => setIsAnimatingDislike(false), 1000);
+  };
+  const handleCommentToggle = () => {
+    setShowComments(!showComments);
+    setIsAnimatingComment(true);
+    setTimeout(() => setIsAnimatingComment(false), 1000);
+  };
+  const handleShare = () => {
+    // Add share logic if needed
+    setIsAnimatingShare(true);
+    setTimeout(() => setIsAnimatingShare(false), 1000);
+  };
+  const handleComment = () => {
+    if (newComment) {
+      setComments([...comments, { id: Date.now(), text: newComment }]);
+      setNewComment('');
+    }
+  };
+
   const styles = getTypeStyles();
 
   return (
-    <button 
-      className={`w-full text-left p-4 rounded-lg ${styles.bgColor} border ${styles.borderColor} mb-3 hover:shadow-sm transition-shadow`}
-      onClick={onClick}
+    <motion.div 
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, type: "spring", stiffness: 120 }}
+      whileHover={{ scale: 1.02, boxShadow: "0px 0px 8px rgb(255,255,255)" }}
+      className={`w-full text-left p-4 rounded-lg ${styles.bgColor} border ${styles.borderColor} mb-3`}
     >
       <div className="flex items-start">
         <div className={`w-8 h-8 rounded-full ${styles.bgColor} flex items-center justify-center ${styles.textColor} mr-3 text-lg`}>
           {styles.icon}
         </div>
         <div className="flex-1">
-          <h3 className={`font-medium ${type === 'urgent' ? 'text-[#E76F51]' : 'text-[#264653]'}`}>
-            {title}
-          </h3>
+          <h3 className={`font-medium ${type === 'urgent' ? 'text-[#E76F51]' : 'text-[#264653]'}`}>{title}</h3>
           <div className="flex items-center text-gray-500 text-xs mt-1">
             <span>{timestamp}</span>
             <span className="mx-1">•</span>
@@ -59,7 +121,57 @@ function NewsItem({ title, timestamp, source, type, onClick }: NewsItemProps) {
           </div>
         </div>
       </div>
-    </button>
+      <div className="flex justify-around mt-4">
+        <button onClick={handleLike} className={`flex items-center text-black ${userReaction === 'like' ? 'text-blue-500' : ''}`}>
+          <ThumbsUp className="w-5 h-5 mr-1" /> {likes}
+        </button>
+        <button onClick={handleDislike} className={`flex items-center text-black ${userReaction === 'dislike' ? 'text-red-500' : ''}`}>
+          <ThumbsDown className="w-5 h-5 mr-1 relative z-10" /> {dislikes}
+        </button>
+        <button onClick={handleCommentToggle} className="flex items-center text-black relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-green-500 opacity-50"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={isAnimatingComment ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+            transition={{ duration: 1, ease: 'easeInOut' }}
+            style={{ clipPath: 'circle(100% at 50% 50%)', mixBlendMode: 'multiply' }}
+          />
+          <MessageCircle className="w-5 h-5 mr-1 relative z-10" /> {comments.length}
+        </button>
+        <button onClick={handleShare} className="flex items-center text-black relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-purple-500 opacity-50"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={isAnimatingShare ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+            transition={{ duration: 1, ease: 'easeInOut' }}
+            style={{ clipPath: 'circle(100% at 50% 50%)', mixBlendMode: 'multiply' }}
+          />
+          <Share2 className="w-5 h-5 relative z-10" />
+        </button>
+      </div>
+      <AnimatePresence>
+        {showComments && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-4"
+          >
+            {comments.map(comment => (
+              <div key={comment.id} className="text-sm text-gray-700 border-b py-2">{comment.text}</div>
+            ))}
+            <input 
+              value={newComment} 
+              onChange={e => setNewComment(e.target.value)} 
+              placeholder="Aggiungi commento..." 
+              className="w-full p-2 mt-2 border rounded text-black"
+              onKeyPress={e => e.key === 'Enter' && handleComment()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 

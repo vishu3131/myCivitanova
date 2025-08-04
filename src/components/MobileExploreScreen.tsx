@@ -8,12 +8,185 @@ import { SearchModal } from './SearchModal';
 import { ArrowLeft, Search, Filter, Star, MapPin, Clock, Users } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 
 const categories = [
   { id: 'all', label: 'Tutti', count: 24 },
   { id: 'culture', label: 'Cultura', count: 8 },
   { id: 'nature', label: 'Natura', count: 6 },
   { id: 'food', label: 'Cibo', count: 10 },
+  { id: 'history', label: 'Storia', count: 5 },
+  { id: 'shopping', label: 'Shopping', count: 7 },
+  { id: 'fun', label: 'Divertimento', count: 12 },
+];
+
+const demoPlaces = [
+  {
+    id: 1,
+    name: 'Spiaggia di Civitanova Marche',
+    category: 'Natura',
+    image: 'https://source.unsplash.com/random/800x600?beach',
+    rating: 4.5,
+    reviews: 120,
+    distance: '2 km',
+    time: '10 min',
+    description: 'Una bellissima spiaggia con sabbia fine e mare cristallino.',
+  },
+  {
+    id: 2,
+    name: 'Porto Turistico',
+    category: 'Cultura',
+    image: 'https://source.unsplash.com/random/800x600?port',
+    rating: 4.0,
+    reviews: 80,
+    distance: '1 km',
+    time: '5 min',
+    description: 'Un vivace porto con molte barche e ristoranti di pesce.',
+  },
+  {
+    id: 3,
+    name: 'Centro Storico',
+    category: 'Storia',
+    image: 'https://source.unsplash.com/random/800x600?old-town',
+    rating: 4.7,
+    reviews: 150,
+    distance: '3 km',
+    time: '15 min',
+    description: 'Esplora le vie antiche e i palazzi storici della città alta.',
+  },
+  {
+    id: 4,
+    name: 'Lungomare Piermanni',
+    category: 'Natura',
+    image: 'https://source.unsplash.com/random/800x600?promenade',
+    rating: 4.3,
+    reviews: 95,
+    distance: '0.5 km',
+    time: '2 min',
+    description: 'Una passeggiata panoramica lungo la costa con vista mozzafiato.',
+  },
+  {
+    id: 5,
+    name: 'Varco sul Mare',
+    category: 'Cultura',
+    image: 'https://source.unsplash.com/random/800x600?architecture',
+    rating: 3.8,
+    reviews: 60,
+    distance: '1.5 km',
+    time: '7 min',
+    description: 'Un moderno spazio urbano e punto di riferimento architettonico.',
+  },
+  {
+    id: 6,
+    name: 'Vecchia Pescheria',
+    category: 'Cultura',
+    image: 'https://source.unsplash.com/random/800x600?fish-market',
+    rating: 4.2,
+    reviews: 75,
+    distance: '0.8 km',
+    time: '4 min',
+    description: 'L\'antico mercato del pesce, ora un luogo di eventi e cultura.',
+  },
+  {
+    id: 7,
+    name: 'Santuario Santa Maria Apparente',
+    category: 'Storia',
+    image: 'https://source.unsplash.com/random/800x600?church',
+    rating: 4.6,
+    reviews: 110,
+    distance: '4 km',
+    time: '20 min',
+    description: 'Un santuario storico con architettura affascinante e vista panoramica.',
+  },
+  {
+    id: 8,
+    name: 'Palazzo Sforza-Cesarini',
+    category: 'Storia',
+    image: 'https://source.unsplash.com/random/800x600?palace',
+    rating: 4.4,
+    reviews: 85,
+    distance: '3.2 km',
+    time: '16 min',
+    description: 'Un imponente palazzo storico, sede del municipio.',
+  },
+  {
+    id: 9,
+    name: 'Azienda Agricola San Marco',
+    category: 'Natura',
+    image: 'https://source.unsplash.com/random/800x600?farm',
+    rating: 4.8,
+    reviews: 130,
+    distance: '7 km',
+    time: '25 min',
+    description: 'Una fattoria locale che offre prodotti tipici e degustazioni.',
+  },
+  {
+    id: 10,
+    name: 'Il Trialone',
+    category: 'Divertimento',
+    image: 'https://source.unsplash.com/random/800x600?amusement-park',
+    rating: 4.1,
+    reviews: 70,
+    distance: '5 km',
+    time: '18 min',
+    description: 'Un parco divertimenti per tutta la famiglia con attrazioni e giochi.',
+  },
+  {
+    id: 11,
+    name: 'Pista Ciclabile sul Lungomare',
+    category: 'Natura',
+    image: 'https://source.unsplash.com/random/800x600?bike-path',
+    rating: 4.5,
+    reviews: 90,
+    distance: '0.3 km',
+    time: '1 min',
+    description: 'Percorso ciclabile panoramico lungo la costa, ideale per una pedalata rilassante.'
+  },
+  {
+    id: 12,
+    name: 'Teatro Annibal Caro',
+    category: 'Cultura',
+    image: 'https://source.unsplash.com/random/800x600?theatre',
+    rating: 4.3,
+    reviews: 55,
+    distance: '2.5 km',
+    time: '12 min',
+    description: 'Storico teatro che ospita spettacoli e eventi culturali.'
+  },
+  {
+    id: 13,
+    name: 'Shopping al Cuore Adriatico',
+    category: 'Shopping',
+    image: 'https://source.unsplash.com/random/800x600?shopping-mall',
+    rating: 4.0,
+    reviews: 110,
+    distance: '6 km',
+    time: '20 min',
+    description: 'Uno dei più grandi centri commerciali della zona, perfetto per lo shopping.'
+  },
+  {
+    id: 14,
+    name: 'Degustazione Vini nelle Cantine Locali',
+    category: 'Cibo',
+    image: 'https://source.unsplash.com/random/800x600?wine-tasting',
+    rating: 4.8,
+    reviews: 70,
+    distance: '8 km',
+    time: '30 min',
+    description: 'Scopri i sapori dei vini locali con una visita guidata alle cantine.'
+  },
+  {
+    id: 15,
+    name: 'Corso Umberto I (Passeggiata Serale)',
+    category: 'Divertimento',
+    image: 'https://source.unsplash.com/random/800x600?night-street',
+    rating: 4.2,
+    reviews: 80,
+    distance: '0.7 km',
+    time: '3 min',
+    description: 'La via principale per una piacevole passeggiata serale, ricca di negozi e caffè.'
+  }
 ];
 
 type Place = {
@@ -35,8 +208,26 @@ export function MobileExploreScreen() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
+  const { triggerHapticFeedback } = useHapticFeedback();
+
+  const handleRefresh = async () => {
+    triggerHapticFeedback('light');
+    setLoading(true);
+    const { data, error } = await supabase.from('places').select('*');
+    if (!error && data) setPlaces(data as Place[]);
+    setLoading(false);
+  };
+
+  usePullToRefresh(handleRefresh);
 
   useEffect(() => {
+    // Use demo data if Supabase is not configured or for development
+    if (!supabase) {
+      setPlaces(demoPlaces);
+      setLoading(false);
+      return;
+    }
+
     async function fetchPlaces() {
       setLoading(true);
       const { data, error } = await supabase.from('places').select('*');
@@ -46,7 +237,7 @@ export function MobileExploreScreen() {
     fetchPlaces();
   }, []);
 
-  const filteredPlaces = places.filter((place: Place) => {
+  const filteredPlaces = (supabase ? places : demoPlaces).filter((place: Place) => {
     const matchesCategory = activeCategory === 'all' || place.category === activeCategory;
     const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -99,7 +290,7 @@ export function MobileExploreScreen() {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ease-in-out ${
                   activeCategory === category.id ? 'scale-105' : 'hover:scale-105'
                 }`}
                 style={{
@@ -135,10 +326,23 @@ export function MobileExploreScreen() {
 
         {/* Places List */}
         <div className="px-6 space-y-4">
-          {filteredPlaces.map((place, index) => (
+          {loading && (
+            <div className="grid grid-cols-1 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse rounded-3xl overflow-hidden border border-white/10 bg-white/5 h-48" />
+              ))}
+            </div>
+          )}
+          {!loading && filteredPlaces.length === 0 && (
+            <div className="text-center text-white/70 py-10">
+              Nessun luogo trovato per la categoria selezionata.
+            </div>
+          )}
+
+          {!loading && filteredPlaces.map((place, index) => (
             <div
               key={place.id}
-              className="group cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+              className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50 opacity-0 translate-y-4 animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div
@@ -149,6 +353,7 @@ export function MobileExploreScreen() {
                   WebkitBackdropFilter: 'blur(12px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.3s ease-in-out',
                 }}
               >
                 {/* Image */}
@@ -157,7 +362,7 @@ export function MobileExploreScreen() {
                     src={place.image}
                     alt={place.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out"
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

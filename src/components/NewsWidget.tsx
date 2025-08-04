@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Clock, ArrowRight } from 'lucide-react';
 
 interface NewsItemProps {
@@ -39,10 +40,10 @@ export function NewsWidget() {
     <div className="bg-dark-300 rounded-xl p-5 card-glow border border-dark-100">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-heading font-medium text-white">Ultime notizie</h2>
-        <button className="text-accent text-sm font-medium flex items-center hover:underline">
+        <Link href="/news" className="text-accent text-sm font-medium flex items-center hover:underline">
           <span>Tutte le news</span>
           <ArrowRight size={14} className="ml-1" />
-        </button>
+        </Link>
       </div>
       
       <div className="space-y-3">
