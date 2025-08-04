@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { useAuthWithRole } from '../hooks/useAuthWithRole';
 
@@ -17,14 +18,16 @@ export function HeroSection() {
     <section className="relative h-[340px] w-full overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
           alt="Civitanova Marche Porto"
-          className="w-full h-full object-cover scale-105"
+          fill
+          className="object-cover scale-105"
           style={{
             transform: `translateY(${scrollY * 0.5}px)`,
             transition: 'transform 0.1s ease-out',
           }}
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/30"></div>
       </div>

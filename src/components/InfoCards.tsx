@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { ArrowLeftRight, Sun, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { IntegratedWidgetBar } from './IntegratedWidgetBar';
@@ -17,10 +18,11 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
        <div className="grid grid-cols-2 gap-4">
         {/* Card immagine luogo - Centro */}
         <div className="relative h-[200px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all duration-300">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
             alt="Centro Civitanova"
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-300"></div>
           <div className="absolute bottom-3 left-4 transform group-hover:translate-y-[-2px] transition-transform duration-300">

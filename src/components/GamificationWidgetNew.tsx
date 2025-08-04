@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useBadgeSystem } from './BadgeSystem';
 
@@ -33,32 +33,7 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
   
   const badgeSystem = useBadgeSystem(userId || '');
 
-  useEffect(() => {
-    if (userId) {
-      loadUserStats();
-      loadRecentBadges();
-      
-      // Simula attività per demo
-      simulateDailyLogin();
-    } else {
-      // Dati demo se non c'è utente
-      setUserStats({
-        total_xp: 750,
-        current_level: 3,
-        level_progress: 75.0,
-        level_title: 'Cittadino Impegnato',
-        badges_count: 5
-      });
-      setRecentBadges([
-        { id: '1', name: 'Benvenuto', icon: '👋', rarity: 'common', earned_at: '2024-01-15' },
-        { id: '2', name: 'Prima Segnalazione', icon: '📝', rarity: 'common', earned_at: '2024-01-16' },
-        { id: '3', name: 'Cittadino Attivo', icon: '⭐', rarity: 'rare', earned_at: '2024-01-20' }
-      ]);
-      setLoading(false);
-    }
-  }, [userId]);
-
-  const loadUserStats = async () => {
+  const loadUserStats = useCallback(async () => {
     if (!userId) return;
     
     try {
@@ -83,9 +58,9 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  const loadRecentBadges = async () => {
+  const loadRecentBadges = useCallback(async () => {
     if (!userId) return;
     
     try {
@@ -118,9 +93,9 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     } catch (error) {
       console.error('Errore caricamento badge recenti:', error);
     }
-  };
+  }, [userId, setRecentBadges]);
 
-  const simulateDailyLogin = async () => {
+  const simulateDailyLogin = useCallback(async () => {
     if (!userId || !badgeSystem) return;
     
     try {
@@ -148,7 +123,30 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     } catch (error) {
       console.error('Errore simulazione login giornaliero:', error);
     }
-  };
+  }, [userId, badgeSystem, loadUserStats, loadRecentBadges, setXpAnimation]);
+
+  useEffect(() => {
+    if (userId) {
+      loadUserStats();
+      loadRecentBadges();
+      simulateDailyLogin();
+    } else {
+      // Dati demo se non c'è utente
+      setUserStats({
+        total_xp: 750,
+        current_level: 3,
+        level_progress: 75.0,
+        level_title: 'Cittadino Impegnato',
+        badges_count: 5
+      });
+      setRecentBadges([
+        { id: '1', name: 'Benvenuto', icon: '👋', rarity: 'common', earned_at: '2024-01-15' },
+        { id: '2', name: 'Prima Segnalazione', icon: '📝', rarity: 'common', earned_at: '2024-01-16' },
+        { id: '3', name: 'Cittadino Attivo', icon: '⭐', rarity: 'rare', earned_at: '2024-01-20' }
+      ]);
+      setLoading(false);
+    }
+  }, [userId, loadUserStats, loadRecentBadges, simulateDailyLogin, setUserStats, setRecentBadges, setLoading]);
 
   const handleQuickAction = async (action: string) => {
     if (!userId || !badgeSystem) return;

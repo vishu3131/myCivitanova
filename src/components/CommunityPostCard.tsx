@@ -238,7 +238,7 @@ export function CommunityPostCard({
               {post.author_avatar ? (
                 <Image 
                   src={post.author_avatar} 
-                  alt={post.author_name} 
+                  alt={post.author_name || 'User avatar'}
                   className="w-full h-full rounded-full object-cover"
                   width={40}
                   height={40}
@@ -563,10 +563,11 @@ export function CommunityPostCard({
                 <div className="flex space-x-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
                     {currentUser.avatar ? (
-                      <img 
+                      <Image 
                         src={currentUser.avatar} 
-                        alt={currentUser.display_name} 
-                        className="w-full h-full rounded-full object-cover"
+                        alt={currentUser.display_name || 'User avatar'} 
+                        fill
+                        className="rounded-full object-cover"
                       />
                     ) : (
                       <span className="text-accent font-semibold text-xs">
@@ -574,7 +575,7 @@ export function CommunityPostCard({
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex-1">
                     <textarea
                       ref={commentInputRef}
@@ -641,10 +642,11 @@ export function CommunityPostCard({
                     <div key={comment.id} className="flex space-x-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
                         {comment.author_avatar ? (
-                          <img 
+                          <Image 
                             src={comment.author_avatar} 
-                            alt={comment.author_name} 
-                            className="w-full h-full rounded-full object-cover"
+                            alt={comment.author_name || 'User avatar'} 
+                            fill
+                            className="rounded-full object-cover"
                           />
                         ) : (
                           <span className="text-accent font-semibold text-xs">

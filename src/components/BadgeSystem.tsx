@@ -38,26 +38,18 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
   const [newBadgeNotification, setNewBadgeNotification] = useState<Badge | null>(null);
 
   const rarityColors = {
-    common: 'bg-gray-500',
-    rare: 'bg-blue-500',
-    epic: 'bg-purple-500',
-      legendary: 'bg-yellow-500'
-   }, []);
+    common: 'border-gray-500',
+    rare: 'border-blue-500',
+    epic: 'border-purple-500',
+    legendary: 'border-yellow-500'
+  };
 
   const rarityGlow = {
     common: 'shadow-gray-500/50',
     rare: 'shadow-blue-500/50',
     epic: 'shadow-purple-500/50',
-      legendary: 'shadow-yellow-500/50'
-   };
-
-  useEffect(() => {
-    if (userId) {
-      loadUserBadges();
-      loadUserStats();
-      loadAvailableBadges();
-    }
-  }, [userId, loadUserBadges, loadUserStats, loadAvailableBadges]);
+    legendary: 'shadow-yellow-500/50'
+  };
 
   const loadUserBadges = useCallback(async () => {
     try {
@@ -128,6 +120,14 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
       setLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadUserBadges();
+      loadUserStats();
+      loadAvailableBadges();
+    }
+  }, [userId, loadUserBadges, loadUserStats, loadAvailableBadges]);
 
   const addXP = async (activityName: string, metadata: any = {}) => {
     try {

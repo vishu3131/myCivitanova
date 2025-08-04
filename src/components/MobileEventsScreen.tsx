@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
-import { StatusBar } from './StatusBar';
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Calendar, Clock, Users, Heart, Share2, MapPin } from 'lucide-react';
 import { BottomNavbar } from './BottomNavbar';
 import { PullToRefresh } from './PullToRefresh';
 import { useToast } from './Toast';
-import { ArrowLeft, Calendar, MapPin, Clock, Users, Heart, Share2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 const timeFilters = [
   { id: 'today', label: 'Oggi', count: 5 },
@@ -105,8 +105,7 @@ export function MobileEventsScreen() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      <StatusBar />
-      <ToastContainer />
+      {/* StatusBar removed */}
       
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="content-with-navbar">
@@ -181,10 +180,12 @@ export function MobileEventsScreen() {
             }}
           >
             <div className="relative h-56">
-              <img
+              <Image
                 src={events[0].image}
                 alt={events[0].title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               
@@ -253,10 +254,11 @@ export function MobileEventsScreen() {
                 >
                   {/* Image */}
                   <div className="relative w-24 h-24 flex-shrink-0">
-                    <img
+                    <Image
                       src={event.image}
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>
 

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CreatePostData } from '@/hooks/useCommunity';
 import PostCreateLoginRequiredModal from './PostCreateLoginRequiredModal';
+import Image from 'next/image';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -187,10 +188,11 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center">
                 {currentUser?.avatar ? (
-                  <img 
+                  <Image 
                     src={currentUser.avatar} 
-                    alt={currentUser.display_name} 
-                    className="w-full h-full rounded-full object-cover"
+                    alt={currentUser.display_name || 'User avatar'} 
+                    fill
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <span className="text-accent font-semibold text-sm">
@@ -336,10 +338,11 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
                       <div className="grid grid-cols-2 gap-3">
                         {imagePreview.map((image, index) => (
                           <div key={index} className="relative">
-                            <img
+                            <Image
                               src={image}
                               alt={`Preview ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-lg"
+                              fill
+                              className="object-cover rounded-lg"
                             />
                             <button
                               onClick={() => handleRemoveImage(index)}

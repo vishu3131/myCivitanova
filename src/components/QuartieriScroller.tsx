@@ -5,7 +5,7 @@ import { quartieriData, Quartiere } from '@/data/quartieriData';
 
 interface QuartieriScrollerProps {
   onQuartiereSelect: (quartiere: Quartiere) => void;
-  selectedQuartiereId: string | null;
+  selectedQuartiereId: number | null;
 }
 
 // Duplichiamo la lista per l'effetto loop
@@ -29,7 +29,7 @@ export const QuartieriScroller: React.FC<QuartieriScrollerProps> = ({ onQuartier
               }`
             }
           >
-            <p className="text-white font-semibold text-lg whitespace-nowrap">{quartiere.nome}</p>
+            <p className="text-white font-semibold text-lg whitespace-nowrap">{quartiere.name}</p>
           </div>
         ))}
       </div>

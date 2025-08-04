@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Quartiere } from '../../data/quartieriData';
-import QuartieriScroller from '../../components/QuartieriScroller';
+import { QuartieriScroller } from '../../components/QuartieriScroller';
 
 interface QuartierePageProps {
   quartiereData: Quartiere[];
 }
 
 const QuartierePage: React.FC<QuartierePageProps> = ({ quartiereData }) => {
-  const [selectedQuartiere, setSelectedQuartiere] = useState<Quartiere | null>(null);
+  const [selectedQuartiere, setSelectedQuartiere] = useState<Quartiere | null>(quartiereData[0]);
 
   const handleQuartiereSelect = (quartiere: Quartiere) => {
     setSelectedQuartiere(quartiere);
@@ -15,11 +15,14 @@ const QuartierePage: React.FC<QuartierePageProps> = ({ quartiereData }) => {
 
   return (
     <div>
-      <QuartieriScroller quartieri={quartiereData} onSelect={handleQuartiereSelect} />
+      <QuartieriScroller 
+        onQuartiereSelect={handleQuartiereSelect} 
+        selectedQuartiereId={selectedQuartiere?.id || null}
+      />
       {selectedQuartiere && (
         <div>
-          <h2>{selectedQuartiere.nome}</h2>
-          <p>{selectedQuartiere.descrizione}</p>
+          <h2>{selectedQuartiere.name}</h2>
+          <p>{selectedQuartiere.description}</p>
           {/* Add more details as needed */}
         </div>
       )}

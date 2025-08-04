@@ -8,7 +8,7 @@ import { quartieriData, Quartiere } from '@/data/quartieriData';
 import Image from 'next/image';
 
 const QuartierePage = () => {
-  const [selectedQuartiere, setSelectedQuartiere] = useState<Quartiere>(quartieriData);
+  const [selectedQuartiere, setSelectedQuartiere] = useState<Quartiere>(quartieriData[0]);
 
   const handleSelectQuartiere = (quartiere: Quartiere) => {
     setSelectedQuartiere(quartiere);
@@ -29,19 +29,18 @@ const QuartierePage = () => {
         <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="relative w-full h-48 md:h-64">
             <Image
-              src={selectedQuartiere.immagine}
-              alt={`Immagine del quartiere ${selectedQuartiere.nome}`}
-              layout="fill"
-              objectFit="cover"
-              className="opacity-80"
+              src={selectedQuartiere.image}
+              alt={`Immagine del quartiere ${selectedQuartiere.name}`}
+              fill
+              className="object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-gray-800 to-transparent"></div>
             <h2 className="absolute bottom-4 left-4 text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
-              {selectedQuartiere.nome}
+              {selectedQuartiere.name}
             </h2>
           </div>
           <div className="p-6">
-            <p className="text-gray-300 mb-6">{selectedQuartiere.descrizione}</p>
+            <p className="text-gray-300 mb-6">{selectedQuartiere.description}</p>
             
             <h3 className="text-xl font-semibold mb-4 text-accent">Punti di Interesse</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
