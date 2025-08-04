@@ -2,7 +2,8 @@ import './globals.css';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { PageTransition } from '@/components/PageTransition';
 import { CircularDevNavigation } from '@/components/CircularDevNavigation';
-import { BottomNavbar } from '@/components/BottomNavbar';
+import BottomNavbarClientWrapper from '@/components/BottomNavbarClientWrapper';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,9 +20,15 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata = {
   title: 'Civitanova Marche App',
   description: 'Applicazione ufficiale della città di Civitanova Marche',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
   'apple-mobile-web-app-capable': 'yes',
   'apple-touch-fullscreen': 'yes',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1.0,
+  maximumScale: 1.0,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -32,13 +39,15 @@ export default function RootLayout({
   return (
     <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans bg-black text-white">
-        <PageTransition>
-          {children}
-        </PageTransition>
-        <div className="md:hidden">
-          <BottomNavbar />
-        </div>
-        <CircularDevNavigation />
+        <ErrorBoundary>
+          <PageTransition>
+            {children}
+          </PageTransition>
+          <div className="md:hidden">
+            <BottomNavbarClientWrapper />
+            <CircularDevNavigation />
+          </div>
+        </ErrorBoundary>
       </body>
     </html>
   );

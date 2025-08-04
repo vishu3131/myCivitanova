@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import NeonTitle from './NeonTitle';
 
 export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
   // Ottieni l'ora corrente per personalizzare il saluto
@@ -31,7 +32,7 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
     <section className="relative h-[300px] md:h-[350px] lg:h-[400px] rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-accent to-dark-200 card-glow">
       <div className="absolute inset-0">
         <Image
-          src="https://source.unsplash.com/random/1200x600/?civitanova,marche,seafront"
+          src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80"
           alt="Civitanova Marche"
           fill
           className="object-cover opacity-30"
@@ -51,9 +52,13 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
           <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-heading font-bold mb-2">
             {greeting}, <span className="text-white/90">Mario</span>
           </h1>
-          <p className="text-white/90 text-lg md:text-xl mb-4">
-            Benvenuto a Civitanova Marche
-          </p>
+          <div className="mb-4">
+            <NeonTitle 
+              text="MyCivitanova"
+              fontSize="clamp(1.5rem, 5vw, 3rem)"
+              onClick={() => console.log('MyCivitanova neon title clicked!')}
+            />
+          </div>
           
           {/* City Description */}
           <p className="text-white/80 text-base md:text-lg max-w-2xl">

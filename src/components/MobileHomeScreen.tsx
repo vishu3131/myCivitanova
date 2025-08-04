@@ -12,13 +12,13 @@ import { QuickStats } from './QuickStats';
 import { LiveUpdates } from './LiveUpdates';
 import { StatusBar } from './StatusBar';
 import { TourARWidget } from './TourARWidget';
-import { WelcomeWidget } from './WelcomeWidget';
+
 import { WeatherWidget } from './WeatherWidget';
 import { TouristSpotWidget } from './TouristSpotWidget';
 import { XPWidget } from './XPWidget';
 import ReportModal from './CommunityReportModal';
 import SocialWidgetsContainer from './SocialWidgetsContainer';
-import RiveAnimationWidget from './RiveAnimationWidget';
+import PureNeonMobileWidget from './PureNeonMobileWidget';
 import { supabase } from '@/utils/supabaseClient';
 
 export function MobileHomeScreen() {
@@ -27,6 +27,7 @@ export function MobileHomeScreen() {
   const [showBadges, setShowBadges] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const news = [
     {
@@ -47,34 +48,68 @@ export function MobileHomeScreen() {
   ];
 
   useEffect(() => {
-    const fetchUserCount = async () => {
-      const { count, error } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-      if (!error) setUserCount(count ?? 0);
-    };
-    
-    const getCurrentUser = async () => {
-      // Prova a ottenere l'utente dalla sessione o localStorage
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setCurrentUserId(user.id);
+    const initializeData = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Fetch user count
+        const { count, error } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        if (!error) setUserCount(count ?? 0);
+        
+        // Get current user
+        if (typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('currentUser');
+          if (storedUser) {
+            try {
+              const user = JSON.parse(storedUser);
+              setCurrentUserId(user.id);
+            } catch (error) {
+              console.error('Error parsing stored user:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing mobile home screen:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchUserCount();
-    getCurrentUser();
+    initializeData();
     
     // Realtime update (optional)
     const subscription = supabase
       .channel('public:users')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, fetchUserCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+        const { count, error } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        if (!error) setUserCount(count ?? 0);
+      })
       .subscribe();
+      
     return () => {
       supabase.removeChannel(subscription);
     };
   }, []);
+
+  // Loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex space-x-2 mb-4">
+            <div className="w-3 h-3 bg-accent rounded-full animate-bounce"></div>
+            <div className="w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+          <p className="text-white/70">Caricamento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-x-hidden">
@@ -87,13 +122,28 @@ export function MobileHomeScreen() {
       > {/* Padding for status bar and navbar */}
       {/* Hero Section */}
       <HeroSection />
+
+      {/* Pure Neon Mobile Widget Row */}
+      <div className="px-3 mt-4">
+        <div className="grid grid-cols-1 gap-2">
+            <div className="bg-black/20 rounded-xl p-4">
+              <PureNeonMobileWidget
+                buttonText="MYCIVITANOVA.IT"
+                onButtonClick={() => {
+                  console.log('Pure Neon CSS Widget cliccato dalla home mobile!');
+                }}
+              />
+            </div>
+        </div>
+      </div>
+
         {/* Category Tags */}
         <CategoryTags />
         {/* Info Cards */}
         <InfoCards onReportClick={() => setShowReport(true)} />
         {/* Widget extra dalla versione desktop */}
         <div className="space-y-4 px-3 mt-4">
-          <WelcomeWidget onReport={() => setShowReport(true)} />
+
           {/* <WeatherWidget /> */}
           <TouristSpotWidget />
           
@@ -110,13 +160,20 @@ export function MobileHomeScreen() {
             </div>
           </div>
           
-          {/* Rive Animation Widget Row */}
+          {/* Pure Neon Mobile Widget Row */}
           <div className="grid grid-cols-1 gap-2">
-            <RiveAnimationWidget 
-              title="❤️ Civitanova"
-              description="Tocca per animare"
-              className="bg-dark-300/50 backdrop-blur-sm border border-white/10 card-glow"
-            />
+            <div className="bg-dark-300/30 backdrop-blur-sm border border-white/10 card-glow rounded-xl">
+              <PureNeonMobileWidget
+                title="✨ MyCivitanova"
+                description="Tocca per l'effetto CSS"
+                className=""
+                buttonText="MyCivitanova.it"
+                onButtonClick={() => {
+                  console.log('Pure Neon CSS Widget cliccato dalla home mobile!');
+                  // Qui puoi aggiungere la logica che vuoi
+                }}
+              />
+            </div>
           </div>
           {/* Middle Row - Mixed Sizes */}
           <div className="grid grid-cols-4 gap-2">

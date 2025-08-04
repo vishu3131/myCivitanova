@@ -58,17 +58,17 @@ export const IntegratedWidgetBar: React.FC<IntegratedWidgetBarProps> = ({
   };
 
   return (
-    <div className="h-[100px] rounded-[20px] p-3 flex items-center justify-between cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group bg-gradient-to-r from-gray-800 to-gray-900">
+    <div className="min-h-[100px] rounded-[16px] p-2 flex items-center justify-start pl-1 cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group bg-gradient-to-r from-gray-800 to-gray-900">
       {widgets.map((widget) => {
         const IconComponent = widget.icon;
         const isActive = activeWidget === widget.id;
         
         return (
-          <div key={widget.id} className="flex flex-col items-center gap-1">
+          <div key={widget.id} className="flex flex-col items-center gap-2 px-1">
             {/* Circular Button */}
             <button
               className={`
-                w-12 h-12 rounded-full flex items-center justify-center
+                w-10 h-10 rounded-full flex items-center justify-center
                 transition-all duration-200 transform
                 ${isActive ? 'scale-90' : 'hover:scale-110'}
                 ${widget.bgClass}
@@ -79,15 +79,15 @@ export const IntegratedWidgetBar: React.FC<IntegratedWidgetBarProps> = ({
               aria-label={widget.label}
             >
               <IconComponent 
-                size={20} 
+                size={18} 
                 className="text-white drop-shadow-sm"
               />
             </button>
             
             {/* Label */}
-            <span className="text-white/80 text-xs font-medium group-hover:text-white transition-colors duration-200">
-              {widget.label}
-            </span>
+             <span className="text-white/80 text-[10px] font-medium group-hover:text-white transition-colors duration-200 leading-tight">
+                {widget.label}
+              </span>
           </div>
         );
       })}

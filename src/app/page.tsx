@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
-import { WelcomeWidget } from '@/components/WelcomeWidget';
+
 import { QuickStats } from '@/components/QuickStats';
 import { QuickActionsGrid } from '@/components/QuickActionsGrid';
 import { GamificationWidget } from '@/components/GamificationWidget';
@@ -11,7 +11,8 @@ import { NewsFeed } from '@/components/NewsFeed';
 import { SuggestionsWidget } from '@/components/SuggestionsWidget';
 import { MobileHomeScreen } from '@/components/MobileHomeScreen';
 import { TourARWidget } from '@/components/TourARWidget';
-import RiveAnimationWidget from '@/components/RiveAnimationWidget';
+import PureNeonWidget from '@/components/PureNeonWidget';
+import PureNeonMobileWidget from '@/components/PureNeonMobileWidget';
 
 export default function Home() {
   // Stato per tracciare se la sidebar è aperta o chiusa
@@ -61,8 +62,7 @@ export default function Home() {
             `}
           >
             <div className="max-w-7xl mx-auto">
-              {/* Welcome Widget */}
-              <WelcomeWidget />
+
               
               {/* Quick Actions Grid */}
               <QuickActionsGrid />
@@ -83,12 +83,33 @@ export default function Home() {
                   {/* Tour AR Widget */}
                   <TourARWidget />
                   
-                  {/* Rive Animation Widget */}
-                  <RiveAnimationWidget 
-                    title="Animazione Civitanova"
-                    description="Interagisci con l'animazione"
-                    className="mb-6"
-                  />
+                  {/* Pure Neon Widget - Desktop */}
+                  <div className="hidden md:block">
+                    <PureNeonWidget 
+                      title="MyCivitanova Neon"
+                      description="Tocca per attivare l'effetto CSS puro"
+                      className="mb-6"
+                      buttonText="MyCivitanova.it"
+                      onButtonClick={() => {
+                        console.log('Pulsante neon CSS puro desktop cliccato!');
+                        // Qui puoi aggiungere la logica che vuoi
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Pure Neon Mobile Widget - Mobile */}
+                  <div className="block md:hidden">
+                    <PureNeonMobileWidget 
+                      title="MyCivitanova Neon"
+                      description="Tocca per l'effetto CSS"
+                      className="mb-6"
+                      buttonText="MyCivitanova.it"
+                      onButtonClick={() => {
+                        console.log('Pulsante neon CSS puro mobile cliccato!');
+                        // Qui puoi aggiungere la logica che vuoi
+                      }}
+                    />
+                  </div>
                   
                   {/* Widget Statistiche */}
                   <QuickStats />

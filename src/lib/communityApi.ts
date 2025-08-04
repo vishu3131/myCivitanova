@@ -100,8 +100,10 @@ export class CommunityAPI {
         hasMore
       };
     } catch (error) {
-      console.error('Errore API fetchPosts:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto nel recupero dei post';
+      const enhancedError = new Error(`Errore API fetchPosts: ${errorMessage}. Verifica la connessione al database e le credenziali Supabase.`);
+      console.error(enhancedError.message);
+      throw enhancedError;
     }
   }
 

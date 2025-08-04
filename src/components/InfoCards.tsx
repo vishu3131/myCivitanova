@@ -14,7 +14,7 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
 
   return (
     <div style={{ paddingLeft: '24px', paddingRight: '24px', marginTop: '24px' }}>
-      <div className="grid grid-cols-2 gap-4">
+       <div className="grid grid-cols-2 gap-4">
         {/* Card immagine luogo - Centro */}
         <div className="relative h-[200px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all duration-300">
           <img

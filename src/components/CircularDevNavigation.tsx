@@ -12,16 +12,39 @@ import {
   User, 
   Settings,
   Sparkles,
-  X
+  X,
+  Bell,
+  Bus,
+  Cloud,
+  Heart,
+  Search,
+  HelpCircle,
+  Camera,
+  Share2,
+  Wifi,
+  Zap
 } from 'lucide-react';
 
 const pages = [
-  { name: 'Home', path: '/', icon: Home, color: '#10B981' },
-  { name: 'Esplora', path: '/esplora', icon: Compass, color: '#3B82F6' },
-  { name: 'Eventi', path: '/eventi', icon: Calendar, color: '#F59E0B' },
-  { name: 'Servizi', path: '/servizi', icon: Settings, color: '#8B5CF6' },
-  { name: 'Mappa', path: '/mappa', icon: MapPin, color: '#EF4444' },
-  { name: 'Profilo', path: '/profilo', icon: User, color: '#EC4899' },
+  // Navigazione principale
+  { name: 'Home', path: '/', icon: Home, color: '#10B981', type: 'navigation' },
+  { name: 'Esplora', path: '/esplora', icon: Compass, color: '#3B82F6', type: 'navigation' },
+  { name: 'Eventi', path: '/eventi', icon: Calendar, color: '#F59E0B', type: 'navigation' },
+  { name: 'Servizi', path: '/servizi', icon: Settings, color: '#8B5CF6', type: 'navigation' },
+  { name: 'Mappa', path: '/mappa', icon: MapPin, color: '#EF4444', type: 'navigation' },
+  { name: 'Profilo', path: '/profilo', icon: User, color: '#EC4899', type: 'navigation' },
+  
+  // Funzionalità rapide
+  { name: 'Meteo', path: '#meteo', icon: Cloud, color: '#0EA5E9', type: 'quick' },
+  { name: 'Trasporti', path: '#trasporti', icon: Bus, color: '#14B8A6', type: 'quick' },
+  { name: 'Notifiche', path: '#notifiche', icon: Bell, color: '#F43F5E', type: 'quick' },
+  { name: 'Cerca', path: '#cerca', icon: Search, color: '#8B5CF6', type: 'quick' },
+  { name: 'Aiuto', path: '#aiuto', icon: HelpCircle, color: '#F97316', type: 'quick' },
+  { name: 'Fotocamera', path: '#fotocamera', icon: Camera, color: '#6366F1', type: 'quick' },
+  { name: 'Condividi', path: '#condividi', icon: Share2, color: '#0284C7', type: 'quick' },
+  { name: 'Preferiti', path: '#preferiti', icon: Heart, color: '#E11D48', type: 'quick' },
+  { name: 'Wi-Fi', path: '#wifi', icon: Wifi, color: '#059669', type: 'quick' },
+  { name: 'Risparmio', path: '#risparmio', icon: Zap, color: '#FBBF24', type: 'quick' }
 ];
 
 export function CircularDevNavigation() {
@@ -113,20 +136,42 @@ export function CircularDevNavigation() {
     }
   }, []);
 
-  // Calculate positions for semicircle layout
-  const getIconPosition = useCallback((index: number, total: number) => {
-    const angle = (Math.PI / (total - 1)) * index; // Semicircle from 0 to π
-    // Reduce radius on mobile devices
-    const radius = typeof window !== 'undefined' && window.innerWidth < 768 ? 90 : 120;
-    const x = Math.cos(angle) * radius;
-    const y = -Math.sin(angle) * radius; // Negative for upward semicircle
-    return { x, y };
+  // Filtra le pagine in base al tipo
+  const navigationPages = pages.filter(page => page.type === 'navigation');
+  const quickPages = pages.filter(page => page.type === 'quick');
+  
+  // Calcola posizioni per un layout a semicerchio geometricamente centrato
+  const getIconPosition = useCallback((index: number, total: number, type: 'navigation' | 'quick') => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    // Semicirconferenza da 180 a 0 gradi (da sinistra a destra)
+    const startAngle = Math.PI; // 180 gradi
+    const endAngle = 0; // 0 gradi
+    const angleStep = (startAngle - endAngle) / (total - 1);
+    const angle = startAngle - index * angleStep;
+
+    if (type === 'navigation') {
+      // Arco interno per la navigazione
+      const radius = isMobile ? 100 : 130;
+      const yOffset = isMobile ? -80 : -100;
+      
+      const x = Math.cos(angle) * radius;
+      const y = -Math.sin(angle) * radius + yOffset;
+      
+      return { x, y };
+    } else {
+      // Arco esterno per le funzionalità rapide
+      const radius = isMobile ? 160 : 200;
+      const yOffset = isMobile ? -80 : -100;
+
+      const x = Math.cos(angle) * radius;
+      const y = -Math.sin(angle) * radius + yOffset;
+      
+      return { x, y };
+    }
   }, []);
 
-  // Only show in development
-  if (process.env.NODE_ENV === 'production') {
-    return null;
-  }
+  // Mostra sempre il componente, sia in sviluppo che in produzione
 
   return (
     <>
@@ -196,7 +241,7 @@ export function CircularDevNavigation() {
           <>
             {/* Primary ripple */}
             <motion.div
-              className="fixed bottom-24 right-6 w-16 h-16 rounded-full border-2 border-purple-400"
+              className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border-2 border-purple-400"
               style={{ zIndex: 9996 }}
               initial={{ scale: 1, opacity: 0.8 }}
               animate={{ scale: 4, opacity: 0 }}
@@ -205,7 +250,7 @@ export function CircularDevNavigation() {
             />
             {/* Secondary ripple */}
             <motion.div
-              className="fixed bottom-24 right-6 w-16 h-16 rounded-full border border-pink-400"
+              className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border border-pink-400"
               style={{ zIndex: 9996 }}
               initial={{ scale: 1, opacity: 0.6 }}
               animate={{ scale: 6, opacity: 0 }}
@@ -214,7 +259,7 @@ export function CircularDevNavigation() {
             />
             {/* Energy burst */}
             <motion.div
-              className="fixed bottom-24 right-6 w-16 h-16 rounded-full"
+              className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full"
               style={{ 
                 zIndex: 9996,
                 background: "radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)"
@@ -237,7 +282,7 @@ export function CircularDevNavigation() {
           handleCentralClick(e as any);
         }}
         onKeyDown={handleKeyDown}
-        className="fixed bottom-24 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-400 touch-manipulation"
+        className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-400 touch-manipulation"
         style={{ 
           zIndex: 9997,
           WebkitTapHighlightColor: 'transparent'
@@ -245,7 +290,7 @@ export function CircularDevNavigation() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         animate={isOpen ? { 
-          scale: [1.2, 1.3, 1.2],
+          scale: 1.2,
         } : { 
           scale: 1 
         }}
@@ -265,31 +310,21 @@ export function CircularDevNavigation() {
           className="absolute inset-0 rounded-full"
           animate={{
             background: isOpen 
-              ? [
-                  "linear-gradient(45deg, #8B5CF6, #EC4899)",
-                  "linear-gradient(45deg, #EC4899, #10B981)",
-                  "linear-gradient(45deg, #10B981, #3B82F6)",
-                  "linear-gradient(45deg, #3B82F6, #8B5CF6)"
-                ]
+              ? "linear-gradient(45deg, #8B5CF6, #EC4899)"
               : "linear-gradient(45deg, #8B5CF6, #EC4899)"
           }}
-          transition={{ duration: 2, repeat: isOpen ? Infinity : 0 }}
+          transition={{ duration: 2, repeat: isOpen ? Infinity : 0, type: "tween" }}
         />
         
         {/* Glow effect */}
         <motion.div
           className="absolute inset-0 rounded-full"
           animate={isOpen ? {
-            boxShadow: [
-              "0 0 20px rgba(139, 92, 246, 0.5)",
-              "0 0 40px rgba(236, 72, 153, 0.7)",
-              "0 0 60px rgba(16, 185, 129, 0.5)",
-              "0 0 40px rgba(139, 92, 246, 0.7)"
-            ]
+            boxShadow: "0 0 40px rgba(139, 92, 246, 0.7)"
           } : {
             boxShadow: "0 0 20px rgba(139, 92, 246, 0.3)"
           }}
-          transition={{ duration: 2, repeat: isOpen ? Infinity : 0 }}
+          transition={{ duration: 2, repeat: isOpen ? Infinity : 0, type: "tween" }}
         />
 
         {/* Icon */}
@@ -301,7 +336,7 @@ export function CircularDevNavigation() {
           {isOpen ? (
             <X className="w-8 h-8 text-white" />
           ) : (
-            <Sparkles className="w-8 h-8 text-white" />
+            <Settings className="w-8 h-8 text-white" />
           )}
         </motion.div>
       </motion.button>
@@ -310,7 +345,7 @@ export function CircularDevNavigation() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed bottom-24 right-6 w-80 h-80 rounded-full pointer-events-none"
+            className="fixed bottom-24 left-1/2 w-80 h-80 rounded-full pointer-events-none"
             style={{ 
               zIndex: 9995,
               background: "radial-gradient(circle, transparent 30%, rgba(139, 92, 246, 0.05) 50%, transparent 70%)",
@@ -320,7 +355,7 @@ export function CircularDevNavigation() {
             animate={{ 
               scale: 1, 
               opacity: 1,
-              rotate: [0, 360]
+              rotate: 360
             }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ 
@@ -332,18 +367,18 @@ export function CircularDevNavigation() {
         )}
       </AnimatePresence>
 
-      {/* Circular Menu Icons */}
+      {/* Menu di Navigazione Principale */}
       <AnimatePresence>
         {isOpen && (
           <div 
-            className="fixed bottom-24 right-6"
+            className="fixed bottom-24 left-1/2 transform -translate-x-1/2"
             style={{ zIndex: 9996 }}
             role="navigation"
-            aria-label="Development navigation menu"
+            aria-label="Menu di navigazione principale"
           >
-            {pages.map((page, index) => {
+            {navigationPages.map((page, index) => {
               const IconComponent = page.icon;
-              const position = getIconPosition(index, pages.length);
+              const position = getIconPosition(index, navigationPages.length, 'navigation');
               
               return (
                 <motion.button
@@ -366,9 +401,9 @@ export function CircularDevNavigation() {
                     y: 0,
                   }}
                   animate={selectedIcon === page.path ? {
-                    scale: [1, 1.5, 0],
-                    rotate: [0, 180, 360],
-                    opacity: [1, 1, 0],
+                    scale: 0,
+                    rotate: 360,
+                    opacity: 0,
                     x: position.x,
                     y: position.y,
                   } : { 
@@ -395,19 +430,15 @@ export function CircularDevNavigation() {
                     boxShadow: `0 0 25px ${page.color}80`,
                   }}
                   whileTap={{ scale: 0.9 }}
-                  aria-label={`Navigate to ${page.name}`}
+                  aria-label={`Vai a ${page.name}`}
                 >
                   {/* Glow effect for each icon */}
                   <motion.div
                     className="absolute inset-0 rounded-full"
                     animate={{
-                      boxShadow: [
-                        `0 0 10px ${page.color}40`,
-                        `0 0 20px ${page.color}60`,
-                        `0 0 10px ${page.color}40`,
-                      ]
+                      boxShadow: `0 0 15px ${page.color}50`
                     }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    transition={{ duration: 2, repeat: Infinity, type: "tween" }}
                   />
                   
                   {/* Pulse ring on hover */}
@@ -415,10 +446,10 @@ export function CircularDevNavigation() {
                     className="absolute inset-0 rounded-full border-2 opacity-0"
                     style={{ borderColor: page.color }}
                     whileHover={{
-                      opacity: [0, 1, 0],
-                      scale: [1, 1.3, 1.6],
+                      opacity: 0.7,
+                      scale: 1.3,
                     }}
-                    transition={{ duration: 0.6, repeat: Infinity }}
+                    transition={{ duration: 0.6, repeat: Infinity, type: "tween" }}
                   />
                   
                   {/* Icon */}
@@ -442,12 +473,117 @@ export function CircularDevNavigation() {
         )}
       </AnimatePresence>
 
+      {/* Menu di Funzionalità Rapide */}
+      <AnimatePresence>
+        {isOpen && (
+          <div 
+            className="fixed bottom-24 left-1/2 transform -translate-x-1/2"
+            style={{ zIndex: 9996 }}
+            role="navigation"
+            aria-label="Menu di funzionalità rapide"
+          >
+            {quickPages.map((page, index) => {
+              const IconComponent = page.icon;
+              const position = getIconPosition(index, quickPages.length, 'quick');
+              
+              return (
+                <motion.button
+                  key={page.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Gestione delle azioni rapide
+                    if (page.path.startsWith('#')) {
+                      // Azioni speciali basate sul tipo
+                      switch(page.path) {
+                        case '#meteo':
+                          alert('Funzionalità meteo in arrivo!');
+                          break;
+                        case '#cerca':
+                          alert('Funzionalità di ricerca in arrivo!');
+                          break;
+                        case '#notifiche':
+                          alert('Centro notifiche in arrivo!');
+                          break;
+                        default:
+                          alert(`Funzionalità ${page.name} in arrivo presto!`);
+                      }
+                    } else {
+                      handleNavigation(page.path, e);
+                    }
+                  }}
+                  className="absolute w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/50 touch-manipulation"
+                  style={{
+                    background: `linear-gradient(135deg, ${page.color}, ${page.color}dd)`,
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
+                  initial={{ 
+                    scale: 0,
+                    opacity: 0,
+                    x: 0,
+                    y: 0,
+                  }}
+                  animate={{ 
+                    scale: 1,
+                    opacity: 1,
+                    x: position.x,
+                    y: position.y,
+                  }}
+                  exit={{ 
+                    scale: 0,
+                    opacity: 0,
+                    x: 0,
+                    y: 0,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                    delay: index * 0.05 + 0.2,
+                  }}
+                  whileHover={{ 
+                    scale: 1.15,
+                    boxShadow: `0 0 15px ${page.color}80`,
+                  }}
+                  whileTap={{ scale: 0.9 }}
+                  aria-label={page.name}
+                >
+                  {/* Glow effect */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    animate={{
+                      boxShadow: `0 0 8px ${page.color}50`
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, type: "tween" }}
+                  />
+                  
+                  {/* Icon */}
+                  <IconComponent className="w-5 h-5 text-white relative z-10" />
+                  
+                  {/* Label */}
+                  <motion.div
+                    className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 px-1.5 py-0.5 bg-black/80 rounded-md backdrop-blur-sm"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 + 0.3 }}
+                  >
+                    <span className="text-white text-[10px] font-medium whitespace-nowrap">
+                      {page.name}
+                    </span>
+                  </motion.div>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+      </AnimatePresence>
+      
       {/* Trail effect */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed bottom-24 right-6" style={{ zIndex: 9994 }}>
-            {pages.map((page, index) => {
-              const position = getIconPosition(index, pages.length);
+          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9994 }}>
+            {navigationPages.map((page, index) => {
+              const position = getIconPosition(index, navigationPages.length, 'navigation');
               
               return (
                 <motion.div
@@ -460,7 +596,7 @@ export function CircularDevNavigation() {
                     y: 0,
                   }}
                   animate={{ 
-                    opacity: [0, 0.6, 0],
+                    opacity: 0.4,
                     x: position.x,
                     y: position.y,
                   }}
@@ -479,7 +615,7 @@ export function CircularDevNavigation() {
       {/* Stardust explosion effect */}
       <AnimatePresence>
         {selectedIcon && (
-          <div className="fixed bottom-24 right-6" style={{ zIndex: 9998 }}>
+          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9998 }}>
             {[...Array(12)].map((_, i) => {
               const angle = (Math.PI * 2 / 12) * i;
               const distance = 60;
@@ -497,8 +633,8 @@ export function CircularDevNavigation() {
                     y: 0,
                   }}
                   animate={{ 
-                    opacity: [1, 1, 0],
-                    scale: [0, 1, 0],
+                    opacity: 0,
+                    scale: 1,
                     x: x,
                     y: y,
                   }}

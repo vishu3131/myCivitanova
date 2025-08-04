@@ -18,16 +18,18 @@ export function useAuthWithRole() {
     let subscription: any;
     const getSessionAndRole = async () => {
       setLoading(true);
-      // Test di connessione: query dummy
-      try {
-        const testConn = await supabase.from('profiles').select('id').limit(1);
-        if (testConn.error) {
-          console.error('Errore di connessione al database Supabase:', testConn.error.message);
-        } else {
-          console.log('Connessione al database Supabase riuscita.');
+      // Test di connessione: query dummy (solo in development)
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const testConn = await supabase.from('profiles').select('id').limit(1);
+          if (testConn.error) {
+            console.warn('Database Supabase non disponibile (usando client dummy):', testConn.error.message);
+          } else {
+            console.log('Connessione al database Supabase riuscita.');
+          }
+        } catch (err) {
+          console.warn('Database Supabase non disponibile (usando client dummy):', err);
         }
-      } catch (err) {
-        console.error('Errore imprevisto nella connessione Supabase:', err);
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
