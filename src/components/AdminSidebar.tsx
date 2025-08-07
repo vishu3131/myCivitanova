@@ -18,13 +18,13 @@ export const AdminSidebar = () => {
             { icon: LayoutDashboard, label: 'Dashboard' },
             { icon: Users, label: 'Users' },
             { icon: FileText, label: 'Content' },
-            { icon: Trophy, label: 'Gamification' },
+            { icon: Trophy, label: 'Gamification', href: '/admin/gamification' },
             { icon: LineChart, label: 'Analytics' },
             { icon: Settings, label: 'Settings' },
-          ].map(({ icon: Icon, label }) => (
+          ].map(({ icon: Icon, label, href }) => (
             <li key={label}>
               <a
-                href="#"
+                href={href || '#'}
                 className="flex items-center p-2 text-gray-600 rounded-lg hover:bg-gray-100"
               >
                 <Icon className="w-6 h-6 mr-3" />
