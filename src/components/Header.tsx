@@ -99,6 +99,10 @@ export function Header({ title }: { title?: string }) {
                   <span className="mr-2 text-lg">❓</span>
                   <span>Aiuto</span>
                 </Link>
+                <Link href="/admin" className="flex items-center px-4 py-2 text-blue-600 hover:bg-blue-50">
+                  <span className="mr-2 text-lg">⚙️</span>
+                  <span>Admin Panel</span>
+                </Link>
                 <div className="border-t border-gray-100 mt-2 pt-2">
                   <button className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">
                     <span className="mr-2 text-lg">🚪</span>

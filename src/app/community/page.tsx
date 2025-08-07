@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import ImageWithFallback from '@/components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, 

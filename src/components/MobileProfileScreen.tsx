@@ -3,10 +3,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
-import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User } from 'lucide-react';
+import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User, Newspaper } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabaseClient';
 import { PublicProfile } from './PublicProfile';
+import { EditProfileModal } from './EditProfileModal';
+import { NotificationsModal } from './NotificationsModal';
+import { PrivacySettingsModal } from './PrivacySettingsModal';
+import { HelpCenterModal } from './HelpCenterModal';
+import { SettingsModal } from './SettingsModal';
+import { NotificationBadge } from './NotificationBadge';
+import { LogoutModal } from './LogoutModal';
+import { NewsManagement } from './NewsManagement';
 
 const userStats = [
   { id: 'visits', label: 'Luoghi visitati', value: 23, icon: MapPin, color: 'from-blue-500 to-blue-600' },
@@ -14,30 +22,46 @@ const userStats = [
   { id: 'points', label: 'Punti guadagnati', value: 1250, icon: Award, color: 'from-yellow-500 to-yellow-600' },
 ];
 
-const menuSections = [
-  {
-    title: 'Account',
-    items: [
-      { id: 'edit-profile', label: 'Modifica Profilo', icon: Edit3, color: 'text-blue-400' },
-      { id: 'public-profile', label: 'Profilo pubblico', icon: User, color: 'text-green-400' },
-      { id: 'notifications', label: 'Notifiche', icon: Bell, color: 'text-green-400', badge: '3' },
-      { id: 'privacy', label: 'Privacy e Sicurezza', icon: Shield, color: 'text-purple-400' },
-    ]
-  },
-  {
-    title: 'Supporto',
-    items: [
-      { id: 'help', label: 'Centro Assistenza', icon: HelpCircle, color: 'text-orange-400' },
-      { id: 'settings', label: 'Impostazioni', icon: Settings, color: 'text-gray-400' },
-    ]
-  },
-  {
+// Funzione per generare le sezioni del menu in base al ruolo dell'utente
+const getMenuSections = (userRole?: string) => {
+  const sections = [
+    {
+      title: 'Account',
+      items: [
+        { id: 'edit-profile', label: 'Modifica Profilo', icon: Edit3, color: 'text-blue-400' },
+        { id: 'public-profile', label: 'Profilo pubblico', icon: User, color: 'text-green-400' },
+        { id: 'notifications', label: 'Notifiche', icon: Bell, color: 'text-green-400', badge: '3' },
+        { id: 'privacy', label: 'Privacy e Sicurezza', icon: Shield, color: 'text-purple-400' },
+      ]
+    },
+    {
+      title: 'Supporto',
+      items: [
+        { id: 'help', label: 'Centro Assistenza', icon: HelpCircle, color: 'text-orange-400' },
+        { id: 'settings', label: 'Impostazioni', icon: Settings, color: 'text-gray-400' },
+      ]
+    }
+  ];
+
+  // Aggiungi sezione amministrazione per admin/editor/moderator
+  if (userRole && ['admin', 'editor', 'moderator'].includes(userRole)) {
+    sections.splice(1, 0, {
+      title: 'Amministrazione',
+      items: [
+        { id: 'news-management', label: 'Gestione News', icon: Newspaper, color: 'text-yellow-400' },
+      ]
+    });
+  }
+
+  sections.push({
     title: 'Altro',
     items: [
       { id: 'logout', label: 'Esci', icon: LogOut, color: 'text-red-400' },
     ]
-  }
-];
+  });
+
+  return sections;
+};
 
 const recentActivity = [
   { id: 1, action: 'Visitato', place: 'Centro Storico', time: '2 ore fa', icon: MapPin },
@@ -52,7 +76,14 @@ export function MobileProfileScreen() {
   const [avatarError, setAvatarError] = useState('');
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showNewsManagement, setShowNewsManagement] = useState(false);
   const [showPublicPreview, setShowPublicPreview] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showPrivacySettings, setShowPrivacySettings] = useState(false);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiList = ['😀','😎','🦄','🐱','🌸','🚀','👽','🐶','🍕','🎨'];
 
@@ -108,11 +139,32 @@ export function MobileProfileScreen() {
 
   const handleMenuClick = async (itemId: string) => {
     switch (itemId) {
-      case 'logout':
-        setShowLogoutModal(true);
+      case 'edit-profile':
+        setShowEditProfile(true);
+        break;
+      case 'news-management':
+        setShowNewsManagement(true);
         break;
       case 'public-profile':
         setShowPublicPreview(true);
+        break;
+      case 'notifications':
+        setShowNotifications(true);
+        break;
+      case 'privacy':
+        setShowPrivacySettings(true);
+        break;
+      case 'help':
+        setShowHelpCenter(true);
+        break;
+      case 'settings':
+        setShowSettings(true);
+        break;
+      case 'news-management':
+        setShowNewsManagement(true);
+        break;
+      case 'logout':
+        setShowLogout(true);
         break;
       default:
         console.log('Menu item clicked:', itemId);
@@ -121,8 +173,17 @@ export function MobileProfileScreen() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setShowLogoutModal(false);
+    localStorage.removeItem('currentUser');
+    setShowLogout(false);
     router.push('/');
+  };
+
+  const handleProfileUpdate = (updatedUser: any) => {
+    setUser(updatedUser);
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,7 +256,7 @@ export function MobileProfileScreen() {
         </div>
         {/* Menu Sections */}
         <div className="px-6 space-y-6">
-          {menuSections.map((section) => (
+          {getMenuSections(user?.role).map((section) => (
             <div key={section.title}>
               <h2 className="text-white text-lg font-bold mb-4">{section.title}</h2>
               <div
@@ -217,7 +278,12 @@ export function MobileProfileScreen() {
                         index !== section.items.length - 1 ? 'border-b border-white/10' : ''
                       }`}
                     >
-                      <IconComponent className={`w-5 h-5 ${item.color}`} />
+                      <div className="relative">
+                        <IconComponent className={`w-5 h-5 ${item.color}`} />
+                        {item.id === 'notifications' && user?.id && (
+                          <NotificationBadge userId={user.id} />
+                        )}
+                      </div>
                       <span className="flex-1 text-left text-white text-sm font-medium">
                         {item.label}
                       </span>
@@ -236,15 +302,81 @@ export function MobileProfileScreen() {
         </div>
         <div className="h-8" />
       </div>
+
+      {/* Modals */}
+      <EditProfileModal
+        user={user}
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        onUpdate={handleProfileUpdate}
+      />
+
+      <NewsManagement
+        isOpen={showNewsManagement}
+        onClose={() => setShowNewsManagement(false)}
+        currentUser={user}
+      />
+
+      <NotificationsModal
+        user={user}
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+
+      <PrivacySettingsModal
+        user={user}
+        isOpen={showPrivacySettings}
+        onClose={() => setShowPrivacySettings(false)}
+      />
+
+      <HelpCenterModal
+        user={user}
+        isOpen={showHelpCenter}
+        onClose={() => setShowHelpCenter(false)}
+      />
+
+      <SettingsModal
+        user={user}
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
+      <LogoutModal
+        user={user}
+        isOpen={showLogout}
+        onClose={() => setShowLogout(false)}
+        onLogout={handleLogout}
+      />
+
+      <NewsManagement
+        isOpen={showNewsManagement}
+        onClose={() => setShowNewsManagement(false)}
+        currentUser={user}
+      />
+
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-sm text-center">
-            <h2 className="text-xl font-bold mb-4">Vuoi uscire?</h2>
-            <button onClick={handleLogout} className="w-full bg-red-500 text-white p-2 rounded mb-2">Logout</button>
-            <button onClick={() => setShowLogoutModal(false)} className="w-full text-gray-500 mt-2">Annulla</button>
+          <div className="bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center border border-gray-700">
+            <h2 className="text-xl font-bold mb-4 text-white">Vuoi uscire?</h2>
+            <p className="text-gray-400 mb-6">Verrai disconnesso dall&apos;app</p>
+            <div className="space-y-3">
+              <button 
+                onClick={handleLogout} 
+                className="w-full bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg font-medium transition-colors"
+              >
+                Esci
+              </button>
+              <button 
+                onClick={() => setShowLogoutModal(false)} 
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-lg font-medium transition-colors"
+              >
+                Annulla
+              </button>
+            </div>
           </div>
         </div>
       )}
+      
       <BottomNavbar />
     </div>
   );

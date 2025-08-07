@@ -18,19 +18,41 @@ export function useAuthWithRole() {
     let subscription: any;
     const getSessionAndRole = async () => {
       setLoading(true);
-      // Test di connessione: query dummy (solo in development)
+      
+      // In modalità sviluppo, crea un utente admin fittizio se non c'è autenticazione
       if (process.env.NODE_ENV === 'development') {
         try {
           const testConn = await supabase.from('profiles').select('id').limit(1);
           if (testConn.error) {
-            console.warn('Database Supabase non disponibile (usando client dummy):', testConn.error.message);
+            console.warn('Database Supabase non disponibile, usando utente admin di sviluppo');
+            // Crea un utente admin fittizio per lo sviluppo
+            const devUser: AuthUser = {
+              id: 'dev-admin-123',
+              email: 'admin@civitanova.dev',
+              name: 'Admin Sviluppo'
+            };
+            setUser(devUser);
+            setRole('admin');
+            setLoading(false);
+            return;
           } else {
             console.log('Connessione al database Supabase riuscita.');
           }
         } catch (err) {
-          console.warn('Database Supabase non disponibile (usando client dummy):', err);
+          console.warn('Database Supabase non disponibile, usando utente admin di sviluppo:', err);
+          // Crea un utente admin fittizio per lo sviluppo
+          const devUser: AuthUser = {
+            id: 'dev-admin-123',
+            email: 'admin@civitanova.dev',
+            name: 'Admin Sviluppo'
+          };
+          setUser(devUser);
+          setRole('admin');
+          setLoading(false);
+          return;
         }
       }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         // Adatta il tipo email per compatibilità
@@ -58,8 +80,19 @@ export function useAuthWithRole() {
           setRole('user');
         }
       } else {
-        setUser(null);
-        setRole('guest');
+        // Se non c'è sessione e siamo in sviluppo, usa l'utente admin fittizio
+        if (process.env.NODE_ENV === 'development') {
+          const devUser: AuthUser = {
+            id: 'dev-admin-123',
+            email: 'admin@civitanova.dev',
+            name: 'Admin Sviluppo'
+          };
+          setUser(devUser);
+          setRole('admin');
+        } else {
+          setUser(null);
+          setRole('guest');
+        }
       }
       setLoading(false);
     };

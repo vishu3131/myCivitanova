@@ -39,6 +39,20 @@ body {
   border-radius: 10px;
 }
 
+@layer utilities {
+  .bg-accent {
+    background-color: rgb(var(--accent-color));
+  }
+  
+  .text-accent {
+    color: rgb(var(--accent-color));
+  }
+  
+  .border-accent {
+    border-color: rgb(var(--accent-color));
+  }
+}
+
 @layer base {
   body {
     @apply text-sm sm:text-base;
