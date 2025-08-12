@@ -147,13 +147,7 @@ export function MobileHomeScreen() {
         </div>
         {/* iOS Control Center Style Layout */}
         <div className="px-3 mt-4 space-y-4">
-          {/* Top Row - Large Widgets */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Tour AR Widget - Large */}
-            <div className="col-span-2">
-              <TourARWidget />
-            </div>
-          </div>
+          
           
           {/* Pure Neon Mobile Widget Row */}
           <div className="grid grid-cols-1 gap-2">
@@ -266,6 +260,13 @@ export function MobileHomeScreen() {
               </div>
             </div>
           </div>
+          {/* Tour AR Widget - posizionato in ultima posizione */}
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="col-span-2">
+              <TourARWidget />
+            </div>
+          </div>
+
           {/* Additional spacing for content */}
           <div className="h-8"></div>
         </div>
