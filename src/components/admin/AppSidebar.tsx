@@ -49,6 +49,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "News", path: "/admin/news", pro: false },
       { name: "Pagine", path: "/admin/pages", pro: false },
+      { name: "Immagini Home", path: "/admin/home-images", pro: false },
     ],
   },
   {

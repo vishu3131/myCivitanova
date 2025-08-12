@@ -15,12 +15,14 @@ import { TourARWidget } from './TourARWidget';
 
 import { WeatherWidget } from './WeatherWidget';
 import { TouristSpotWidget } from './TouristSpotWidget';
+import { BeachWidget } from './BeachWidget';
 import { XPWidget } from './XPWidget';
 import ReportModal from './CommunityReportModal';
-import SocialWidgetsContainer from './SocialWidgetsContainer';
+import { FullScreenLoader } from './LoadingSpinner';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
 import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
+import SocialWidgetsContainer from './SocialWidgetsContainer';
 
 export function MobileHomeScreen() {
   const [showNews, setShowNews] = useState(false);
@@ -96,20 +98,9 @@ export function MobileHomeScreen() {
     };
   }, []);
 
-  // Loading screen
+// Loading screen
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex space-x-2 mb-4">
-            <div className="w-3 h-3 bg-accent rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-3 h-3 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          </div>
-          <p className="text-white/70">Caricamento...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   return (
@@ -147,6 +138,9 @@ export function MobileHomeScreen() {
 
           {/* <WeatherWidget /> */}
           <TouristSpotWidget />
+          
+          {/* Beach Widget */}
+          <BeachWidget />
           
           {/* Social Widgets con Switch Toggle */}
           <SocialWidgetsContainer />

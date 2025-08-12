@@ -1,28 +1,23 @@
 "use client";
 
 import React from 'react';
+import '../styles/loader.css'; // Import the new loader styles
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: number;
   color?: string;
 }
 
-export function LoadingSpinner({ size = 'md', color = '#C6FF00' }: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12'
+export function LoadingSpinner({ size = 48, color = '#FF3D00' }: LoadingSpinnerProps) {
+  const spinnerStyle = {
+    width: `${size}px`,
+    height: `${size}px`,
+    borderBottomColor: color,
   };
 
   return (
     <div className="flex items-center justify-center">
-      <div
-        className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-transparent`}
-        style={{
-          borderTopColor: color,
-          borderRightColor: `${color}40`,
-        }}
-      />
+      <div className="loader" style={spinnerStyle} />
     </div>
   );
 }
@@ -31,7 +26,7 @@ export function FullScreenLoader() {
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="text-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size={64} />
         <p className="text-white/70 text-sm mt-4">Caricamento...</p>
       </div>
     </div>

@@ -6,11 +6,11 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import DatabaseTest from "@/components/admin/DatabaseTest";
 import { DatabaseService } from "@/lib/database";
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
-import { 
-  Users, 
-  FileText, 
-  Trophy, 
-  BarChart3, 
+import {
+  Users,
+  FileText,
+  Trophy,
+  BarChart3,
   Activity,
   TrendingUp,
   Shield,
@@ -21,7 +21,8 @@ import {
   ArrowUp,
   CheckCircle,
   AlertTriangle,
-  Zap
+  Zap,
+  Image
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -464,6 +465,23 @@ export default function AdminPage() {
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       Modera community
+                    </div>
+                  </div>
+                </a>
+                
+                <a
+                  href="/admin/home-images"
+                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="p-2 bg-red-500/10 rounded-lg">
+                    <Image className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      Gestisci Immagini Home
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Modifica le immagini del carosello
                     </div>
                   </div>
                 </a>

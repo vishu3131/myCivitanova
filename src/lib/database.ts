@@ -185,8 +185,153 @@ export interface SystemLog {
   created_at: string;
 }
 
+export interface SiteImageSection {
+  id: string;
+  name: string;
+  type: 'single' | 'carousel';
+  description?: string;
+}
+
+export interface SiteImage {
+  id: string;
+  section_id: string;
+  image_url: string;
+  alt_text?: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Poi {
+  id: string;
+  name: string;
+  category: string;
+  latitude: number;
+  longitude: number;
+  description?: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  imageUrl?: string;
+  opening_hours?: any;
+  created_at: string;
+}
+
+
 // Utility functions per il database
 export class DatabaseService {
+  // Site Images functions
+  static async getSiteImageSections() {
+    const { data, error } = await supabase
+      .from('site_image_sections')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data as SiteImageSection[];
+  }
+
+  static async getImagesBySection(sectionId: string) {
+    const { data, error } = await supabase
+      .from('site_images')
+      .select('*')
+      .eq('section_id', sectionId)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+    return data as SiteImage[];
+  }
+
+  static async createSiteImage(image: Partial<SiteImage>) {
+    const { data, error } = await supabase
+      .from('site_images')
+      .insert(image)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as SiteImage;
+  }
+
+  static async updateSiteImage(id: string, updates: Partial<SiteImage>) {
+    const { data, error } = await supabase
+      .from('site_images')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as SiteImage;
+  }
+
+  static async deleteSiteImage(id: string) {
+    const { error } = await supabase
+      .from('site_images')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  }
+
+  static async updateSectionType(sectionId: string, type: 'single' | 'carousel') {
+    const { data, error } = await supabase
+      .from('site_image_sections')
+      .update({ type })
+      .eq('id', sectionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as SiteImageSection;
+  }
+
+  // POI functions
+  static async getPois() {
+    const { data, error } = await supabase
+      .from('pois')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data as Poi[];
+  }
+
+  static async createPoi(poi: Partial<Poi>) {
+    const { data, error } = await supabase
+      .from('pois')
+      .insert(poi)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Poi;
+  }
+
+  static async updatePoi(id: string, updates: Partial<Poi>) {
+    const { data, error } = await supabase
+      .from('pois')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Poi;
+  }
+
+  static async deletePoi(id: string) {
+    const { error } = await supabase
+      .from('pois')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  }
+
   // News functions
   static async getNews(filters?: {
     category?: string;

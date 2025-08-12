@@ -42,11 +42,16 @@ module.exports = {
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'scroll-loop': 'scroll-loop 40s linear infinite',
+        'pulse-fast': 'pulse-fast 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         'scroll-loop': {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
+        },
+        'pulse-fast': {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.3 },
         }
       }
     },

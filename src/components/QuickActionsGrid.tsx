@@ -39,6 +39,10 @@ export function QuickActionsGrid() {
     alert("Questa funzionalità sarà disponibile prossimamente!");
   };
 
+  const goToBeach = () => {
+    window.location.href = '/spiaggia';
+  };
+
   return (
     <div className="mb-8">
       <h2 className="text-white text-xl font-heading font-medium mb-4">Azioni rapide</h2>
@@ -62,15 +66,17 @@ export function QuickActionsGrid() {
         <QuickAction 
           icon="🏛️" 
           title="Servizi" 
-          subtitle="Prenota e gestisci" 
-          onClick={showFeatureComingSoon}
+          subtitle="Condizioni marine" 
+          badge="28°C"
+          onClick={goToBeach}
         />
         
         <QuickAction 
-          icon="📊" 
-          title="Dashboard" 
-          subtitle="Punti e attività" 
-          onClick={showFeatureComingSoon}
+          icon="🏖️" 
+          title="Spiagge" 
+          subtitle="Condizioni marine" 
+          badge="28°C"
+          onClick={goToBeach}
         />
       </div>
     </div>

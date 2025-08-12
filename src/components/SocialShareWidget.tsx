@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const Card = () => {
+const SocialShareWidget = () => {
   return (
     <StyledWrapper>
       <div className="card">
@@ -206,4 +206,4 @@ const StyledWrapper = styled.div`
   }
 `;
 
-export default Card;
+export default SocialShareWidget;

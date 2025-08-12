@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 const categories = [
   { id: 'search', label: 'Cerca', icon: Search, path: '/esplora' },
-  { id: 'beach', label: 'Spiaggia', icon: Waves, path: '/esplora' },
+  { id: 'beach', label: 'Spiaggia', icon: Waves, path: '/siaggiiaggia' },
   { id: 'events', label: 'Eventi', icon: Calendar, path: '/eventi' },
   { id: 'culture', label: 'Cultura', icon: Building, path: '/esplora' },
   { id: 'shopping', label: 'Shopping', icon: ShoppingBag, path: '/esplora' },

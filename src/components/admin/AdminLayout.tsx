@@ -3,12 +3,12 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  Users, 
-  FileText, 
-  BarChart3, 
-  Settings, 
+import {
+  Home,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
   LogOut,
   Shield,
   Calendar,
@@ -16,7 +16,9 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  X,
+  Image,
+  MapPin
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,8 +31,10 @@ const navigation = [
   { name: 'Utenti', href: '/admin/users', icon: Users },
   { name: 'Contenuti', href: '/admin/content', icon: FileText },
   { name: 'Eventi', href: '/admin/events', icon: Calendar },
+  { name: 'POI', href: '/admin/pois', icon: MapPin },
   { name: 'Statistiche', href: '/admin/stats', icon: BarChart3 },
   { name: 'Gamification', href: '/admin/gamification', icon: Trophy },
+  { name: 'Immagini Sito', href: '/admin/site-images', icon: Image },
   { name: 'Impostazioni', href: '/admin/settings', icon: Settings },
 ];
 

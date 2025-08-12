@@ -551,9 +551,94 @@ function UserCard({
     </div>
   );
 }
+        </div>
+
+        <div className="border-t border-gray-700">
+          <div className="px-4 py-2 text-xs text-gray-400 font-medium">Cambia Ruolo</div>
+          {['user', 'staff', 'moderator', 'admin'].map((role) => (
+            <button
+              key={role}
+              onClick={() => {
+                onUpdateRole(user.id, role);
+                setShowActions(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-white hover:bg-gray-700 ${
+                user.role === role ? 'bg-gray-700' : ''
+              }`}
+            >
+              {role.charAt(0).toUpperCase() + role.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-gray-700">
+          <div className="px-4 py-2 text-xs text-gray-400 font-medium">Cambia Status</div>
+          {['active', 'suspended', 'banned'].map((status) => (
+            <button
+              key={status}
+              onClick={() => {
+                onUpdateStatus(user.id, status);
+                setShowActions(false);
+              }}
+              className={`w-full px-4 py-2 text-left text-white hover:bg-gray-700 ${
+                user.status === status ? 'bg-gray-700' : ''
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-gray-700">
+          <button
+            onClick={() => {
+              onDelete(user.id);
+              setShowActions(false);
+            }}
+            className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Elimina Utente
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // Modal per i dettagli dell'utente
-function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }) {
+function UserDetailsModal({ user: initialUser, onClose }: { user: User; onClose: () => void }) {
+  const [user, setUser] = useState(initialUser);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setUser(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: user.full_name,
+          role: user.role,
+          status: user.status
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      alert('Utente aggiornato con successo!');
+      onClose();
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento dell\'utente:', error);
+      alert('Errore nell\'aggiornamento dell\'utente');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
       <motion.div
@@ -563,7 +648,7 @@ function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }
         className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700"
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h3 className="text-xl font-bold text-white">Dettagli Utente</h3>
+          <h3 className="text-xl font-bold text-white">Modifica Utente</h3>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
@@ -574,46 +659,73 @@ function UserDetailsModal({ user, onClose }: { user: User; onClose: () => void }
 
         <div className="p-6 space-y-6">
           {/* User Info */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-              {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h4 className="text-xl font-semibold text-white">{user.full_name || 'Nome non disponibile'}</h4>
-              <p className="text-gray-400">{user.email}</p>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-white">{user.current_level}</div>
-              <div className="text-sm text-gray-400">Livello</div>
-            </div>
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-white">{user.total_xp}</div>
-              <div className="text-sm text-gray-400">XP Totali</div>
-            </div>
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-white">{user.badges_count}</div>
-              <div className="text-sm text-gray-400">Badge</div>
-            </div>
-          </div>
-
-          {/* Additional Info */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-400">Data Registrazione</label>
-              <p className="text-white">{new Date(user.created_at).toLocaleString()}</p>
+              <label className="block text-sm font-medium text-gray-400">Nome Completo</label>
+              <input
+                type="text"
+                name="full_name"
+                value={user.full_name || ''}
+                onChange={handleChange}
+                className="mt-1 p-2 w-full bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+              />
             </div>
-            
-            {user.last_sign_in_at && (
-              <div>
-                <label className="text-sm font-medium text-gray-400">Ultimo Accesso</label>
-                <p className="text-white">{new Date(user.last_sign_in_at).toLocaleString()}</p>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-400">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={user.email}
+                className="mt-1 p-2 w-full bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400">Ruolo</label>
+              <select
+                name="role"
+                value={user.role}
+                onChange={handleChange}
+                className="mt-1 p-2 w-full bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="user">Utente</option>
+                <option value="moderator">Moderatore</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400">Stato</label>
+              <select
+                name="status"
+                value={user.status}
+                onChange={handleChange}
+                className="mt-1 p-2 w-full bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="active">Attivo</option>
+                <option value="suspended">Sospeso</option>
+                <option value="banned">Bannato</option>
+              </select>
+            </div>
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="p-6 border-t border-gray-700 flex justify-end gap-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-md text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            Annulla
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`px-4 py-2 rounded-md text-white font-medium ${isSaving ? 'bg-blue-700 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 transition-colors'
+              }`}
+          >
+            {isSaving ? 'Salvataggio...' : 'Salva'}
+          </button>
         </div>
       </motion.div>
     </div>

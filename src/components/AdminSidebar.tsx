@@ -6,7 +6,8 @@ import {
   FileText,
   Trophy,
   LineChart,
-  Settings
+  Settings,
+  MapPin
 } from 'lucide-react';
 
 export const AdminSidebar = () => {
@@ -18,6 +19,7 @@ export const AdminSidebar = () => {
             { icon: LayoutDashboard, label: 'Dashboard' },
             { icon: Users, label: 'Users' },
             { icon: FileText, label: 'Content' },
+            { icon: MapPin, label: 'POI', href: '/admin/pois' },
             { icon: Trophy, label: 'Gamification', href: '/admin/gamification' },
             { icon: LineChart, label: 'Analytics' },
             { icon: Settings, label: 'Settings' },

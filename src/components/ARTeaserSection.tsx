@@ -1,10 +1,29 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { SiteImage } from '@/lib/database';
 
 export function ARTeaserSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHeroImage = async () => {
+      try {
+        const response = await fetch('/api/site-images');
+        const sections = await response.json();
+        const heroSection = sections.find((s: any) => s.id === 'home_hero');
+        if (heroSection && heroSection.images.length > 0) {
+          setHeroImage(heroSection.images.image_url);
+        }
+      } catch (error) {
+        console.error("Failed to fetch hero image:", error);
+      }
+    };
+
+    fetchHeroImage();
+  }, []);
   
   const openModal = () => {
     setIsModalOpen(true);
@@ -18,7 +37,10 @@ export function ARTeaserSection() {
     <div className="mb-8">
       <div className="bg-gradient-to-r from-dark-200 to-accent/80 rounded-xl overflow-hidden relative card-glow border border-dark-100">
         <div className="absolute top-0 right-0 w-1/3 h-full opacity-20">
-          <div className="w-full h-full bg-contain bg-no-repeat bg-right" style={{ backgroundImage: "url('https://cdn-icons-png.flaticon.com/512/2271/2271068.png')" }}></div>
+          <div
+            className="w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroImage || 'https://source.unsplash.com/random/1200x800?harbor'})` }}
+          ></div>
         </div>
         
         <div className="p-6 md:p-8 relative z-10">

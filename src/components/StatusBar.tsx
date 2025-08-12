@@ -5,8 +5,11 @@ import { Wifi, Battery, Signal } from 'lucide-react';
 
 export function StatusBar() {
   const [currentTime, setCurrentTime] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('it-IT', { 
@@ -33,7 +36,7 @@ export function StatusBar() {
       {/* Left side - Time */}
       <div className="flex items-center">
         <span className="text-white text-sm font-semibold tracking-wide">
-          {currentTime}
+          {isMounted ? currentTime : '--:--'}
         </span>
       </div>
 
