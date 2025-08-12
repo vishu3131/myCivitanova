@@ -73,9 +73,10 @@ const HomeImageManagementPage = () => {
     setImageUrl('');
   };
 
+  const addImageCallback = useCallback(addImage, []);
   const handleFileDrop = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
-    const file = files;
+    const file = files[0];
     setIsUploading(true);
     
     // Simula l'upload e ottiene un URL. In un'app reale, useresti un servizio di storage.
@@ -88,9 +89,9 @@ const HomeImageManagementPage = () => {
     // const response = await fetch('/api/upload', { method: 'POST', body: formData });
     // const { url: uploadedUrl } = await response.json();
 
-    addImage(uploadedUrl, 'upload');
+    addImageCallback(uploadedUrl, 'upload');
     setIsUploading(false);
-  }, []);
+  }, [addImageCallback]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -154,7 +155,7 @@ const HomeImageManagementPage = () => {
             />
             <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold text-primary">Trascina un'immagine</span> o clicca per caricarla
+              <span className="font-semibold text-primary">Trascina un&apos;immagine</span> o clicca per caricarla
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF fino a 10MB</p>
             {isUploading && <p className="text-sm text-primary mt-2">Caricamento...</p>}

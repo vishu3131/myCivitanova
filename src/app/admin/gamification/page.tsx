@@ -120,7 +120,7 @@ export default function GamificationPage() {
               Gestione Gamification
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Gestisci le regole di gamification per incentivare l'engagement degli utenti
+              Gestisci le regole di gamification per incentivare l&apos;engagement degli utenti
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -551,60 +551,7 @@ function UserCard({
     </div>
   );
 }
-        </div>
-
-        <div className="border-t border-gray-700">
-          <div className="px-4 py-2 text-xs text-gray-400 font-medium">Cambia Ruolo</div>
-          {['user', 'staff', 'moderator', 'admin'].map((role) => (
-            <button
-              key={role}
-              onClick={() => {
-                onUpdateRole(user.id, role);
-                setShowActions(false);
-              }}
-              className={`w-full px-4 py-2 text-left text-white hover:bg-gray-700 ${
-                user.role === role ? 'bg-gray-700' : ''
-              }`}
-            >
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="border-t border-gray-700">
-          <div className="px-4 py-2 text-xs text-gray-400 font-medium">Cambia Status</div>
-          {['active', 'suspended', 'banned'].map((status) => (
-            <button
-              key={status}
-              onClick={() => {
-                onUpdateStatus(user.id, status);
-                setShowActions(false);
-              }}
-              className={`w-full px-4 py-2 text-left text-white hover:bg-gray-700 ${
-                user.status === status ? 'bg-gray-700' : ''
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="border-t border-gray-700">
-          <button
-            onClick={() => {
-              onDelete(user.id);
-              setShowActions(false);
-            }}
-            className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Elimina Utente
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+ 
 
 // Modal per i dettagli dell'utente
 function UserDetailsModal({ user: initialUser, onClose }: { user: User; onClose: () => void }) {

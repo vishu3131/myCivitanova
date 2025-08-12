@@ -13,7 +13,7 @@ export default function Home() {
 
       {/* Desktop View Message */}
       <div className="desktop-only-message">
-        L'app funziona solo in versione mobile.
+        L&apos;app funziona solo in versione mobile.
       </div>
     </>
   );

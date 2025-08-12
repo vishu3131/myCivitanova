@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { StatusBar } from '@/components/StatusBar';
-import { ArrowLeft, MapPin, Star, Thermometer, Wind, Eye, Waves, Sun, Umbrella, Car, Wifi, Shower, UtensilsCrossed } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Thermometer, Wind, Eye, Waves, Sun, Umbrella, Car, Wifi, ShowerHead, UtensilsCrossed } from 'lucide-react';
 
 // Icon mapping to ensure all icons are properly defined
 const iconMap = {
   Umbrella,
-  Shower, 
+  Shower: ShowerHead,
   UtensilsCrossed,
   Car,
   Wifi
