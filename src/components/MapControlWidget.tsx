@@ -12,7 +12,8 @@ interface MapControlWidgetProps {
   onSearchChange: (term: string) => void;
 }
 
-const categories = ['Tutti', 'Piazza', 'Interesse', 'Cultura', 'Spiaggia', 'Trasporti', 'Servizi', 'Ristorante', 'Bar'];
+import { POI_CATEGORIES } from '@/data/poiCategories';
+const categories = POI_CATEGORIES;
 
 const MapControlWidget: React.FC<MapControlWidgetProps> = ({ 
   isOpen, 

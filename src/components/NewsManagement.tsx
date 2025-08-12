@@ -403,12 +403,28 @@ function NewsForm({
   onSubmit: (data: CreateNewsData | UpdateNewsData) => void | Promise<void>;
   onCancel: () => void;
 }) {
-  const [formData, setFormData] = useState({
+  type FormStatus = 'draft' | 'published';
+  type FormType = 'urgent' | 'news' | 'event';
+  interface NewsFormData {
+    title: string;
+    description: string;
+    content: string;
+    type: FormType;
+    status: FormStatus;
+    source: string;
+    featured: boolean;
+    tags: string;
+  }
+
+  const initialStatus: FormStatus =
+    news?.status === 'published' ? 'published' : 'draft';
+
+  const [formData, setFormData] = useState<NewsFormData>({
     title: news?.title || '',
     description: news?.description || '',
     content: news?.content || '',
-    type: news?.type || 'news' as 'urgent' | 'news' | 'event',
-    status: news?.status || 'draft' as 'draft' | 'published',
+    type: (news?.type || 'news') as FormType,
+    status: initialStatus,
     source: news?.source || '',
     featured: news?.featured || false,
     tags: news?.tags?.join(', ') || '',
@@ -490,7 +506,7 @@ function NewsForm({
               <select
                 required
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as FormType }))}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="news">News</option>
@@ -504,7 +520,7 @@ function NewsForm({
               <select
                 required
                 value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as FormStatus }))}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="draft">Bozza</option>

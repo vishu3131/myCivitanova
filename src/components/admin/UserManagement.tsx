@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -51,13 +51,7 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && currentUser) {
-      loadUsers();
-    }
-  }, [isOpen, currentUser, searchTerm, roleFilter, statusFilter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       let query = supabase
@@ -136,7 +130,13 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      loadUsers();
+    }
+  }, [isOpen, currentUser, loadUsers]);
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {

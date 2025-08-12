@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { DatabaseService } from '@/lib/database';
@@ -37,13 +37,7 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
 
-  useEffect(() => {
-    if (currentUser) {
-      loadUsers();
-    }
-  }, [currentUser]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const usersData = await DatabaseService.getUsers();
       setUsers(usersData);
@@ -88,7 +82,13 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      loadUsers();
+    }
+  }, [currentUser, loadUsers]);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

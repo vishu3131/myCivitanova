@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Navigation } from 'lucide-react';
 
 interface Poi {
   id: string;
@@ -129,13 +129,29 @@ const PoiManagement = () => {
                 <td className="py-2 px-4 border-b">{poi.category}</td>
                 <td className="py-2 px-4 border-b">{poi.address}</td>
                 <td className="py-2 px-4 border-b">
-                  <div className="flex space-x-2">
-                    <button onClick={() => handleEdit(poi)} className="text-blue-500 hover:text-blue-700">
+                  <div className="flex space-x-2 items-center">
+                    <button onClick={() => handleEdit(poi)} className="text-blue-500 hover:text-blue-700" title="Modifica">
                       <Edit size={18} />
                     </button>
-                    <button onClick={() => handleDelete(poi.id)} className="text-red-500 hover:text-red-700">
+                    <button onClick={() => handleDelete(poi.id)} className="text-red-500 hover:text-red-700" title="Elimina">
                       <Trash2 size={18} />
                     </button>
+                    {/* Apri direttamente sulla mappa */}
+                    <a
+                      href={`/mappa?focus=${encodeURIComponent(poi.latitude + ',' + poi.longitude)}&name=${encodeURIComponent(poi.name)}`}
+                      className="text-green-600 hover:text-green-800"
+                      title="Apri in Mappa"
+                    >
+                      <MapPin size={18} />
+                    </a>
+                    {/* Anteprima percorso da posizione utente (se consentito) */}
+                    <a
+                      href={`/mappa?route=${encodeURIComponent(poi.latitude + ',' + poi.longitude)}&name=${encodeURIComponent(poi.name)}`}
+                      className="text-gray-700 hover:text-black"
+                      title="Anteprima percorso"
+                    >
+                      <Navigation size={18} />
+                    </a>
                   </div>
                 </td>
               </tr>
