@@ -417,16 +417,22 @@ function NewsForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const data: CreateNewsData | UpdateNewsData = {
-      ...formData,
+    const baseData: CreateNewsData = {
+      title: formData.title,
+      description: formData.description || undefined,
+      content: formData.content || undefined,
+      type: formData.type,
+      status: formData.status,
+      source: formData.source || undefined,
+      featured: formData.featured,
       tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
     };
 
-    if (news) {
-      (data as UpdateNewsData).id = news.id;
-    }
+    const submitData: CreateNewsData | UpdateNewsData = news
+      ? ({ ...baseData, id: news.id } as UpdateNewsData)
+      : baseData;
 
-    onSubmit(data);
+    onSubmit(submitData);
   };
 
   return (
