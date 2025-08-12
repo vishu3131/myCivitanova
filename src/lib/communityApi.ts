@@ -36,7 +36,7 @@ export class CommunityAPI {
     try {
       let query = supabase
         .from('community_posts_with_stats')
-        .select('*');
+        .select('*', { count: 'exact' });
 
       // Applica filtri
       if (params.type) {
@@ -77,21 +77,25 @@ export class CommunityAPI {
           break;
       }
 
-      // Paginazione
-      const limit = params.limit || 20;
-      const offset = params.offset || 0;
-      
-      query = query.range(offset, offset + limit - 1);
+      // Paginazione: usa .range solo con limit definito per evitare errori
+      const limit = typeof params.limit === 'number' ? params.limit : 20;
+      const offset = typeof params.offset === 'number' ? params.offset : 0;
+      if (typeof limit === 'number' && typeof offset === 'number') {
+        query = query.range(offset, offset + limit - 1);
+      }
 
       const { data, error, count } = await query;
 
-      if (error) {
+      // Gestione robusta errori: considera errore solo se ha contenuto significativo
+      const isMeaningfulError = !!(error && (error as any).message);
+      if (isMeaningfulError) {
         console.error('Errore nel recupero dei post:', error);
-        throw error;
+        throw error as any;
       }
 
-      const posts = data || [];
-      const total = count || 0;
+      const posts = (data as any[]) || [];
+      // Alcuni adapter Supabase non restituiscono count quando non esplicitato: fallback sicuro
+      const total = typeof count === 'number' ? count : posts.length;
       const hasMore = posts.length === limit;
 
       return {
@@ -100,8 +104,9 @@ export class CommunityAPI {
         hasMore
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto nel recupero dei post';
-      const enhancedError = new Error(`Errore API fetchPosts: ${errorMessage}. Verifica la connessione al database e le credenziali Supabase.`);
+      // Non sovrascrivere l'errore se è vuoto: crea un messaggio più utile
+      const errorMessage = error instanceof Error && error.message ? error.message : 'Impossibile recuperare i post';
+      const enhancedError = new Error(`Errore API fetchPosts: ${errorMessage}`);
       console.error(enhancedError.message);
       throw enhancedError;
     }

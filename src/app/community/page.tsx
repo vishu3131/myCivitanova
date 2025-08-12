@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,6 +95,7 @@ const fakePosts = [
 const CommunityPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -111,13 +112,18 @@ const CommunityPage = () => {
     error,
     currentUser,
     fetchPosts,
+    loadMorePosts,
     createPost,
     fetchComments,
     addComment,
     toggleReaction,
     sharePost,
-    deletePost
+    deletePost,
+    hasMore,
+    total
   } = useCommunity();
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Effetto per ascoltare un evento personalizzato dalla sidebar
   useEffect(() => {
@@ -134,6 +140,41 @@ const CommunityPage = () => {
     };
   }, []);
 
+  // Ripristina filtri salvati
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('communityFilters');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.activeTab) setActiveTab(parsed.activeTab);
+        if (typeof parsed.selectedCategory === 'string') setSelectedCategory(parsed.selectedCategory);
+        if (parsed.sortBy) setSortBy(parsed.sortBy);
+        if (typeof parsed.searchQuery === 'string') {
+          setSearchQuery(parsed.searchQuery);
+          setSearchInput(parsed.searchQuery);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Persisti filtri
+  useEffect(() => {
+    try {
+      localStorage.setItem('communityFilters', JSON.stringify({
+        activeTab,
+        selectedCategory,
+        sortBy,
+        searchQuery
+      }));
+    } catch {}
+  }, [activeTab, selectedCategory, sortBy, searchQuery]);
+
+  // Debounce search input -> searchQuery
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   // Carica i post all'avvio e quando cambiano i filtri
   useEffect(() => {
     const params: FetchPostsParams = {
@@ -146,6 +187,26 @@ const CommunityPage = () => {
     
     fetchPosts(params);
   }, [activeTab, selectedCategory, searchQuery, sortBy, fetchPosts]);
+
+  // Infinite scroll: osserva il sentinel
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      const first = entries[0];
+      if (first.isIntersecting && hasMore && !loading && posts.length > 0) {
+        const params: FetchPostsParams = {
+          type: activeTab === 'all' ? undefined : activeTab,
+          category: selectedCategory || undefined,
+          search: searchQuery || undefined,
+          sortBy: sortBy,
+          limit: 20
+        };
+        loadMorePosts(params);
+      }
+    }, { rootMargin: '400px 0px' });
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [activeTab, selectedCategory, searchQuery, sortBy, hasMore, loading, posts.length, loadMorePosts]);
 
   // Gestori eventi
   const handleCreatePost = async (postData: any) => {
@@ -288,6 +349,7 @@ const CommunityPage = () => {
               <div>
                 <h1 className="text-2xl font-bold text-white">Community</h1>
                 <p className="text-white/60 text-sm">Connettiti con la tua città</p>
+                <div className="mt-1 text-xs text-white/40">{total} post totali</div>
               </div>
               
               <div className="flex items-center space-x-3">
@@ -314,8 +376,8 @@ const CommunityPage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Cerca nella community..."
                 className="w-full bg-dark-300/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/40 focus:ring-2 focus:ring-accent focus:border-transparent"
               />
@@ -483,11 +545,21 @@ const CommunityPage = () => {
           {/* Posts Feed */}
           <div className="space-y-6">
             {loading && posts.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 text-accent animate-spin mx-auto mb-4" />
-                  <p className="text-white/60">Caricamento post...</p>
-                </div>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-dark-300/50 border border-white/10 rounded-xl p-4 animate-pulse">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-white/10" />
+                      <div className="flex-1">
+                        <div className="h-3 bg-white/10 rounded w-1/3 mb-2" />
+                        <div className="h-2 bg-white/10 rounded w-1/5" />
+                      </div>
+                    </div>
+                    <div className="h-3 bg-white/10 rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/2 mb-2" />
+                    <div className="h-40 bg-white/10 rounded" />
+                  </div>
+                ))}
               </div>
             ) : error ? (
               <div className="text-center py-12">
@@ -537,16 +609,15 @@ const CommunityPage = () => {
             )}
           </div>
 
-          {/* Load More */}
-          {posts.length > 0 && !loading && (
-            <div className="text-center mt-8">
-              <button
-                onClick={handleRefresh}
-                className="px-6 py-3 bg-dark-300/50 border border-white/10 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                Carica altri post
-              </button>
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} />
+          {posts.length > 0 && loading && (
+            <div className="flex items-center justify-center py-6 text-white/60">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Caricamento...
             </div>
+          )}
+          {posts.length > 0 && !hasMore && (
+            <div className="text-center py-6 text-white/40 text-sm">Hai visto tutti i post</div>
           )}
         </div>
       </div>

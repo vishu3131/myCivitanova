@@ -79,6 +79,8 @@ export const useCommunity = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [total, setTotal] = useState<number>(0);
 
   // Carica l'utente corrente
   useEffect(() => {
@@ -117,6 +119,8 @@ export const useCommunity = () => {
       setError(null);
 
       const result = await CommunityAPI.fetchPosts(params);
+      setHasMore(result.hasMore);
+      setTotal(result.total);
       
       // Se l'utente è loggato, recupera le sue reazioni per ogni post
       if (currentUser) {
@@ -143,6 +147,45 @@ export const useCommunity = () => {
       setLoading(false);
     }
   }, [currentUser]);
+
+  // Caricamento incrementale
+  const loadMorePosts = useCallback(async (params: FetchPostsParams = {}) => {
+    try {
+      if (loading || !hasMore) return;
+      setLoading(true);
+      setError(null);
+
+      const result = await CommunityAPI.fetchPosts({
+        ...params,
+        offset: posts.length,
+      });
+
+      setHasMore(result.hasMore);
+      setTotal(result.total);
+
+      if (currentUser) {
+        const postsWithReactions = await Promise.all(
+          result.posts.map(async (post) => {
+            try {
+              const userReaction = await CommunityAPI.getUserReaction(post.id, currentUser.id);
+              return { ...post, user_reaction: userReaction || undefined };
+            } catch (error) {
+              console.error('Errore nel recupero reazione utente:', error);
+              return post;
+            }
+          })
+        );
+        setPosts(prev => [...prev, ...postsWithReactions]);
+      } else {
+        setPosts(prev => [...prev, ...result.posts]);
+      }
+    } catch (err) {
+      console.error('Errore nel caricamento incrementale dei post:', err);
+      setError(err instanceof Error ? err.message : 'Errore nel caricamento dei post');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, posts.length, hasMore, loading]);
 
   // Crea un nuovo post
   const createPost = useCallback(async (postData: CreatePostData) => {
@@ -328,6 +371,7 @@ export const useCommunity = () => {
     error,
     currentUser,
     fetchPosts,
+    loadMorePosts,
     createPost,
     fetchComments,
     addComment,
@@ -335,6 +379,8 @@ export const useCommunity = () => {
     sharePost,
     markAsViewed,
     deletePost,
-    updatePost
+    updatePost,
+    hasMore,
+    total
   };
 };
