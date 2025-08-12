@@ -91,6 +91,14 @@ export function NewsManagement({ isOpen, onClose, currentUser }: NewsManagementP
     }
   };
 
+  const handleSubmitNews = async (data: CreateNewsData | UpdateNewsData) => {
+    if ('id' in data) {
+      await handleUpdateNews(data as UpdateNewsData);
+    } else {
+      await handleCreateNews(data as CreateNewsData);
+    }
+  };
+
   const handleDeleteNews = async (id: string) => {
     if (!confirm('Sei sicuro di voler eliminare questa news?')) return;
     
@@ -280,7 +288,7 @@ export function NewsManagement({ isOpen, onClose, currentUser }: NewsManagementP
         {(showCreateForm || editingNews) && (
           <NewsForm
             news={editingNews}
-            onSubmit={editingNews ? handleUpdateNews : handleCreateNews}
+            onSubmit={handleSubmitNews}
             onCancel={() => {
               setShowCreateForm(false);
               setEditingNews(null);
@@ -392,7 +400,7 @@ function NewsForm({
   onCancel 
 }: { 
   news?: NewsItem | null;
-  onSubmit: (data: CreateNewsData | UpdateNewsData) => void;
+  onSubmit: (data: CreateNewsData | UpdateNewsData) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const [formData, setFormData] = useState({
