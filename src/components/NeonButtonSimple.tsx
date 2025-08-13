@@ -8,7 +8,7 @@ interface NeonButtonSimpleProps {
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export function NeonButtonSimple({ 
@@ -65,6 +65,7 @@ export function NeonButtonSimple({
 
   // Dimensioni responsive basate sulla prop size
   const sizeClasses = {
+    xs: 'text-sm sm:text-base',
     sm: 'text-lg sm:text-xl',
     md: 'text-xl sm:text-2xl md:text-3xl',
     lg: 'text-2xl sm:text-3xl md:text-4xl',
@@ -72,6 +73,7 @@ export function NeonButtonSimple({
   };
 
   const paddingClasses = {
+    xs: 'px-2 py-1',
     sm: 'px-4 py-2',
     md: 'px-6 py-3',
     lg: 'px-8 py-4',
@@ -90,7 +92,7 @@ export function NeonButtonSimple({
         uppercase
         text-transparent
         transition-all
-        duration-300
+        duration-200
         ease-in-out
         select-none
         touch-manipulation
@@ -102,7 +104,7 @@ export function NeonButtonSimple({
       style={{
         WebkitTextStroke: '1px rgba(255, 255, 255, 0.6)',
         WebkitTapHighlightColor: 'transparent',
-        letterSpacing: '0.1em',
+        letterSpacing: '0.08em', // Slightly reduced letter spacing
       }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -112,12 +114,12 @@ export function NeonButtonSimple({
       disabled={disabled}
       whileTap={{ scale: 0.95 }}
       animate={{
-        scale: isPressed ? 0.95 : isHovered ? 1.05 : 1,
+        scale: isPressed ? 0.95 : (isHovered || isPressed) ? 1.02 : 1, // Apply scale on hover or press
       }}
       transition={{
         type: "spring",
-        stiffness: 400,
-        damping: 17
+        stiffness: 300,
+        damping: 15
       }}
       aria-label={text}
       role="button"
@@ -132,10 +134,11 @@ export function NeonButtonSimple({
         className="absolute inset-0 overflow-hidden flex items-center justify-center"
         initial={{ width: "0%" }}
         animate={{
-          width: isHovered ? "100%" : "0%",
+          width: (isHovered || isPressed) ? "100%" : "0%",
+          borderRight: (isHovered || isPressed) ? '4px solid #37FF8B' : '0px solid transparent', // Animate border-right width
         }}
         transition={{
-          duration: 0.5,
+          duration: 0.3,
           ease: "easeInOut"
         }}
       >
@@ -149,7 +152,7 @@ export function NeonButtonSimple({
             color: '#37FF8B',
             WebkitTextStroke: '1px #37FF8B',
             borderRight: isHovered ? '4px solid #37FF8B' : 'none',
-            filter: isHovered ? 'drop-shadow(0 0 15px #37FF8B) drop-shadow(0 0 25px #37FF8B)' : 'none',
+            filter: (isHovered || isPressed) ? 'drop-shadow(0 0 15px #37FF8B) drop-shadow(0 0 25px #37FF8B)' : 'none',
             letterSpacing: '0.1em',
           }}
         >
@@ -161,15 +164,14 @@ export function NeonButtonSimple({
       <motion.div
         className="absolute inset-0 rounded-lg pointer-events-none"
         animate={{
-          boxShadow: isHovered ? [
-            '0 0 5px #fff, 0 0 10px #fff, 0 0 15px #37FF8B, 0 0 20px #37FF8B',
-            '0 0 10px #fff, 0 0 20px #37FF8B, 0 0 30px #37FF8B, 0 0 40px #37FF8B',
-            '0 0 5px #fff, 0 0 10px #fff, 0 0 15px #37FF8B, 0 0 20px #37FF8B'
+          boxShadow: (isHovered || isPressed) ? [
+            '0 0 3px #fff, 0 0 6px #fff, 0 0 10px #37FF8B, 0 0 15px #37FF8B', // from state
+            '0 0 6px #fff, 0 0 12px #37FF8B, 0 0 20px #37FF8B, 0 0 25px #37FF8B' // to state
           ] : '0 0 0px transparent'
         }}
         transition={{
-          duration: 1.5,
-          repeat: isHovered ? Infinity : 0,
+          duration: 1.5, // Match NeonTitle's 1.5s
+          repeat: (isHovered || isPressed) ? Infinity : 0,
           repeatType: "reverse"
         }}
       />
@@ -194,8 +196,8 @@ export function NeonButtonSimple({
                 y: [0, (Math.random() - 0.5) * 60],
               }}
               transition={{
-                duration: 0.8,
-                delay: i * 0.08,
+                duration: 0.6,
+                delay: i * 0.05,
                 ease: "easeOut"
               }}
             />

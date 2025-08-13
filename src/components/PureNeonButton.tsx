@@ -71,13 +71,16 @@ export default function PureNeonButton({
           
           margin: 0;
           height: auto;
+          width: 100%; /* Ensure button takes full width */
+          display: block; /* Ensure it takes full width */
           background: transparent;
-          padding: 0;
+          padding: 4px 0 0 0; /* Increased padding-top */
           border: none;
           cursor: pointer;
-          letter-spacing: 3px;
+          letter-spacing: normal;
           text-decoration: none;
           font-size: var(--fs-size);
+          text-align: center;
           font-family: "Arial", sans-serif;
           position: relative;
           text-transform: uppercase;
@@ -99,12 +102,14 @@ export default function PureNeonButton({
           box-sizing: border-box;
           content: attr(data-text);
           color: var(--animation-color);
-          width: 0%;
+          width: 100%; /* Always full width */
           inset: 0;
           border-right: var(--border-right) solid var(--animation-color);
           overflow: hidden;
-          transition: 0.5s;
+          clip-path: inset(0% 50% 0% 50%); /* Start fully clipped in the center */
+          transition: clip-path 0.5s, border-right 0.5s; /* Animate clip-path and border */
           -webkit-text-stroke: 1px var(--animation-color);
+          text-align: center; /* Ensure text in ::after is centered */
         }
 
         .pure-neon-button.active {
@@ -113,7 +118,8 @@ export default function PureNeonButton({
         }
 
         .pure-neon-button.active::after {
-          width: 100%;
+          width: 100%; /* Keep full width */
+          clip-path: inset(0% 0% 0% 0%); /* Reveal fully */
           filter: drop-shadow(0 0 23px var(--animation-color));
         }
 
@@ -154,7 +160,7 @@ export default function PureNeonButton({
         aria-label={text}
         role="button"
       >
-        <span>{text}</span>
+        <span style={{ display: 'block', width: '100%', textAlign: 'center' }}>{text}</span>
       </button>
     </>
   );

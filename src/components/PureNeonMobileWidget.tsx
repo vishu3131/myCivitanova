@@ -19,13 +19,13 @@ export default function PureNeonMobileWidget({
   buttonText = "MyCivitanova.it"
 }: PureNeonMobileWidgetProps) {
   return (
-    <div className={`relative py-8 px-4 ${className}`}>
+    <div className={`relative py-1 px-1 w-full ${className}`}>
       {/* Solo l'effetto neon, senza contenitori */}
-      <div className="flex items-center justify-center">
+      <div className="flex items-center w-full">
         <PureNeonButton
           text={buttonText}
           onClick={onButtonClick}
-          fontSize="clamp(1.2rem, 4vw, 2rem)" // Font size più grande per maggiore impatto
+          fontSize="clamp(0.8rem, 2.5vw, 1.2rem)" // Font size ulteriormente ridotto
         />
       </div>
     </div>

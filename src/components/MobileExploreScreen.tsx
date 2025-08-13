@@ -5,19 +5,18 @@ import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { SearchModal } from './SearchModal';
-import { ArrowLeft, Search, Filter, Star, MapPin, Clock, Users } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowLeft, Search, Filter, Star, MapPin, Clock, Users, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 
 const categories = [
+  { id: 'shopping', label: 'Shopping', count: 7 },
   { id: 'all', label: 'Tutti', count: 24 },
   { id: 'culture', label: 'Cultura', count: 8 },
   { id: 'nature', label: 'Natura', count: 6 },
   { id: 'food', label: 'Cibo', count: 10 },
   { id: 'history', label: 'Storia', count: 5 },
-  { id: 'shopping', label: 'Shopping', count: 7 },
   { id: 'fun', label: 'Divertimento', count: 12 },
 ];
 
@@ -206,39 +205,21 @@ export function MobileExploreScreen() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [places, setPlaces] = useState<Place[]>(demoPlaces);
+  const [loading, setLoading] = useState(false);
   const { triggerHaptic } = useHapticFeedback();
 
   const handleRefresh = async () => {
     triggerHaptic('light');
-    setLoading(true);
-    const { data, error } = await supabase.from('places').select('*');
-    if (!error && data) setPlaces(data as Place[]);
-    setLoading(false);
+    // Supabase logic removed for now
   };
 
   const pullToRefreshProps = usePullToRefresh({ onRefresh: handleRefresh });
 
-  useEffect(() => {
-    // Use demo data if Supabase is not configured or for development
-    if (!supabase) {
-      setPlaces(demoPlaces);
-      setLoading(false);
-      return;
-    }
+  // useEffect to fetch data from Supabase is removed for now to force demo data
 
-    async function fetchPlaces() {
-      setLoading(true);
-      const { data, error } = await supabase.from('places').select('*');
-      if (!error && data) setPlaces(data as Place[]);
-      setLoading(false);
-    }
-    fetchPlaces();
-  }, []);
-
-  const filteredPlaces = (supabase ? places : demoPlaces).filter((place: Place) => {
-    const matchesCategory = activeCategory === 'all' || place.category === activeCategory;
+  const filteredPlaces = places.filter((place: Place) => {
+    const matchesCategory = activeCategory === 'all' || place.category.toLowerCase() === activeCategory.toLowerCase();
     const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -286,41 +267,54 @@ export function MobileExploreScreen() {
 
           {/* Categories */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-6">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ease-in-out ${
-                  activeCategory === category.id ? 'scale-105' : 'hover:scale-105'
-                }`}
-                style={{
-                  background: activeCategory === category.id 
-                    ? 'rgba(198, 255, 0, 0.15)' 
-                    : 'rgba(255, 255, 255, 0.08)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: activeCategory === category.id 
-                    ? '1px solid rgba(198, 255, 0, 0.3)' 
-                    : '1px solid rgba(255, 255, 255, 0.12)',
-                  boxShadow: activeCategory === category.id 
-                    ? '0 0 10px rgba(198, 255, 0, 0.1)' 
-                    : 'none',
-                }}
-              >
-                <span className={`text-sm font-medium ${
-                  activeCategory === category.id ? 'text-white' : 'text-white/80'
-                }`}>
-                  {category.label}
-                </span>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  activeCategory === category.id 
-                    ? 'bg-accent/20 text-accent' 
-                    : 'bg-white/10 text-white/60'
-                }`}>
-                  {category.count}
-                </span>
-              </button>
-            ))}
+            {categories.map((category) => {
+              const isShopping = category.id === 'shopping';
+              const isActive = activeCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ease-in-out ${
+                    isActive ? 'scale-105' : 'hover:scale-105'
+                  } ${isShopping ? 'shopping-pill hover:brightness-110' : ''}`}
+                  style={{
+                    // Elegant gold treatment for the Shopping pill
+                    background: isShopping
+                      ? 'linear-gradient(135deg, rgba(212,175,55,0.35), rgba(212,175,55,0.15))'
+                      : (isActive
+                        ? 'rgba(198, 255, 0, 0.15)'
+                        : 'rgba(255, 255, 255, 0.08)'),
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: isShopping
+                      ? '1px solid rgba(212,175,55,0.6)'
+                      : (isActive
+                        ? '1px solid rgba(198, 255, 0, 0.3)'
+                        : '1px solid rgba(255, 255, 255, 0.12)'),
+                    // For shopping we delegate the glow to CSS ::before animation
+                    boxShadow: isShopping
+                      ? 'none'
+                      : (isActive
+                        ? '0 0 10px rgba(198, 255, 0, 0.1)'
+                        : 'none'),
+                  }}
+                >
+                  {isShopping && <ShoppingBag className="w-4 h-4 text-yellow-300" />}
+                  <span className={`text-sm font-medium ${
+                    isShopping ? 'text-yellow-200' : (isActive ? 'text-white' : 'text-white/80')
+                  }`}>
+                    {category.label}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    isShopping
+                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30'
+                      : (isActive ? 'bg-accent/20 text-accent' : 'bg-white/10 text-white/60')
+                  }`}>
+                    {category.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -342,8 +336,7 @@ export function MobileExploreScreen() {
           {!loading && filteredPlaces.map((place, index) => (
             <div
               key={place.id}
-              className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50 opacity-0 translate-y-4 animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50"
             >
               <div
                 className="rounded-3xl overflow-hidden border"
@@ -357,14 +350,7 @@ export function MobileExploreScreen() {
                 }}
               >
                 {/* Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={place.image}
-                    alt={place.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
+                <div className="relative h-48 overflow-hidden bg-gray-800">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
                   {/* Rating Badge */}
@@ -420,6 +406,57 @@ export function MobileExploreScreen() {
       />
 
       <BottomNavbar />
+
+      <style jsx>{`
+        .shopping-pill {
+          position: relative;
+          isolation: isolate; /* keep pseudo-elements within this pill's stacking context */
+        }
+        .shopping-pill::before {
+          content: "";
+          position: absolute;
+          inset: -2px; /* slight halo outside the pill */
+          border-radius: 9999px;
+          border: 1px solid rgba(212, 175, 55, 0.55);
+          box-shadow:
+            0 0 0 1px rgba(212, 175, 55, 0.25) inset,
+            0 0 12px rgba(212, 175, 55, 0.30),
+            0 0 24px rgba(212, 175, 55, 0.15);
+          pointer-events: none;
+          z-index: -1; /* sit behind content but above background */
+          animation: goldPulse 3.2s ease-in-out infinite;
+        }
+        .shopping-pill::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 9999px;
+          background: linear-gradient(120deg, rgba(255,255,255,0), rgba(255,255,255,0.18), rgba(255,255,255,0));
+          transform: translateX(-150%);
+          animation: shimmer 6s linear infinite;
+          pointer-events: none;
+          mix-blend-mode: screen;
+          opacity: 0.35;
+        }
+        @keyframes goldPulse {
+          0%, 100% {
+            box-shadow:
+              0 0 0 1px rgba(212, 175, 55, 0.25) inset,
+              0 0 12px rgba(212, 175, 55, 0.30),
+              0 0 24px rgba(212, 175, 55, 0.15);
+          }
+          50% {
+            box-shadow:
+              0 0 0 1px rgba(212, 175, 55, 0.35) inset,
+              0 0 18px rgba(212, 175, 55, 0.40),
+              0 0 34px rgba(212, 175, 55, 0.22);
+          }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(150%); }
+        }
+      `}</style>
     </div>
   );
 }

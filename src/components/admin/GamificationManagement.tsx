@@ -20,6 +20,7 @@ import {
   Gift
 } from 'lucide-react';
 import { supabase } from '@/utils/supabaseClient';
+import { Mission } from '@/types/gamification';
 
 interface Badge {
   id: string;
@@ -62,16 +63,19 @@ interface GamificationManagementProps {
 }
 
 export function GamificationManagement({ isOpen, onClose, currentUser }: GamificationManagementProps) {
-  const [activeTab, setActiveTab] = useState<'badges' | 'xp' | 'stats'>('badges');
+  const [activeTab, setActiveTab] = useState<'badges' | 'xp' | 'missions' | 'stats'>('badges');
   const [badges, setBadges] = useState<Badge[]>([]);
   const [xpActivities, setXpActivities] = useState<XPActivity[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
   const [stats, setStats] = useState<GamificationStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateBadge, setShowCreateBadge] = useState(false);
   const [showCreateActivity, setShowCreateActivity] = useState(false);
+  const [showCreateMission, setShowCreateMission] = useState(false);
   const [editingBadge, setEditingBadge] = useState<Badge | null>(null);
   const [editingActivity, setEditingActivity] = useState<XPActivity | null>(null);
+  const [editingMission, setEditingMission] = useState<Mission | null>(null);
 
   useEffect(() => {
     if (isOpen && currentUser) {
@@ -84,6 +88,7 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
     await Promise.all([
       loadBadges(),
       loadXPActivities(),
+      loadMissions(),
       loadStats()
     ]);
     setLoading(false);
@@ -320,6 +325,33 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
     }
   };
 
+  const handleEditMission = (mission: Mission) => {
+    setEditingMission(mission);
+    setShowCreateMission(true);
+  };
+
+  const handleDeleteMission = async (missionId: string) => {
+    if (window.confirm('Are you sure you want to delete this mission?')) {
+      try {
+        const { error } = await supabase
+          .from('missions')
+          .delete()
+          .eq('id', missionId);
+
+        if (error) throw error;
+        loadMissions();
+      } catch (error) {
+        console.error('Error deleting mission:', error);
+        alert('Failed to delete mission.');
+      }
+    }
+  };
+
+  const handleViewMissionDetails = (mission: Mission) => {
+    setSelectedMission(mission);
+    setShowMissionDetails(true);
+  };
+
   // Verifica permessi
   const hasPermission = currentUser && ['admin', 'moderator'].includes(currentUser.role);
 
@@ -479,6 +511,19 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
 
           {activeTab === 'stats' && (
             <StatsTab stats={stats} />
+          )}
+
+          {activeTab === 'missions' && (
+            <MissioniTab
+              missions={missions}
+              loading={loading}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              onCreateMission={() => setShowCreateMission(true)}
+              onEditMission={setEditingMission}
+              onDeleteMission={deleteMission}
+              onViewMissionDetails={handleViewMissionDetails}
+            />
           )}
         </div>
       </motion.div>
@@ -654,7 +699,368 @@ function XPActivitiesTab({
 }
 
 // Tab per le Statistiche
-function StatsTab({ stats }: { stats: GamificationStats | null }) {
+function StatsTab({ stats }: { stats: GamificationStats | null }) {}
+
+// Tab per le Missioni
+function MissioniTab({
+  missions,
+  loading,
+  searchTerm,
+  setSearchTerm,
+  onCreateMission,
+  onEditMission,
+  onDeleteMission,
+  onViewMissionDetails
+}: any) {
+  const filteredMissions = missions.filter((mission: Mission) =>
+    mission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mission.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-6">
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cerca missioni..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <button
+          onClick={onCreateMission}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Nuova Missione
+        </button>
+      </div>
+
+      {/* Missions List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <span className="ml-2 text-white">Caricamento...</span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredMissions.map((mission: Mission) => (
+            <MissionCard
+              key={mission.id}
+              mission={mission}
+              onEdit={() => onEditMission(mission)}
+              onDelete={() => onDeleteMission(mission.id)}
+              onViewDetails={() => onViewMissionDetails(mission)}
+            />
+          ))}
+        </div>
+      )}
+
+      {filteredMissions.length === 0 && !loading && (
+        <div className="text-center py-12 text-gray-400">
+          <p>Nessuna missione trovata</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Card per Missione
+function MissionCard({ mission, onEdit, onDelete, onViewDetails }: { mission: Mission; onEdit: () => void; onDelete: () => void; onViewDetails: () => void }) {
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer" onClick={onViewDetails}>
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-white font-semibold">{mission.title}</h3>
+            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-sm font-medium">
+              +{mission.xp_reward} XP
+            </span>
+            <span className={`px-2 py-1 rounded text-xs ${
+              mission.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+            }`}>
+              {mission.is_active ? 'Attiva' : 'Inattiva'}
+            </span>
+          </div>
+          
+          <p className="text-gray-400 text-sm mb-2">{mission.description}</p>
+          
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            {mission.activity_type_required && (
+              <span>Richiede: {mission.activity_type_required} ({mission.activity_value_required})</span>
+            )}
+            {mission.completion_count && (
+              <span>Completamenti richiesti: {mission.completion_count}</span>
+            )}
+            <span>Creato: {new Date(mission.created_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 ml-4">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+          >
+            <Edit3 className="w-4 h-4 text-white" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Modal per creare/modificare Missione
+function MissionFormModal({ mission, onSubmit, onCancel }: any) {
+  const [formData, setFormData] = useState({
+    name: mission?.name || '',
+    title: mission?.title || '',
+    description: mission?.description || '',
+    xp_reward: mission?.xp_reward || 100,
+    is_active: mission?.is_active ?? true,
+    activity_type_required: mission?.activity_type_required || '',
+    activity_value_required: mission?.activity_value_required || null,
+    completion_count: mission?.completion_count || null,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(mission ? { ...formData, id: mission.id } : formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700"
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h3 className="text-xl font-bold text-white">
+            {mission ? 'Modifica Missione' : 'Nuova Missione'}
+          </h3>
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Nome (ID)</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Titolo</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Descrizione</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              rows={3}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">XP Ricompensa</label>
+            <input
+              type="number"
+              value={formData.xp_reward}
+              onChange={(e) => setFormData({ ...formData, xp_reward: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              min="1"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Tipo Attività Richiesta (Opzionale)</label>
+            <input
+              type="text"
+              value={formData.activity_type_required || ''}
+              onChange={(e) => setFormData({ ...formData, activity_type_required: e.target.value })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              placeholder="e.g., 'daily_login'"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Valore Attività Richiesta (Opzionale)</label>
+            <input
+              type="number"
+              value={formData.activity_value_required || ''}
+              onChange={(e) => setFormData({ ...formData, activity_value_required: e.target.value ? parseInt(e.target.value) : null })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              min="1"
+              placeholder="e.g., 1 (for 1 login)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Completamenti Richiesti (Opzionale)</label>
+            <input
+              type="number"
+              value={formData.completion_count || ''}
+              onChange={(e) => setFormData({ ...formData, completion_count: e.target.value ? parseInt(e.target.value) : null })}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              min="1"
+              placeholder="e.g., 5 (for 5 times)"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_active_mission"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="is_active_mission" className="text-sm text-gray-400">Missione attiva</label>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {mission ? 'Aggiorna' : 'Crea'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+// Modal per i dettagli della Missione
+function MissionDetailsModal({ mission, onEdit, onDelete, onCancel }: any) {
+  if (!mission) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700"
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h3 className="text-xl font-bold text-white">Dettagli Missione</h3>
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 text-white">
+          <div>
+            <p className="text-gray-400 text-sm">Nome (ID):</p>
+            <p className="text-lg font-semibold">{mission.name}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-sm">Titolo:</p>
+            <p className="text-lg font-semibold">{mission.title}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-sm">Descrizione:</p>
+            <p>{mission.description}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-sm">XP Ricompensa:</p>
+            <p className="text-lg font-semibold">{mission.xp_reward}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-sm">Stato:</p>
+            <p className={`font-semibold ${mission.is_active ? 'text-green-400' : 'text-gray-400'}`}>
+              {mission.is_active ? 'Attiva' : 'Inattiva'}
+            </p>
+          </div>
+          {mission.activity_type_required && (
+            <div>
+              <p className="text-gray-400 text-sm">Tipo Attività Richiesta:</p>
+              <p>{mission.activity_type_required}</p>
+            </div>
+          )}
+          {mission.activity_value_required && (
+            <div>
+              <p className="text-gray-400 text-sm">Valore Attività Richiesta:</p>
+              <p>{mission.activity_value_required}</p>
+            </div>
+          )}
+          {mission.completion_count && (
+            <div>
+              <p className="text-gray-400 text-sm">Completamenti Richiesti:</p>
+              <p>{mission.completion_count}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-gray-400 text-sm">Data Creazione:</p>
+            <p>{new Date(mission.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 p-6 border-t border-gray-700">
+          <button
+            onClick={onEdit}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <Edit3 className="w-4 h-4" />
+            Modifica
+          </button>
+          <button
+            onClick={onDelete}
+            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Elimina
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
   if (!stats) {
     return (
       <div className="p-6 text-center text-gray-400">
