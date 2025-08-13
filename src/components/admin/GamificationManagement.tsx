@@ -76,6 +76,8 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
   const [editingBadge, setEditingBadge] = useState<Badge | null>(null);
   const [editingActivity, setEditingActivity] = useState<XPActivity | null>(null);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [showMissionDetails, setShowMissionDetails] = useState(false);
 
   useEffect(() => {
     if (isOpen && currentUser) {
@@ -92,6 +94,47 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
       loadStats()
     ]);
     setLoading(false);
+  };
+
+  const loadMissions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('missions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMissions(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento delle missioni:', error);
+      // Fallback con dati demo
+      setMissions([
+        {
+          id: 'm1',
+          name: 'daily_explorer',
+          title: 'Esploratore Quotidiano',
+          description: 'Visita un POI ogni giorno per 3 giorni consecutivi.',
+          xp_reward: 75,
+          is_active: true,
+          activity_type_required: 'poi_visit',
+          activity_value_required: 1,
+          completion_count: 3,
+          created_at: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 'm2',
+          name: 'community_contributor',
+          title: 'Contributore della Community',
+          description: 'Crea 5 post o commenti nella sezione Community.',
+          xp_reward: 120,
+          is_active: true,
+          activity_type_required: 'community_interaction',
+          activity_value_required: 5,
+          completion_count: undefined,
+          created_at: '2024-01-05T00:00:00Z',
+        },
+      ]);
+    }
   };
 
   const loadBadges = async () => {
@@ -344,6 +387,23 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
         console.error('Error deleting mission:', error);
         alert('Failed to delete mission.');
       }
+    }
+  };
+
+  const deleteMission = async (missionId: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questa missione?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('missions')
+        .delete()
+        .eq('id', missionId);
+
+      if (error) throw error;
+      setMissions(prev => prev.filter(mission => mission.id !== missionId));
+    } catch (error) {
+      console.error('Errore nell\'eliminazione della missione:', error);
+      alert('Errore nell\'eliminazione della missione');
     }
   };
 
@@ -699,7 +759,107 @@ function XPActivitiesTab({
 }
 
 // Tab per le Statistiche
-function StatsTab({ stats }: { stats: GamificationStats | null }) {}
+function StatsTab({ stats }: { stats: GamificationStats | null }) {
+  if (!stats) {
+    return (
+      <div className="p-6 text-center text-gray-400">
+        <p>Statistiche non disponibili</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Badge Stats */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Statistiche Badge
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Badge Totali</span>
+              <span className="text-white font-semibold">{stats.total_badges}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Badge Attivi</span>
+              <span className="text-white font-semibold">{stats.active_badges}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Tasso di Attivazione</span>
+              <span className="text-white font-semibold">
+                {((stats.active_badges / stats.total_badges) * 100).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* XP Stats */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Statistiche XP
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-400">XP Totali Distribuiti</span>
+              <span className="text-white font-semibold">{stats.total_xp_distributed.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Utenti con XP</span>
+              <span className="text-white font-semibold">{stats.active_users_with_xp}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Livello Medio</span>
+              <span className="text-white font-semibold">{stats.average_user_level.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Stats */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5" />
+            Statistiche Attività
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Attività XP Totali</span>
+              <span className="text-white font-semibold">{stats.total_xp_activities}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">XP Medi per Utente</span>
+              <span className="text-white font-semibold">
+                {Math.round(stats.total_xp_distributed / stats.active_users_with_xp).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Engagement Stats */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Engagement
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Utenti Attivi</span>
+              <span className="text-white font-semibold">{stats.active_users_with_xp}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Partecipazione Media</span>
+              <span className="text-white font-semibold">
+                {((stats.active_users_with_xp / (stats.active_users_with_xp + 50)) * 100).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Tab per le Missioni
 function MissioniTab({
@@ -1053,111 +1213,11 @@ function MissionDetailsModal({ mission, onEdit, onDelete, onCancel }: any) {
             onClick={onDelete}
             className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 text-white" />
             Elimina
           </button>
         </div>
       </motion.div>
-    </div>
-  );
-}
-  if (!stats) {
-    return (
-      <div className="p-6 text-center text-gray-400">
-        <p>Statistiche non disponibili</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Badge Stats */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5" />
-            Statistiche Badge
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Badge Totali</span>
-              <span className="text-white font-semibold">{stats.total_badges}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Badge Attivi</span>
-              <span className="text-white font-semibold">{stats.active_badges}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Tasso di Attivazione</span>
-              <span className="text-white font-semibold">
-                {((stats.active_badges / stats.total_badges) * 100).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* XP Stats */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Statistiche XP
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-400">XP Totali Distribuiti</span>
-              <span className="text-white font-semibold">{stats.total_xp_distributed.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Utenti con XP</span>
-              <span className="text-white font-semibold">{stats.active_users_with_xp}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Livello Medio</span>
-              <span className="text-white font-semibold">{stats.average_user_level.toFixed(1)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Activity Stats */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Statistiche Attività
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Attività XP Totali</span>
-              <span className="text-white font-semibold">{stats.total_xp_activities}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">XP Medi per Utente</span>
-              <span className="text-white font-semibold">
-                {Math.round(stats.total_xp_distributed / stats.active_users_with_xp).toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Engagement Stats */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Engagement
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Utenti Attivi</span>
-              <span className="text-white font-semibold">{stats.active_users_with_xp}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Partecipazione Media</span>
-              <span className="text-white font-semibold">
-                {((stats.active_users_with_xp / (stats.active_users_with_xp + 50)) * 100).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
