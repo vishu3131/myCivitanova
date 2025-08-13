@@ -273,7 +273,13 @@ export function MobileExploreScreen() {
               return (
                 <button
                   key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
+                  onClick={() => {
+                    if (isShopping) {
+                      router.push('/esplora/shopping');
+                    } else {
+                      setActiveCategory(category.id);
+                    }
+                  }}
                   className={`flex-shrink-0 px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ease-in-out ${
                     isActive ? 'scale-105' : 'hover:scale-105'
                   } ${isShopping ? 'shopping-pill hover:brightness-110' : ''}`}
