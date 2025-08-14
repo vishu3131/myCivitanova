@@ -361,7 +361,7 @@ export function CommunityPostCard({
 
       {/* Contenuto del Post */}
       <div className="px-3 sm:px-4 pb-3">
-        <h2 className="text-white font-semibold text-base sm:text-lg mb-2 leading-tight">
+        <h2 className="text-white font-semibold text-base sm:text-lg mb-2 leading-tight break-words">
           {post.title}
         </h2>
         
@@ -474,7 +474,7 @@ export function CommunityPostCard({
 
       {/* Pulsanti Azione */}
       <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-white/10">
-        <div className="flex items-center justify-around sm:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-1">
             {/* Like */}
             <button
@@ -521,7 +521,7 @@ export function CommunityPostCard({
               className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white/60 hover:text-green-400 hover:bg-green-500/10 transition-all"
             >
               <Share2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Condividi</span>
+              <span className="hidden sm:inline text-sm font-medium">Condividi</span>
             </button>
 
             <AnimatePresence>

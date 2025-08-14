@@ -58,7 +58,7 @@ export const IntegratedWidgetBar: React.FC<IntegratedWidgetBarProps> = ({
   };
 
   return (
-    <div className="min-h-[100px] rounded-[16px] p-2 flex items-center justify-start pl-1 cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group bg-gradient-to-r from-gray-800 to-gray-900">
+    <div className="min-h-0 p-0 grid grid-cols-2 gap-x-4 gap-y-3 content-start items-start -mt-3 group">
       {widgets.map((widget) => {
         const IconComponent = widget.icon;
         const isActive = activeWidget === widget.id;

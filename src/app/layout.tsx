@@ -1,5 +1,6 @@
 import './globals.css';
 import '../styles/quartieri.css';
+import '../styles/search-input.css';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { PageTransition } from '@/components/PageTransition';
 import { CircularDevNavigation } from '@/components/CircularDevNavigation';

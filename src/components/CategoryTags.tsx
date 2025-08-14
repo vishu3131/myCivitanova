@@ -1,11 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Waves, Calendar, Building, ShoppingBag, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const categories = [
-  { id: 'search', label: 'Cerca', icon: Search, path: '/esplora' },
   { id: 'beach', label: 'Spiaggia', icon: Waves, path: '/spiaggia' },
   { id: 'events', label: 'Eventi', icon: Calendar, path: '/eventi' },
   { id: 'culture', label: 'Cultura', icon: Building, path: '/esplora' },
@@ -14,15 +13,60 @@ const categories = [
 ];
 
 export function CategoryTags() {
-  const [activeTag, setActiveTag] = React.useState('search');
+  const [activeTag, setActiveTag] = useState('');
+  const [query, setQuery] = useState('');
   const router = useRouter();
+  const [placeholder, setPlaceholder] = useState('');
+
+  useEffect(() => {
+    const text = 'in arrivo';
+    let i = 0;
+    setPlaceholder('');
+    const interval = setInterval(() => {
+      i++;
+      setPlaceholder(text.slice(0, i));
+      if (i >= text.length) clearInterval(interval);
+    }, 90);
+    return () => clearInterval(interval);
+  }, []);
+
+  const submitSearch = () => {
+    const q = query.trim();
+    if (!q) return;
+    router.push(`/esplora?query=${encodeURIComponent(q)}`);
+  };
 
   return (
     <div style={{ paddingLeft: '24px', paddingRight: '24px', marginTop: '24px' }}>
       <div 
-        className="flex flex-row gap-3 overflow-x-auto scrollbar-hide scroll-smooth"
+        className="flex flex-row gap-3 overflow-x-auto scrollbar-hide scroll-smooth items-center"
         style={{ scrollSnapType: 'x mandatory' }}
       >
+        {/* Custom Search Input (replaces the 'Cerca' pill) */}
+        <div className="flex-shrink-0" style={{ scrollSnapAlign: 'start' }}>
+          <div className="input__container">
+            <input
+              type="text"
+              className="input__search"
+              placeholder={placeholder}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitSearch();
+              }}
+            />
+            <button
+              className="input__button__shadow"
+              aria-label="Cerca"
+              onClick={submitSearch}
+            >
+              <Search className="w-5 h-5 text-black/70" />
+            </button>
+            <span className="shadow__input"></span>
+          </div>
+        </div>
+
+        {/* Remaining category pills */}
         {categories.map((category, index) => {
           const IconComponent = category.icon;
           const isActive = activeTag === category.id;
