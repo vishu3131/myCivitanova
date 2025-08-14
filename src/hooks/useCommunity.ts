@@ -244,51 +244,65 @@ export const useCommunity = () => {
 
   // Gestisci reazione (like/dislike)
   const toggleReaction = useCallback(async (postId: string, reactionType: 'like' | 'dislike') => {
+    if (!currentUser) {
+      throw new Error('Utente non autenticato');
+    }
+
+    // Simula l'interazione per i dati finti
+    if (error) {
+      setPosts(prevPosts =>
+        prevPosts.map(p => {
+          if (p.id === postId) {
+            const newPost = { ...p };
+            const currentReaction = newPost.user_reaction;
+
+            // Logica per aggiornare i conteggi e la reazione dell'utente
+            if (currentReaction === reactionType) { // Rimuove la reazione
+              newPost.user_reaction = undefined;
+              if (reactionType === 'like') newPost.likes_count--;
+              else newPost.dislikes_count--;
+            } else { // Aggiunge o cambia la reazione
+              if (currentReaction === 'like') newPost.likes_count--;
+              if (currentReaction === 'dislike') newPost.dislikes_count--;
+              
+              newPost.user_reaction = reactionType;
+              if (reactionType === 'like') newPost.likes_count++;
+              else newPost.dislikes_count++;
+            }
+            return newPost;
+          }
+          return p;
+        })
+      );
+      return;
+    }
+
+    // Logica reale con API
     try {
-      if (!currentUser) {
-        throw new Error('Utente non autenticato');
-      }
-
       const result = await CommunityAPI.toggleReaction(postId, currentUser.id, reactionType);
-
-      // Aggiorna il post locale immediatamente per feedback visivo
-      setPosts(prevPosts => 
+      // L'aggiornamento dei conteggi viene gestito dai trigger del DB, 
+      // ma aggiorniamo la reazione dell'utente per un feedback immediato.
+      setPosts(prevPosts =>
         prevPosts.map(post => {
           if (post.id === postId) {
             const updatedPost = { ...post };
-            
-            // Rimuovi la reazione precedente se esisteva
-            if (post.user_reaction === 'like') {
-              updatedPost.likes_count = Math.max(0, updatedPost.likes_count - 1);
-            } else if (post.user_reaction === 'dislike') {
-              updatedPost.dislikes_count = Math.max(0, updatedPost.dislikes_count - 1);
-            }
-
-            // Applica la nuova reazione basata sul risultato
-            if (result.action === 'added' || result.action === 'changed') {
-              if (result.newReaction === 'like') {
-                updatedPost.likes_count += 1;
-                updatedPost.user_reaction = 'like';
-              } else if (result.newReaction === 'dislike') {
-                updatedPost.dislikes_count += 1;
-                updatedPost.user_reaction = 'dislike';
-              }
-            } else if (result.action === 'removed') {
+            if (result.action === 'removed') {
               updatedPost.user_reaction = undefined;
+            } else {
+              updatedPost.user_reaction = result.newReaction;
             }
-
+            // Potremmo anche aggiornare i conteggi localmente per evitare un refetch
+            // Ma per ora ci affidiamo alla denormalizzazione del DB
             return updatedPost;
           }
           return post;
         })
       );
-
-      return result;
     } catch (err) {
       console.error('Errore nella gestione reazione:', err);
       throw err;
     }
-  }, [currentUser]);
+  }, [currentUser, error]);
 
   // Condividi un post
   const sharePost = useCallback(async (postId: string, shareType: 'internal' | 'facebook' | 'twitter' | 'whatsapp' | 'email' | 'link') => {

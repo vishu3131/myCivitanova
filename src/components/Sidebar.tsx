@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useSidebar } from '@/context/SidebarContext';
 
 interface SidebarIconProps {
   emoji: string;
@@ -38,58 +39,14 @@ function SidebarIcon({ emoji, isActive = false, label, onClick }: SidebarIconPro
 }
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isSidebarOpen: isOpen, toggleSidebar } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
-  
-  // Funzione per gestire il toggle della sidebar
-  const toggleSidebar = () => {
-    const newState = !isOpen;
-    setIsOpen(newState);
-    
-    // Emetti un evento personalizzato per notificare il cambio di stato
-    const event = new CustomEvent('sidebarToggle', { 
-      detail: { isOpen: newState } 
-    });
-    window.dispatchEvent(event);
-  };
   
   // Funzione per la navigazione
   const handleNavigation = (path: string) => {
     router.push(path);
   };
-  
-  // Gestione della chiusura/apertura con tasto Esc e apertura automatica su desktop
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-    
-    // Apri automaticamente la sidebar su schermi grandi
-    const handleResize = () => {
-      const newState = window.innerWidth >= 1024; // lg breakpoint
-      setIsOpen(newState);
-      
-      // Emetti un evento personalizzato per notificare il cambio di stato
-      const event = new CustomEvent('sidebarToggle', { 
-        detail: { isOpen: newState } 
-      });
-      window.dispatchEvent(event);
-    };
-    
-    // Controlla la dimensione iniziale
-    handleResize();
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   return (
     <>

@@ -38,9 +38,12 @@ import { Sidebar } from '@/components/Sidebar';
 import { BottomNavbar } from '@/components/BottomNavbar';
 import { CreatePostModal } from '@/components/CreatePostModal';
 import { CommunityPostCard } from '@/components/CommunityPostCard';
+import { CategoryFilter } from '@/components/community/CategoryFilter';
+import { SortMenu } from '@/components/community/SortMenu';
 import LoginModal from '@/components/LoginModal';
 import { useToast } from '@/components/Toast';
 import { useCommunity } from '@/hooks/useCommunity';
+import { useSidebar } from '@/context/SidebarContext';
 import { FetchPostsParams } from '@/lib/communityApi';
 
 const fakePosts = [
@@ -93,14 +96,13 @@ const fakePosts = [
 ];
 
 const CommunityPage = () => {
+  const { sidebarWidth } = useSidebar();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showNewPost, setShowNewPost] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
-  const [showSortMenu, setShowSortMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Toast system
   const { showToast, ToastContainer } = useToast();
@@ -124,21 +126,6 @@ const CommunityPage = () => {
   } = useCommunity();
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-
-  // Effetto per ascoltare un evento personalizzato dalla sidebar
-  useEffect(() => {
-    const handleSidebarToggle = (e: CustomEvent) => {
-      setIsSidebarOpen(e.detail.isOpen);
-    };
-    
-    // Aggiungi event listener per l'evento personalizzato
-    window.addEventListener('sidebarToggle' as any, handleSidebarToggle as EventListener);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('sidebarToggle' as any, handleSidebarToggle as EventListener);
-    };
-  }, []);
 
   // Ripristina filtri salvati
   useEffect(() => {
@@ -313,12 +300,6 @@ const CommunityPage = () => {
     { id: 'group', label: 'Gruppi', icon: Users, count: posts.filter(p => p.type === 'group').length },
   ];
 
-  const sortOptions = [
-    { id: 'recent', label: 'Più Recenti', icon: Clock },
-    { id: 'popular', label: 'Più Popolari', icon: TrendingUp },
-    { id: 'trending', label: 'In Tendenza', icon: Flame }
-  ];
-
   const categories = [
     'Generale',
     'Trasporti', 
@@ -336,11 +317,8 @@ const CommunityPage = () => {
       <Sidebar />
       
       <div
-        className={`
-          transition-all duration-500 ease-in-out
-          ${isSidebarOpen ? 'ml-16 md:ml-20 lg:ml-24' : 'ml-0'}
-          pb-16 md:pb-0
-        `}
+        style={{ marginLeft: sidebarWidth }}
+        className="transition-all duration-500 ease-in-out pb-16 md:pb-0"
       >
         {/* Header */}
         <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-sm border-b border-white/10">
@@ -419,62 +397,16 @@ const CommunityPage = () => {
         <div className="px-4 py-3 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {/* Category Filter */}
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-dark-300/50 border border-white/10 rounded-lg px-3 py-1 text-white text-sm focus:ring-2 focus:ring-accent focus:border-transparent"
-              >
-                <option value="">Tutte le categorie</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              <CategoryFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
             </div>
-
-            {/* Sort Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center space-x-2 px-3 py-1 bg-dark-300/50 border border-white/10 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <SortDesc className="w-4 h-4" />
-                <span className="text-sm">
-                  {sortOptions.find(opt => opt.id === sortBy)?.label}
-                </span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              <AnimatePresence>
-                {showSortMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                    className="absolute right-0 top-10 bg-dark-400 rounded-lg shadow-xl border border-white/10 py-2 min-w-[160px] z-20"
-                  >
-                    {sortOptions.map((option) => {
-                      const IconComponent = option.icon;
-                      return (
-                        <button
-                          key={option.id}
-                          onClick={() => {
-                            setSortBy(option.id as any);
-                            setShowSortMenu(false);
-                          }}
-                          className={`w-full px-4 py-2 text-left hover:bg-white/10 flex items-center space-x-2 text-sm ${
-                            sortBy === option.id ? 'text-accent' : 'text-white'
-                          }`}
-                        >
-                          <IconComponent className="w-4 h-4" />
-                          <span>{option.label}</span>
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <SortMenu
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+            />
           </div>
         </div>
 
@@ -561,18 +493,28 @@ const CommunityPage = () => {
                   </div>
                 ))}
               </div>
-            ) : error ? (
-              <div className="text-center py-12">
-                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <h3 className="text-white font-semibold mb-2">Errore nel caricamento</h3>
-                <p className="text-white/60 mb-4">{error}</p>
-                <button
-                  onClick={handleRefresh}
-                  className="px-4 py-2 bg-accent text-dark-400 rounded-lg font-medium hover:bg-accent/90 transition-colors"
-                >
-                  Riprova
-                </button>
-              </div>
+              ) : error ? (
+                <>
+                  <div className="text-center py-6">
+                    <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+                    <h3 className="text-white font-semibold mb-1">Errore nel caricamento</h3>
+                    <p className="text-white/60 text-sm mb-3">{error}</p>
+                    <p className="text-white/50 text-xs mb-4">Dati di test mostrati di seguito.</p>
+                  </div>
+                  {fakePosts.map((post) => (
+                    <CommunityPostCard
+                      key={post.id}
+                      post={post as any}
+                      currentUser={currentUser}
+                      onLike={async () => {}}
+                      onDislike={async () => {}}
+                      onShare={async () => {}}
+                      onComment={async () => {}}
+                      onDelete={async () => {}}
+                      fetchComments={async () => []}
+                    />
+                  ))}
+                </>
             ) : posts.length === 0 ? (
               <div className="text-center py-12">
                 <MessageCircle className="w-12 h-12 text-white/40 mx-auto mb-4" />
@@ -592,18 +534,18 @@ const CommunityPage = () => {
                   </button>
                 )}
               </div>
-            ) : (
-              (posts.length > 0 ? posts : fakePosts).map((post) => (
+              ) : (
+              posts.map((post) => (
                 <CommunityPostCard
                   key={post.id}
                   post={post as any}
                   currentUser={currentUser}
-                  onLike={post.id.startsWith('fake-') ? async () => {} : handleLike}
-                  onDislike={post.id.startsWith('fake-') ? async () => {} : handleDislike}
-                  onShare={post.id.startsWith('fake-') ? async () => {} : handleShare}
-                  onComment={post.id.startsWith('fake-') ? async () => {} : handleComment}
-                  onDelete={post.id.startsWith('fake-') ? async () => {} : handleDelete}
-                  fetchComments={post.id.startsWith('fake-') ? async () => [] : fetchComments}
+                  onLike={handleLike}
+                  onDislike={handleDislike}
+                  onShare={handleShare}
+                  onComment={handleComment}
+                  onDelete={handleDelete}
+                  fetchComments={fetchComments}
                 />
               ))
             )}

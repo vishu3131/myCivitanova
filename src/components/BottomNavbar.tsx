@@ -69,6 +69,7 @@ export function BottomNavbar() {
           if (item.isCenter) {
             return (
               <div
+                id="explore-fab"
                 key={item.id}
                 className="relative flex flex-col items-center cursor-pointer group"
                 onClick={() => handleNavigation(item.path, true)}

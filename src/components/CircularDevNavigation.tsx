@@ -243,6 +243,7 @@ export function CircularDevNavigation() {
             <motion.div
               className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border-2 border-purple-400"
               style={{ zIndex: 9996 }}
+              id="circular-origin-ripple-1"
               initial={{ scale: 1, opacity: 0.8 }}
               animate={{ scale: 4, opacity: 0 }}
               exit={{ opacity: 0 }}
@@ -252,6 +253,7 @@ export function CircularDevNavigation() {
             <motion.div
               className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border border-pink-400"
               style={{ zIndex: 9996 }}
+              id="circular-origin-ripple-2"
               initial={{ scale: 1, opacity: 0.6 }}
               animate={{ scale: 6, opacity: 0 }}
               exit={{ opacity: 0 }}
@@ -264,6 +266,7 @@ export function CircularDevNavigation() {
                 zIndex: 9996,
                 background: "radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)"
               }}
+              id="circular-origin-ripple-3"
               initial={{ scale: 0, opacity: 1 }}
               animate={{ scale: 8, opacity: 0 }}
               exit={{ opacity: 0 }}
@@ -304,6 +307,18 @@ export function CircularDevNavigation() {
         }}
         aria-label={isOpen ? "Close development navigation" : "Open development navigation"}
         aria-expanded={isOpen}
+        id="circular-origin"
+        ref={(el) => {
+          try {
+            const target = document.getElementById('explore-fab');
+            if (el && target) {
+              const targetRect = target.getBoundingClientRect();
+              const centerX = targetRect.left + targetRect.width / 2;
+              el.style.left = `${centerX}px`;
+              el.style.transform = 'translate(-50%, 0)';
+            }
+          } catch {}
+        }}
       >
         {/* Animated gradient background */}
         <motion.div
@@ -375,6 +390,18 @@ export function CircularDevNavigation() {
             style={{ zIndex: 9996 }}
             role="navigation"
             aria-label="Menu di navigazione principale"
+            id="circular-menu-anchor"
+            ref={(el) => {
+              try {
+                const target = document.getElementById('explore-fab');
+                if (el && target) {
+                  const targetRect = target.getBoundingClientRect();
+                  const centerX = targetRect.left + targetRect.width / 2;
+                  el.style.left = `${centerX}px`;
+                  el.style.transform = 'translate(-50%, 0)';
+                }
+              } catch {}
+            }}
           >
             {navigationPages.map((page, index) => {
               const IconComponent = page.icon;
@@ -481,6 +508,18 @@ export function CircularDevNavigation() {
             style={{ zIndex: 9996 }}
             role="navigation"
             aria-label="Menu di funzionalità rapide"
+            id="circular-quick-anchor"
+            ref={(el) => {
+              try {
+                const target = document.getElementById('explore-fab');
+                if (el && target) {
+                  const targetRect = target.getBoundingClientRect();
+                  const centerX = targetRect.left + targetRect.width / 2;
+                  el.style.left = `${centerX}px`;
+                  el.style.transform = 'translate(-50%, 0)';
+                }
+              } catch {}
+            }}
           >
             {quickPages.map((page, index) => {
               const IconComponent = page.icon;
@@ -581,7 +620,7 @@ export function CircularDevNavigation() {
       {/* Trail effect */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9994 }}>
+          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9994 }} id="circular-trail-anchor">
             {navigationPages.map((page, index) => {
               const position = getIconPosition(index, navigationPages.length, 'navigation');
               
@@ -615,7 +654,7 @@ export function CircularDevNavigation() {
       {/* Stardust explosion effect */}
       <AnimatePresence>
         {selectedIcon && (
-          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9998 }}>
+          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9998 }} id="circular-stardust-anchor">
             {[...Array(12)].map((_, i) => {
               const angle = (Math.PI * 2 / 12) * i;
               const distance = 60;
