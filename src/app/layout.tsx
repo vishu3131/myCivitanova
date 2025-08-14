@@ -44,7 +44,7 @@ export default function RootLayout({
           <PageTransition>
             {children}
           </PageTransition>
-          <div className="md:hidden">
+          <div>
             <BottomNavbarClientWrapper />
             <CircularDevNavigation />
           </div>

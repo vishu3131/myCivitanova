@@ -6,15 +6,7 @@ import '@/styles/desktop-message.css';
 export default function Home() {
   return (
     <>
-      {/* Mobile View */}
-      <div className="mobile-only-content">
-        <MobileHomeScreen />
-      </div>
-
-      {/* Desktop View Message */}
-      <div className="desktop-only-message">
-        L&apos;app funziona solo in versione mobile.
-      </div>
+      <MobileHomeScreen />
     </>
   );
 }

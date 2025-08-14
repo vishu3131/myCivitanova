@@ -24,8 +24,9 @@ import PureNeonMobileWidget from './PureNeonMobileWidget';
 import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import SocialWidgetsContainer from './SocialWidgetsContainer';
-import LShapeWidget from './LShapeWidget';
+import LeaderboardWidget from './LeaderboardWidget';
 import SponsoredActivitiesWidget from './SponsoredActivitiesWidget';
+import AngoloWidget from './AngoloWidget';
 
 export function MobileHomeScreen() {
   const [showNews, setShowNews] = useState(false);
@@ -142,11 +143,6 @@ export function MobileHomeScreen() {
           {/* <WeatherWidget /> */}
           <TouristSpotWidget />
           
-          {/* Beach Widget */}
-          <BeachWidget />
-          
-          {/* Social Widgets con Switch Toggle */}
-          <SocialWidgetsContainer />
         </div>
         {/* iOS Control Center Style Layout */}
         <div className="px-3 mt-4 space-y-4">
@@ -189,10 +185,10 @@ export function MobileHomeScreen() {
               </div>
             </div>
           </div>
-          {/* Bottom Row - Small Widgets + L-Shape Widget Area */}
-          <div className="grid grid-cols-4 gap-2 items-start">
-            {/* Left block: Badge, Eventi, Servizi, News (2 cols wide) */}
-            <div className="col-span-2 space-y-2">
+          {/* Bottom Row - Resized for Leaderboard */}
+          <div className="grid grid-cols-3 gap-2 items-start">
+            {/* Left block: Smaller widgets (1 col wide) */}
+            <div className="col-span-1 space-y-2">
               {/* Badge - Small */}
               <div
                 className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 cursor-pointer hover:bg-dark-300/70 transition-colors"
@@ -206,78 +202,66 @@ export function MobileHomeScreen() {
                   <div className="text-accent text-xs">{currentUserId ? '...' : '5'}</div>
                 </div>
               </div>
-              {/* Inline row: Eventi / Servizi / News */}
-              <div className="grid grid-cols-3 gap-2">
-                {/* Events - Small */}
-                <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10">
-                  <div className="text-center">
-                    <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xs text-blue-400">📅</span>
-                    </div>
-                    <div className="text-white font-medium text-xs">Eventi</div>
-                    <div className="text-blue-400 text-xs">5</div>
-                  </div>
-                </div>
-                {/* Services - Small */}
-                <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 flex flex-col items-center justify-between">
-                  <div className="text-center">
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xs text-purple-400">⚙️</span>
-                    </div>
-                    <div className="text-white font-medium text-xs">Servizi</div>
-                    <div className="text-purple-400 text-xs mb-2">8</div>
-                  </div>
-                  <button
-                    className="w-full bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-semibold shadow hover:bg-purple-700 transition-all mt-2"
-                    onClick={() => setShowReport(true)}
-                  >
-                    Segnala Problema
-                  </button>
-                </div>
-                {/* News - Small */}
-                <Link href="/news">
-                  <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 cursor-pointer">
-                    <div className="text-center">
-                      <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <span className="text-xs text-red-400">📰</span>
-                      </div>
-                      <div className="text-white font-medium text-xs">News</div>
-                      <div className="text-red-400 text-xs">3</div>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-              {/* Waste Collection Widget - Half Width (left side) */}
-              <div>
-                <WasteCollectionWidget />
-              </div>
+              {/* Angolo Widget */}
+              <AngoloWidget
+                onButton1Click={() => console.log('Angolo Tasto 1 cliccato')}
+                onButton2Click={() => console.log('Angolo Tasto 2 cliccato')}
+              />
+              {/* Waste Collection Widget */}
+              <WasteCollectionWidget />
             </div>
 
-            {/* Right block: new L-shape widget occupying 2 cols, taller than Waste box */}
+            {/* Right block: Leaderboard widget occupying 2 cols */}
             <div className="col-span-2">
-              {/* Import lazy to avoid SSR hiccups if needed */}
-              {/* @ts-ignore - component is default export */}
-              <LShapeWidget
-                className="h-[220px] md:h-[260px]"
-                title="Widget Speciale"
-                ariaLabel="Apri widget speciale"
-                topContent={
-                  <div className="h-full flex flex-col items-center justify-center gap-2">
-                    <button className="w-full py-2 rounded-lg text-[10px] bg-white/10 text-white border border-white/10 hover:bg-white/15">Azione 1</button>
-                    <button className="w-full py-2 rounded-lg text-[10px] bg-white/10 text-white border border-white/10 hover:bg-white/15">Azione 2</button>
-                  </div>
-                }
-                sideContent={
-                  <div className="h-full flex items-center justify-between">
-                    <div className="text-white/80 text-xs">
-                      <div className="text-white font-semibold">Promemoria</div>
-                      <div className="opacity-80">Contenuti rapidi o KPI</div>
-                    </div>
-                    <button className="px-2 py-1 rounded-lg text-[10px] bg-accent/20 text-accent border border-accent/30">Apri</button>
-                  </div>
-                }
+              <LeaderboardWidget
+                className="h-[400px] md:h-[440px]"
               />
             </div>
+          </div>
+
+          {/* Independent Report Button */}
+          <button
+            className="w-full bg-purple-600 text-white px-3 py-2 rounded-xl text-sm font-semibold shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+            onClick={() => setShowReport(true)}
+          >
+            <span className="text-lg">⚠️</span>
+            Segnala un Problema
+          </button>
+
+          {/* Moved small widgets row */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Events - Small */}
+            <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-xs text-blue-400">📅</span>
+                </div>
+                <div className="text-white font-medium text-xs">Eventi</div>
+                <div className="text-blue-400 text-xs">5</div>
+              </div>
+            </div>
+            {/* Services - Small */}
+            <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 flex flex-col items-center justify-center">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span className="text-xs text-purple-400">⚙️</span>
+                </div>
+                <div className="text-white font-medium text-xs">Servizi</div>
+                <div className="text-purple-400 text-xs">8</div>
+              </div>
+            </div>
+            {/* News - Small */}
+            <Link href="/news">
+              <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10 cursor-pointer">
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-xs text-red-400">📰</span>
+                  </div>
+                  <div className="text-white font-medium text-xs">News</div>
+                  <div className="text-red-400 text-xs">3</div>
+                </div>
+              </div>
+            </Link>
           </div>
           {/* Live Updates - Medium */}
           <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 card-glow border border-white/10">
@@ -304,6 +288,12 @@ export function MobileHomeScreen() {
               <TourARWidget />
             </div>
           </div>
+
+          {/* Beach Widget */}
+          <BeachWidget />
+
+          {/* Social Widgets con Switch Toggle */}
+          <SocialWidgetsContainer />
 
           {/* Additional spacing for content */}
           <div className="h-8"></div>
