@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Sun, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,22 +14,284 @@ interface InfoCardsProps {
 export function InfoCards({ onReportClick }: InfoCardsProps) {
   const router = useRouter();
   const [heartActive, setHeartActive] = useState(false);
+  const [prevSlide, setPrevSlide] = useState(0);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [offset, setOffset] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const SLIDE_MS = 3500;
+
+  // Carousel murales - eccentric scrolling + spray overlay
+  // Inserisci qui i tuoi file locali sotto public/murales (rinominali come suggerito oppure aggiorna questo array)
+  const muralImages = [
+    "/murales/mural-1.jpg",
+    "/murales/mural-2.jpg",
+    "/murales/mural-3.jpg",
+    "/murales/mural-4.jpg",
+    "/murales/mural-5.jpg",
+    "/murales/mural-6.jpg",
+    "/murales/mural-7.jpg",
+    "/murales/mural-8.jpg",
+    "/murales/mural-9.jpg",
+    "/murales/mural-10.jpg",
+    "/murales/mural-11.jpg",
+    "/murales/mural-12.jpg",
+    "/murales/mural-13.jpg",
+  ];
+  const [slide, setSlide] = useState(0);
+  const [animMs, setAnimMs] = useState(1000);
+  const [jitter, setJitter] = useState<{x:number;y:number;r:number;s:number}>({ x: 0, y: 0, r: 0, s: 1 });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSlide((p) => {
+        const next = (p + 1) % muralImages.length;
+        setPrevSlide(p);
+        return next;
+      });
+      const dur = Math.floor(Math.random() * (1500 - 800) + 800);
+      setAnimMs(dur);
+      setJitter({
+        x: Math.random() * 8 - 4,
+        y: Math.random() * 6 - 3,
+        r: Math.random() * 3 - 1.5,
+        s: 0.97 + Math.random() * 0.03
+      });
+    }, SLIDE_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const compute = () => {
+      if (!containerRef.current || !naturalSize) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const cw = rect.width;
+      const ch = rect.height;
+      const ratio = naturalSize.w / naturalSize.h;
+      let w = cw;
+      let h = w / ratio;
+      if (h > ch) {
+        h = ch;
+        w = h * ratio;
+      }
+      w *= 0.92;
+      h *= 0.92;
+      setImgSize({ w, h });
+      setOffset({ left: (cw - w) / 2, top: (ch - h) / 2 });
+    };
+    compute();
+    const onResize = () => compute();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [naturalSize, slide]);
 
   return (
     <div style={{ paddingLeft: '24px', paddingRight: '24px', marginTop: '24px' }}>
        <div className="grid grid-cols-2 gap-4">
-        {/* Card immagine luogo - Centro */}
-        <div className="relative h-[200px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all duration-300">
-          <Image
-            src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-            alt="Centro Civitanova"
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-300"></div>
-          <div className="absolute bottom-3 left-4 transform group-hover:translate-y-[-2px] transition-transform duration-300">
-            <span className="text-white text-base font-semibold drop-shadow-lg">Centro</span>
+        {/* Card immagine luogo - Carosello murales con effetto spray */}
+        <div className="relative h-[200px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => router.push('/arte')} aria-label="Apri la pagina Arte">
+          <div className="absolute inset-0">
+            {/* Wrapper con jitter eccentrico */}
+            <div
+              className="h-full w-full"
+              style={{
+                transform: `translate(${jitter.x}px, ${jitter.y}px) rotate(${jitter.r}deg) scale(${jitter.s})`,
+                transition: `transform ${animMs}ms cubic-bezier(.22,1,.36,1)`
+              }}
+            >
+              {/* Transizione 3D cube modern wow */}
+              <div className="absolute inset-0" ref={containerRef} style={{ perspective: '900px' }}>
+                {/* layer uscente */}
+                <div key={`out-${prevSlide}-${slide}`} className="absolute inset-0 slide-out" style={{ animationDuration: `${animMs}ms` }}>
+                  <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
+                    <Image src={muralImages[prevSlide]} alt={`Murale ${prevSlide + 1}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 400px" />
+                  </div>
+                </div>
+                {/* layer entrante */}
+                <div key={`in-${slide}`} className="absolute inset-0 slide-in" style={{ animationDuration: `${animMs}ms` }}>
+                  <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
+                    <Image src={muralImages[slide]} alt={`Murale ${slide + 1}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 400px" onLoadingComplete={(img) => { setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight }); }} />
+                    <div className="shine"></div>
+                  </div>
+                </div>
+                {/* Neon timer glow */}
+                <div className="neon-timer absolute pointer-events-none" style={{ zIndex: 25, top: `${offset.top}px`, left: `${offset.left}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px` }}>
+                  <svg width={imgSize.w} height={imgSize.h} className="block">
+                    <defs>
+                      <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#00F7FF" />
+                        <stop offset="50%" stopColor="#7C4DFF" />
+                        <stop offset="100%" stopColor="#00F7FF" />
+                      </linearGradient>
+                      <filter id="neonFilter" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="2" result="blur1" />
+                        <feGaussianBlur in="blur1" stdDeviation="4" result="blur2" />
+                        <feMerge>
+                          <feMergeNode in="blur2" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <rect key={slide}
+                      x={1.5}
+                      y={1.5}
+                      width={Math.max(imgSize.w - 3, 0)}
+                      height={Math.max(imgSize.h - 3, 0)}
+                      rx={12}
+                      ry={12}
+                      className="neon-rect"
+                      stroke="url(#neonGrad)"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      filter="url(#neonFilter)"
+                      style={{ animationDuration: `${SLIDE_MS}ms` }}
+                      strokeDasharray={`${2 * (imgSize.w + imgSize.h)}`}
+                      strokeDashoffset={`${2 * (imgSize.w + imgSize.h)}`}
+                    />
+                    <rect
+                      x={3}
+                      y={3}
+                      width={Math.max(imgSize.w - 6, 0)}
+                      height={Math.max(imgSize.h - 6, 0)}
+                      rx={10}
+                      ry={10}
+                      stroke="#00F7FF"
+                      strokeOpacity="0.35"
+                      strokeWidth="2"
+                      fill="none"
+                      filter="url(#neonFilter)"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            
+            {/* Overlay spray che simula la vernice */}
+            <div
+              key={slide}
+              className="pointer-events-none absolute inset-0 z-20 spray-overlay"
+              style={{ animation: `spritz ${Math.min(animMs + 400, 1800)}ms ease-out` }}
+            />
+
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-300"></div>
+            <div className="absolute bottom-3 left-4 z-30 transform group-hover:translate-y-[-2px] transition-transform duration-300">
+              <span className="neon-title text-white text-base font-semibold">L'arte a civitanova</span>
+            </div>
           </div>
+
+          <style jsx>{`
+            .spray-overlay {
+              background:
+                radial-gradient(14px 14px at 10% 20%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.2) 45%, transparent 70%),
+                radial-gradient(10px 10px at 30% 70%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.18) 45%, transparent 70%),
+                radial-gradient(18px 18px at 80% 40%, rgba(255,255,255,0.28) 0, rgba(255,255,255,0.16) 45%, transparent 70%),
+                radial-gradient(12px 12px at 60% 80%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
+                radial-gradient(20px 20px at 40% 35%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
+                repeating-radial-gradient(circle at 15% 15%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px),
+                repeating-radial-gradient(circle at 70% 60%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px);
+              mix-blend-mode: screen;
+              opacity: 0;
+              filter: blur(0.6px) contrast(1.08);
+            }
+            @keyframes spritz {
+              0% { opacity: 0.0; transform: scale(0.94) translateY(6px); filter: blur(2px); }
+              10% { opacity: 0.85; }
+              40% { opacity: 0.65; }
+              100% { opacity: 0; transform: scale(1) translateY(0); filter: blur(0); }
+            }
+            .slide-in {
+              transform-origin: left center;
+              animation-name: cubeIn;
+              animation-timing-function: cubic-bezier(.2,.8,.2,1);
+              animation-fill-mode: forwards;
+            }
+            .slide-out {
+              transform-origin: right center;
+              animation-name: cubeOut;
+              animation-timing-function: cubic-bezier(.2,.8,.2,1);
+              animation-fill-mode: forwards;
+            }
+            @keyframes cubeIn {
+              0% { transform: rotateY(-65deg) scale(0.96); filter: blur(8px) saturate(120%); opacity: 0; }
+              50% { opacity: 1; }
+              100% { transform: rotateY(0deg) scale(1); filter: blur(0) saturate(105%); opacity: 1; }
+            }
+            @keyframes cubeOut {
+              0% { transform: rotateY(0deg) scale(1); filter: blur(0); opacity: 1; }
+              100% { transform: rotateY(65deg) scale(0.96); filter: blur(8px); opacity: 0; }
+            }
+            .shine {
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background: linear-gradient(105deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.22) 12%, rgba(255,255,255,0) 15%) no-repeat;
+              background-size: 15% 120%;
+              background-position: -20% -10%;
+              animation: shineSweep 900ms ease-out forwards;
+              mix-blend-mode: screen;
+              filter: blur(1px);
+            }
+            @keyframes shineSweep {
+              to { background-position: 120% 110%; opacity: 0; }
+            }
+            .neon-rect {
+              stroke: #00f7ff;
+              fill: transparent;
+              stroke-width: 3px;
+              filter: drop-shadow(0 0 6px #00f7ff) drop-shadow(0 0 14px #00f7ff) drop-shadow(0 0 22px rgba(0,247,255,0.6));
+              animation-name: neonTimer;
+              animation-timing-function: linear;
+              animation-fill-mode: forwards;
+            }
+            @keyframes neonTimer {
+              to { stroke-dashoffset: 0; }
+            }
+            .neon-title {
+              position: relative;
+              display: inline-block;
+              letter-spacing: 0.3px;
+              text-shadow:
+                0 0 4px rgba(0,247,255,0.6),
+                0 0 8px rgba(0,247,255,0.6),
+                0 0 14px rgba(0,247,255,0.5),
+                0 0 22px rgba(124,77,255,0.35);
+              animation: neonPulse 2200ms ease-in-out infinite;
+            }
+            .neon-title::after {
+              content: '';
+              position: absolute;
+              inset: -6px -12px;
+              background: linear-gradient(100deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 65%);
+              transform: translateX(-120%) skewX(-18deg);
+              mix-blend-mode: screen;
+              filter: blur(0.6px);
+              animation: titleShine 3500ms ease-in-out infinite;
+              pointer-events: none;
+            }
+            @keyframes neonPulse {
+              0%, 100% {
+                text-shadow:
+                  0 0 6px rgba(0,247,255,0.85),
+                  0 0 16px rgba(0,247,255,0.75),
+                  0 0 28px rgba(0,247,255,0.45),
+                  0 0 42px rgba(124,77,255,0.55);
+              }
+              50% {
+                text-shadow:
+                  0 0 3px rgba(0,247,255,0.55),
+                  0 0 9px rgba(0,247,255,0.45),
+                  0 0 16px rgba(0,247,255,0.35),
+                  0 0 28px rgba(124,77,255,0.35);
+              }
+            }
+            @keyframes titleShine {
+              0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+              15% { opacity: 1; }
+              60% { transform: translateX(120%) skewX(-18deg); opacity: 1; }
+              100% { transform: translateX(150%) skewX(-18deg); opacity: 0; }
+            }
+          `}</style>
         </div>
 
         {/* Card percorso - sostituita con widget dinamico a scorrimento */}

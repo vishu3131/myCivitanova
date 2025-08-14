@@ -23,6 +23,16 @@ const nextConfig = {
         hostname: 'encrypted-tbn0.gstatic.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'statics.cedscdn.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/**',
+      },
     ],
   },
   eslint: {

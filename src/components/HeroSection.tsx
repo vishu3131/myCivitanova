@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { useAuthWithRole } from '../hooks/useAuthWithRole';
+import heroImageLocal from '../../nuova immagine per herosection/nuova immagine per herosection.jpeg';
 
 export function HeroSection() {
   const [scrollY, setScrollY] = useState(0);
@@ -15,11 +16,11 @@ export function HeroSection() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   return (
-    <section className="relative h-[340px] w-full overflow-hidden">
+    <section className="relative h-[340px] w-full overflow-hidden rounded-b-lg">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+          src={heroImageLocal}
           alt="Civitanova Marche Porto"
           fill
           className="object-cover scale-105"
@@ -33,9 +34,9 @@ export function HeroSection() {
       </div>
       
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-between" style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '48px', paddingBottom: '24px' }}>
+      <div className="relative z-10 h-full flex flex-col items-end justify-between" style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '48px', paddingBottom: '24px' }}>
         {/* Header Text */}
-        <div className="flex flex-col">
+        <div className="flex flex-col items-end text-right">
           {/* Greeting */}
           <p className="text-[#A0A0A0] text-sm font-normal mb-1 animate-fade-in">
             {user?.display_name ? `Ciao ${user.display_name.split(' ')[0]}!` : 'Ciao!'}
@@ -45,11 +46,11 @@ export function HeroSection() {
           <h1 className="text-white text-[34px] font-bold leading-[1.2] tracking-[-0.5px] max-w-[80%] mb-2 animate-slide-up">
             Scopri il<br />
             Meglio di<br />
-            Civitanova
+            Civitanova Marche
           </h1>
           
           {/* Subtitle with Dropdown */}
-          <div className="flex items-center -mt-2 cursor-pointer hover:text-white transition-colors duration-200">
+          <div className="flex items-center justify-end -mt-2 cursor-pointer hover:text-white transition-colors duration-200">
             <span className="text-[#888888] text-base">Centro Storico</span>
             <ChevronDown className="ml-1 w-4 h-4 text-[#888888] transition-transform duration-200 hover:rotate-180" />
           </div>

@@ -52,7 +52,7 @@ const touristSpots: TouristSpot[] = [
     address: "Porto Turistico",
     description: "Zona suggestiva con arte e mare. Perfetto per una passeggiata romantica al tramonto e per apprezzare la street art.",
     rating: 4.8,
-    image: "https://images.unsplash.com/photo-1544551763-77ef2d0cfc6c?w=800&h=400&fit=crop",
+    image: "https://statics.cedscdn.it/photos/MED/96/99/489699_20140708_civitanova_colori.jpg",
     tags: ["Mare", "Arte", "Panorama"],
     category: "Mare"
   },

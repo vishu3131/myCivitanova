@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
@@ -25,7 +26,7 @@ const demoPlaces = [
     id: 1,
     name: 'Spiaggia di Civitanova Marche',
     category: 'Natura',
-    image: 'https://source.unsplash.com/random/800x600?beach',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/7/74/Bayside_Civitanova_Marche.JPG',
     rating: 4.5,
     reviews: 120,
     distance: '2 km',
@@ -36,7 +37,7 @@ const demoPlaces = [
     id: 2,
     name: 'Porto Turistico',
     category: 'Cultura',
-    image: 'https://source.unsplash.com/random/800x600?port',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/7/73/Porto_di_Civitanova.jpg',
     rating: 4.0,
     reviews: 80,
     distance: '1 km',
@@ -47,7 +48,7 @@ const demoPlaces = [
     id: 3,
     name: 'Centro Storico',
     category: 'Storia',
-    image: 'https://source.unsplash.com/random/800x600?old-town',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Centro_storico_di_Civitanova_Alta_-_Civitanova_Marche_1.jpg',
     rating: 4.7,
     reviews: 150,
     distance: '3 km',
@@ -58,7 +59,7 @@ const demoPlaces = [
     id: 4,
     name: 'Lungomare Piermanni',
     category: 'Natura',
-    image: 'https://source.unsplash.com/random/800x600?promenade',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/2/20/Panorama_di_Civitanova_Marche.jpg',
     rating: 4.3,
     reviews: 95,
     distance: '0.5 km',
@@ -69,7 +70,7 @@ const demoPlaces = [
     id: 5,
     name: 'Varco sul Mare',
     category: 'Cultura',
-    image: 'https://source.unsplash.com/random/800x600?architecture',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Varco_sul_Mare_-_Civitanova_Marche_%28MC%29.jpg',
     rating: 3.8,
     reviews: 60,
     distance: '1.5 km',
@@ -80,7 +81,7 @@ const demoPlaces = [
     id: 6,
     name: 'Vecchia Pescheria',
     category: 'Cultura',
-    image: 'https://source.unsplash.com/random/800x600?fish-market',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Esterno_antica_pescheria.jpg',
     rating: 4.2,
     reviews: 75,
     distance: '0.8 km',
@@ -91,7 +92,7 @@ const demoPlaces = [
     id: 7,
     name: 'Santuario Santa Maria Apparente',
     category: 'Storia',
-    image: 'https://source.unsplash.com/random/800x600?church',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Civitanova_Marche_-_Torrione_di_Santa_Maria_Apparente_-_2023-09-27_16-19-07_001.jpg',
     rating: 4.6,
     reviews: 110,
     distance: '4 km',
@@ -102,7 +103,7 @@ const demoPlaces = [
     id: 8,
     name: 'Palazzo Sforza-Cesarini',
     category: 'Storia',
-    image: 'https://source.unsplash.com/random/800x600?palace',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Palazzo_comunale_sforzA.jpg',
     rating: 4.4,
     reviews: 85,
     distance: '3.2 km',
@@ -146,7 +147,7 @@ const demoPlaces = [
     id: 12,
     name: 'Teatro Annibal Caro',
     category: 'Cultura',
-    image: 'https://source.unsplash.com/random/800x600?theatre',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/1/16/Civitanova_Marche_-_Teatro_Annibal_Caro_-_2023-09-27_16-09-36_001.jpg',
     rating: 4.3,
     reviews: 55,
     distance: '2.5 km',
@@ -357,6 +358,7 @@ export function MobileExploreScreen() {
               >
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden bg-gray-800">
+                  <Image src={place.image} alt={place.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
                   {/* Rating Badge */}
