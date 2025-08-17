@@ -50,6 +50,8 @@ interface DemoPoi {
   description?: string;
   address: string;
   imageUrl?: string;
+  phone?: string;
+  website?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -77,7 +79,9 @@ const DEMO_POIS: DemoPoi[] = [
     name: 'Teatro Annibal Caro',
     category: 'Cultura',
     description: 'Storico teatro “all’italiana” a Civitanova Alta con rassegne e spettacoli.',
-    address: 'Teatro Annibal Caro, Via Annibal Caro, Civitanova Alta, Civitanova Marche MC, Italy',
+    address: 'Corso Annibal Caro 2, 62012 Civitanova Marche Alta MC, Italy',
+    phone: '+39 0733 892101',
+    website: 'https://tdic.it/teatro-annibal-caro/',
     imageUrl: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?w=800&q=80'
   },
   {
@@ -107,7 +111,9 @@ const DEMO_POIS: DemoPoi[] = [
     name: 'Chiesa di Cristo Re',
     category: 'Cultura',
     description: 'Chiesa moderna con alto campanile-faro, simbolo del città.',
-    address: 'Chiesa Cristo Re, Civitanova Marche MC, Italy'
+    address: 'Viale G. Matteotti 42, 62012 Civitanova Marche MC, Italy',
+    phone: '+39 0733 812842',
+    website: 'https://www.sanpietro-cristore.it/'
   },
   {
     id: 'poi-008',
@@ -136,7 +142,9 @@ const DEMO_POIS: DemoPoi[] = [
     name: 'Biblioteca Comunale Silvio Zavatti',
     category: 'Cultura',
     description: 'Biblioteca civica con sale studio ed eventi culturali per la comunità.',
-    address: 'Biblioteca Comunale Silvio Zavatti, Viale Vittorio Veneto, Civitanova Marche MC, Italy'
+    address: 'Viale Vittorio Veneto 124, 62012 Civitanova Marche MC, Italy',
+    phone: '+39 0733 813837',
+    website: 'https://bibliotecazavatti.com'
   },
   {
     id: 'poi-012',
@@ -150,7 +158,9 @@ const DEMO_POIS: DemoPoi[] = [
     name: 'Centro Commerciale Cuore Adriatico',
     category: 'Servizi',
     description: 'Grande centro commerciale con negozi, ristorazione e parcheggi.',
-    address: 'Cuore Adriatico, Civitanova Marche MC, Italy'
+    address: 'Via San Costantino 98, 62012 Civitanova Marche MC, Italy',
+    phone: '+39 0733 771387',
+    website: 'https://cuoreadriatico.it/'
   },
   {
     id: 'poi-014',
@@ -270,6 +280,57 @@ const DEMO_POIS: DemoPoi[] = [
     category: 'Interesse',
     description: 'Spazio eventi e accesso al mare, simbolo della città contemporanea.',
     address: 'Varco sul Mare, Civitanova Marche MC, Italy'
+  },
+  // Added to synchronize with TouristSpotWidget and explore section
+  {
+    id: 'poi-031',
+    name: 'Parco della Resistenza',
+    category: 'Interesse',
+    description: 'Oasi verde nel cuore di Civitanova, ideale per relax e attività leggere.',
+    address: 'Parco della Resistenza, 62012 Civitanova Marche MC, Italy',
+    imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=400&fit=crop'
+  },
+  {
+    id: 'poi-032',
+    name: 'Lungomare Piermanni',
+    category: 'Spiaggia',
+    description: 'Passeggiata panoramica con vista sul mare Adriatico.',
+    address: 'Lungomare Piermanni, 62012 Civitanova Marche MC, Italy',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/20/Panorama_di_Civitanova_Marche.jpg'
+  },
+  {
+    id: 'poi-033',
+    name: 'MAGMA - Museo Archivio della Grafica e del Manifesto',
+    category: 'Cultura',
+    description: 'Museo dedicato alla grafica e al manifesto, con collezioni uniche.',
+    address: 'Piazza Garibaldi 533, 62012 Civitanova Marche MC, Italy',
+    phone: '+39 0733 1860015',
+    website: 'http://www.museomagma.com',
+    imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop'
+  },
+  {
+    id: 'poi-034',
+    name: 'Chiesa di Santa Maria Apparente',
+    category: 'Cultura',
+    description: 'Santuario storico immerso nel verde, luogo di pace e tradizioni.',
+    address: 'Via del Torrione 127, 62012 Civitanova Marche MC, Italy',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Civitanova_Marche_-_Torrione_di_Santa_Maria_Apparente_-_2023-09-27_16-19-07_001.jpg'
+  },
+  {
+    id: 'poi-035',
+    name: 'Vecchia Pescheria',
+    category: 'Interesse',
+    description: 'Edificio storico del porto, oggi sede di ristoranti e tradizione marinara.',
+    address: 'Vecchia Pescheria, Porto di Civitanova Marche, 62012 Civitanova Marche MC, Italy',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Esterno_antica_pescheria.jpg'
+  },
+  {
+    id: 'poi-036',
+    name: 'Pista Ciclabile Civitanova Marche',
+    category: 'Interesse',
+    description: 'Percorso ciclabile continuo che collega il Lungomare Sud e Nord.',
+    address: 'Lungomare Sud, 62012 Civitanova Marche MC, Italy',
+    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzzBGaDWwGJhsD5aFWRVJI6aEboVC9rbJIOg&s'
   },
 ];
 

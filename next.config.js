@@ -33,6 +33,76 @@ const nextConfig = {
         hostname: 'upload.wikimedia.org',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.cronachemaceratesi.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.residencecasamare.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.civitanovamarche.info',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.cuoreadriatico.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.hotelvelas.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.bedandbreakfastmarche.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.teatridicivitanova.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i0.wp.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.chieseitaliane.chiesacattolica.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'citylive.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.picchionews.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.donnamoderna.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.aziendagricolasanmarco.it',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.illocale.info',
+        pathname: '/**',
+      },
     ],
   },
   eslint: {

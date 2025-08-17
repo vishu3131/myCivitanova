@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "name": "Parcheggi Civitanova Marche (Esempio Open Data)",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "stadio",
+        "name": "Parcheggio Stadio",
+        "fee": "no",
+        "fee_bool": false,
+        "capacity": 300,
+        "operator": "Comune di Civitanova / Civitas",
+        "source": "Open Data (esempio)",
+        "notes": "Ampia area di sosta presso lo stadio."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [13.7156, 43.3087]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "piazza-xx-settembre",
+        "name": "Piazza XX Settembre",
+        "fee": "yes",
+        "fee_bool": true,
+        "capacity": 120,
+        "operator": "Comune di Civitanova / Civitas",
+        "source": "Open Data (esempio)",
+        "notes": "Stalli a pagamento in piazza centrale."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [13.7229, 43.3073]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "biblioteca-zavatti",
+        "name": "Biblioteca Zavatti",
+        "fee": "no",
+        "fee_bool": false,
+        "capacity": 50,
+        "operator": "Comune di Civitanova",
+        "source": "Open Data (esempio)",
+        "notes": "Piccola area di sosta vicina alla biblioteca."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [13.7249, 43.3078]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "stazione",
+        "name": "Parcheggio Stazione",
+        "fee": "yes",
+        "fee_bool": true,
+        "capacity": 200,
+        "operator": "RFI / Comune",
+        "source": "Open Data (esempio)",
+        "notes": "Area di sosta presso la stazione ferroviaria."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [13.7222, 43.3096]
+      }
+    }
+  ]
+}

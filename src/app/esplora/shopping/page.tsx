@@ -3,6 +3,8 @@
 import React from 'react';
 import { ShoppingActivityCard } from '@/components/ShoppingActivityCard';
 import HeliotropeCard from '@/components/explore/HeliotropeCard';
+import TeaExperienceCard from '@/components/explore/TeaExperienceCard';
+import FitFuelCard from '@/components/explore/FitFuelCard';
 
 const mockShoppingActivities = [
   {
@@ -32,9 +34,15 @@ export default function ShoppingPage() {
       <h1 className="text-3xl font-bold mb-6 text-center">Shopping & Attività</h1>
       
       <h2 className="text-2xl font-bold mb-4 text-center">In Evidenza</h2>
-      <div className="flex justify-center mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 place-items-center">
         <div className="w-full max-w-sm">
           <HeliotropeCard />
+        </div>
+        <div className="w-full max-w-sm">
+          <TeaExperienceCard />
+        </div>
+        <div className="w-full max-w-sm">
+          <FitFuelCard />
         </div>
       </div>
 

@@ -7,6 +7,8 @@ import { CircularDevNavigation } from '@/components/CircularDevNavigation';
 import BottomNavbarClientWrapper from '@/components/BottomNavbarClientWrapper';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { LoadingProvider } from '@/context/LoadingContext';
+import { GlobalLoader } from '@/components/GlobalLoader';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,15 +45,18 @@ export default function RootLayout({
     <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans bg-black text-white">
         <ErrorBoundary>
-          <SidebarProvider>
-            <PageTransition>
-              {children}
-            </PageTransition>
-            <div>
-              <BottomNavbarClientWrapper />
-              <CircularDevNavigation />
-            </div>
-          </SidebarProvider>
+          <LoadingProvider>
+            <SidebarProvider>
+              <GlobalLoader />
+              <PageTransition>
+                {children}
+              </PageTransition>
+              <div>
+                <BottomNavbarClientWrapper />
+                <CircularDevNavigation />
+              </div>
+            </SidebarProvider>
+          </LoadingProvider>
         </ErrorBoundary>
       </body>
     </html>

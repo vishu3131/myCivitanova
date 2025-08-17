@@ -241,7 +241,7 @@ export function CircularDevNavigation() {
           <>
             {/* Primary ripple */}
             <motion.div
-              className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border-2 border-purple-400"
+              className="fixed bottom-24 left-[45%] transform -translate-x-1/2 w-16 h-16 rounded-full border-2 border-purple-400"
               style={{ zIndex: 9996 }}
               id="circular-origin-ripple-1"
               initial={{ scale: 1, opacity: 0.8 }}
@@ -391,17 +391,6 @@ export function CircularDevNavigation() {
             role="navigation"
             aria-label="Menu di navigazione principale"
             id="circular-menu-anchor"
-            ref={(el) => {
-              try {
-                const target = document.getElementById('explore-fab');
-                if (el && target) {
-                  const targetRect = target.getBoundingClientRect();
-                  const centerX = targetRect.left + targetRect.width / 2;
-                  el.style.left = `${centerX}px`;
-                  el.style.transform = 'translate(-50%, 0)';
-                }
-              } catch {}
-            }}
           >
             {navigationPages.map((page, index) => {
               const IconComponent = page.icon;
@@ -504,7 +493,7 @@ export function CircularDevNavigation() {
       <AnimatePresence>
         {isOpen && (
           <div 
-            className="fixed bottom-24 left-1/2 transform -translate-x-1/2"
+            className="fixed bottom-24 left-[45%] transform -translate-x-1/2"
             style={{ zIndex: 9996 }}
             role="navigation"
             aria-label="Menu di funzionalità rapide"
@@ -620,7 +609,7 @@ export function CircularDevNavigation() {
       {/* Trail effect */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9994 }} id="circular-trail-anchor">
+          <div className="fixed bottom-24 left-[45%] transform -translate-x-1/2" style={{ zIndex: 9994 }} id="circular-trail-anchor">
             {navigationPages.map((page, index) => {
               const position = getIconPosition(index, navigationPages.length, 'navigation');
               
@@ -654,7 +643,7 @@ export function CircularDevNavigation() {
       {/* Stardust explosion effect */}
       <AnimatePresence>
         {selectedIcon && (
-          <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2" style={{ zIndex: 9998 }} id="circular-stardust-anchor">
+          <div className="fixed bottom-24 left-[45%] transform -translate-x-1/2" style={{ zIndex: 9998 }} id="circular-stardust-anchor">
             {[...Array(12)].map((_, i) => {
               const angle = (Math.PI * 2 / 12) * i;
               const distance = 60;

@@ -6,6 +6,7 @@ import { Sun, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { IntegratedWidgetBar } from './IntegratedWidgetBar';
 import WalkingTimeWidget from './WalkingTimeWidget';
+import ModernServicesWidget from './ModernServicesWidget';
 
 interface InfoCardsProps {
   onReportClick?: () => void;
@@ -41,25 +42,97 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
   const [slide, setSlide] = useState(0);
   const [animMs, setAnimMs] = useState(1000);
   const [jitter, setJitter] = useState<{x:number;y:number;r:number;s:number}>({ x: 0, y: 0, r: 0, s: 1 });
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+  const didSwipeRef = useRef(false);
+  const reducedMotionRef = useRef(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPaused) return;
     const id = setInterval(() => {
       setSlide((p) => {
         const next = (p + 1) % muralImages.length;
         setPrevSlide(p);
         return next;
       });
-      const dur = Math.floor(Math.random() * (1500 - 800) + 800);
+      const dur = reducedMotionRef.current ? 0 : Math.floor(Math.random() * (1500 - 800) + 800);
       setAnimMs(dur);
-      setJitter({
-        x: Math.random() * 8 - 4,
-        y: Math.random() * 6 - 3,
-        r: Math.random() * 3 - 1.5,
-        s: 0.97 + Math.random() * 0.03
-      });
+      setJitter(
+        reducedMotionRef.current
+          ? { x: 0, y: 0, r: 0, s: 1 }
+          : {
+              x: Math.random() * 8 - 4,
+              y: Math.random() * 6 - 3,
+              r: Math.random() * 3 - 1.5,
+              s: 0.97 + Math.random() * 0.03,
+            }
+      );
     }, SLIDE_MS);
     return () => clearInterval(id);
+  }, [isPaused]);
+
+  // Pause autoplay when tab is hidden
+  useEffect(() => {
+    const onVis = () => setIsPaused(document.hidden);
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
+
+  const goNext = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSlide((p) => {
+      const next = (p + 1) % muralImages.length;
+      setPrevSlide(p);
+      return next;
+    });
+    const dur = reducedMotionRef.current ? 0 : Math.floor(Math.random() * (1500 - 800) + 800);
+    setAnimMs(dur);
+    setJitter(
+      reducedMotionRef.current
+        ? { x: 0, y: 0, r: 0, s: 1 }
+        : {
+            x: Math.random() * 8 - 4,
+            y: Math.random() * 6 - 3,
+            r: Math.random() * 3 - 1.5,
+            s: 0.97 + Math.random() * 0.03,
+          }
+    );
+  };
+
+  const goPrev = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSlide((p) => {
+      const prev = (p - 1 + muralImages.length) % muralImages.length;
+      setPrevSlide(prev);
+      return prev;
+    });
+    const dur = reducedMotionRef.current ? 0 : Math.floor(Math.random() * (1500 - 800) + 800);
+    setAnimMs(dur);
+    setJitter(
+      reducedMotionRef.current
+        ? { x: 0, y: 0, r: 0, s: 1 }
+        : {
+            x: Math.random() * 8 - 4,
+            y: Math.random() * 6 - 3,
+            r: Math.random() * 3 - 1.5,
+            s: 0.97 + Math.random() * 0.03,
+          }
+    );
+  };
+
+  const handleCardClick = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      return;
+    }
+    router.push('/arte');
+  };
 
   useEffect(() => {
     const compute = () => {
@@ -88,208 +161,320 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
   return (
     <div style={{ paddingLeft: '24px', paddingRight: '24px', marginTop: '24px' }}>
        <div className="grid grid-cols-2 gap-4">
-        {/* Card immagine luogo - Carosello murales con effetto spray */}
-        <div className="relative h-[200px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => router.push('/arte')} aria-label="Apri la pagina Arte">
-          <div className="absolute inset-0">
-            {/* Wrapper con jitter eccentrico */}
-            <div
-              className="h-full w-full"
-              style={{
-                transform: `translate(${jitter.x}px, ${jitter.y}px) rotate(${jitter.r}deg) scale(${jitter.s})`,
-                transition: `transform ${animMs}ms cubic-bezier(.22,1,.36,1)`
+        {/* Card immagine luogo - Carosello murales migliorato */}
+        <div
+          className="relative h-[240px] rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-gray-900 to-black"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Galleria murales - Arte a Civitanova"
+          aria-live="polite"
+          onClick={handleCardClick}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={(e) => { 
+            touchStartXRef.current = e.touches[0].clientX; 
+            setIsPaused(true);
+          }}
+          onTouchEnd={(e) => {
+            if (touchStartXRef.current === null) return;
+            const delta = e.changedTouches[0].clientX - touchStartXRef.current;
+            if (Math.abs(delta) > 50) {
+              didSwipeRef.current = true;
+              if (delta < 0) { goNext(); } else { goPrev(); }
+            }
+            touchStartXRef.current = null;
+            setIsPaused(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+            if (e.key === ' ') { e.preventDefault(); setIsPaused(!isPaused); }
+          }}
+          tabIndex={0}
+        >
+          {/* Main image container with improved responsive sizing */}
+          <div className="absolute inset-0 rounded-[20px] overflow-hidden">
+            {/* Current image */}
+            <div 
+              key={`current-${slide}`}
+              className="absolute inset-0 murals-slide-current"
+              style={{ 
+                animationDuration: `${animMs}ms`,
+                transform: reducedMotionRef.current ? 'none' : `translate(${jitter.x * 0.5}px, ${jitter.y * 0.5}px) rotate(${jitter.r * 0.3}deg) scale(${0.98 + jitter.s * 0.02})`,
+                transition: reducedMotionRef.current ? 'none' : `transform ${animMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
               }}
             >
-              {/* Transizione 3D cube modern wow */}
-              <div className="absolute inset-0" ref={containerRef} style={{ perspective: '900px' }}>
-                {/* layer uscente */}
-                <div key={`out-${prevSlide}-${slide}`} className="absolute inset-0 slide-out" style={{ animationDuration: `${animMs}ms` }}>
-                  <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
-                    <Image src={muralImages[prevSlide]} alt={`Murale ${prevSlide + 1}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 400px" />
-                  </div>
-                </div>
-                {/* layer entrante */}
-                <div key={`in-${slide}`} className="absolute inset-0 slide-in" style={{ animationDuration: `${animMs}ms` }}>
-                  <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
-                    <Image src={muralImages[slide]} alt={`Murale ${slide + 1}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 400px" onLoadingComplete={(img) => { setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight }); }} />
-                    <div className="shine"></div>
-                  </div>
-                </div>
-                {/* Neon timer glow */}
-                <div className="neon-timer absolute pointer-events-none" style={{ zIndex: 25, top: `${offset.top}px`, left: `${offset.left}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px` }}>
-                  <svg width={imgSize.w} height={imgSize.h} className="block">
-                    <defs>
-                      <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#00F7FF" />
-                        <stop offset="50%" stopColor="#7C4DFF" />
-                        <stop offset="100%" stopColor="#00F7FF" />
-                      </linearGradient>
-                      <filter id="neonFilter" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="2" result="blur1" />
-                        <feGaussianBlur in="blur1" stdDeviation="4" result="blur2" />
-                        <feMerge>
-                          <feMergeNode in="blur2" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                    </defs>
-                    <rect key={slide}
-                      x={1.5}
-                      y={1.5}
-                      width={Math.max(imgSize.w - 3, 0)}
-                      height={Math.max(imgSize.h - 3, 0)}
-                      rx={12}
-                      ry={12}
-                      className="neon-rect"
-                      stroke="url(#neonGrad)"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      filter="url(#neonFilter)"
-                      style={{ animationDuration: `${SLIDE_MS}ms` }}
-                      strokeDasharray={`${2 * (imgSize.w + imgSize.h)}`}
-                      strokeDashoffset={`${2 * (imgSize.w + imgSize.h)}`}
-                    />
-                    <rect
-                      x={3}
-                      y={3}
-                      width={Math.max(imgSize.w - 6, 0)}
-                      height={Math.max(imgSize.h - 6, 0)}
-                      rx={10}
-                      ry={10}
-                      stroke="#00F7FF"
-                      strokeOpacity="0.35"
-                      strokeWidth="2"
-                      fill="none"
-                      filter="url(#neonFilter)"
-                    />
-                  </svg>
-                </div>
-              </div>
+              <Image 
+                src={muralImages[slide]} 
+                alt={`Murale ${slide + 1} di Civitanova Marche - Arte urbana`} 
+                fill 
+                className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                sizes="(max-width: 768px) 50vw, 400px"
+                priority={slide < 3}
+                onLoadingComplete={(img) => { 
+                  setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight }); 
+                }}
+              />
+              
+              {/* Subtle shine effect */}
+              <div className="murals-shine absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
 
-            
-            {/* Overlay spray che simula la vernice */}
-            <div
-              key={slide}
-              className="pointer-events-none absolute inset-0 z-20 spray-overlay"
-              style={{ animation: `spritz ${Math.min(animMs + 400, 1800)}ms ease-out` }}
-            />
+            {/* Previous image for transition */}
+            {prevSlide !== slide && (
+              <div 
+                key={`previous-${prevSlide}`}
+                className="absolute inset-0 murals-slide-previous"
+                style={{ animationDuration: `${animMs}ms` }}
+              >
+                <Image 
+                  src={muralImages[prevSlide]} 
+                  alt={`Murale ${prevSlide + 1} di Civitanova Marche`} 
+                  fill 
+                  className="object-cover" 
+                  sizes="(max-width: 768px) 50vw, 400px"
+                />
+              </div>
+            )}
 
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-300"></div>
-            <div className="absolute bottom-3 left-4 z-30 transform group-hover:translate-y-[-2px] transition-transform duration-300">
-              <span className="neon-title text-white text-base font-semibold">L'arte a civitanova</span>
+            {/* Improved gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-500" />
+            
+            {/* Neon progress border - pauses when carousel is paused */}
+            <div className="murals-neon-border absolute inset-0 pointer-events-none rounded-[20px]">
+              <div 
+                className="murals-progress-ring absolute inset-1 rounded-[18px] border-2 border-cyan-400/60"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(0, 247, 255, 0.3), transparent)',
+                  backgroundSize: '200% 100%',
+                  animation: isPaused ? 'none' : `muralsProgress ${SLIDE_MS}ms linear infinite`,
+                  filter: 'drop-shadow(0 0 8px rgba(0, 247, 255, 0.5))',
+                  opacity: isPaused ? 0.3 : 1,
+                  transition: 'opacity 0.5s ease'
+                }}
+              />
             </div>
           </div>
 
+          {/* Improved controls with better accessibility - fade when paused */}
+          <button
+            className={`murals-control murals-control-prev absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/80 hover:scale-110 active:scale-95 transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+              isPaused ? 'opacity-5 pointer-events-none' : 'opacity-100'
+            }`}
+            onClick={goPrev}
+            aria-label="Immagine precedente"
+            tabIndex={-1}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+          </button>
+          
+          <button
+            className={`murals-control murals-control-next absolute right-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/80 hover:scale-110 active:scale-95 transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+              isPaused ? 'opacity-5 pointer-events-none' : 'opacity-100'
+            }`}
+            onClick={goNext}
+            aria-label="Immagine successiva"
+            tabIndex={-1}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="9,18 15,12 9,6"></polyline>
+            </svg>
+          </button>
+
+          {/* Play/Pause indicator */}
+          <button
+            className="absolute top-3 left-3 z-30 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/70 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+            onClick={(e) => { e.stopPropagation(); setIsPaused(!isPaused); }}
+            aria-label={isPaused ? "Riprendi slideshow" : "Pausa slideshow"}
+            tabIndex={-1}
+          >
+            {isPaused ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"></polygon>
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+            )}
+          </button>
+
+          {/* Improved counter */}
+          <div className="absolute top-3 right-3 z-30 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+            <span className="text-cyan-400">{slide + 1}</span>
+            <span className="text-white/60 mx-1">/</span>
+            <span className="text-white/80">{muralImages.length}</span>
+          </div>
+
+          {/* Dot indicators */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+            {muralImages.slice(0, 5).map((_, index) => (
+              <button
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === slide % 5 
+                    ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50' 
+                    : 'bg-white/40 hover:bg-white/60'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSlide(index);
+                  setPrevSlide(slide);
+                }}
+                aria-label={`Vai all'immagine ${index + 1}`}
+                tabIndex={-1}
+              />
+            ))}
+          </div>
+
+          {/* Enhanced and optimized title section */}
+          <div className="absolute bottom-4 left-4 z-30 max-w-[calc(100%-32px)]">
+            <h3 className="murals-title-optimized text-white text-lg font-bold leading-tight transform group-hover:translate-y-[-2px] transition-all duration-300">
+              Arte a Civitanova
+            </h3>
+          </div>
+
           <style jsx>{`
-            .spray-overlay {
-              background:
-                radial-gradient(14px 14px at 10% 20%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.2) 45%, transparent 70%),
-                radial-gradient(10px 10px at 30% 70%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.18) 45%, transparent 70%),
-                radial-gradient(18px 18px at 80% 40%, rgba(255,255,255,0.28) 0, rgba(255,255,255,0.16) 45%, transparent 70%),
-                radial-gradient(12px 12px at 60% 80%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
-                radial-gradient(20px 20px at 40% 35%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
-                repeating-radial-gradient(circle at 15% 15%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px),
-                repeating-radial-gradient(circle at 70% 60%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px);
-              mix-blend-mode: screen;
-              opacity: 0;
-              filter: blur(0.6px) contrast(1.08);
+            .murals-slide-current {
+              animation: muralsSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             }
-            @keyframes spritz {
-              0% { opacity: 0.0; transform: scale(0.94) translateY(6px); filter: blur(2px); }
-              10% { opacity: 0.85; }
-              40% { opacity: 0.65; }
-              100% { opacity: 0; transform: scale(1) translateY(0); filter: blur(0); }
+            
+            .murals-slide-previous {
+              animation: muralsSlideOut 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             }
-            .slide-in {
-              transform-origin: left center;
-              animation-name: cubeIn;
-              animation-timing-function: cubic-bezier(.2,.8,.2,1);
-              animation-fill-mode: forwards;
+            
+            @keyframes muralsSlideIn {
+              0% { 
+                opacity: 0; 
+                transform: translateX(30px) scale(0.95); 
+                filter: blur(4px);
+              }
+              100% { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+                filter: blur(0);
+              }
             }
-            .slide-out {
-              transform-origin: right center;
-              animation-name: cubeOut;
-              animation-timing-function: cubic-bezier(.2,.8,.2,1);
-              animation-fill-mode: forwards;
+            
+            @keyframes muralsSlideOut {
+              0% { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+                filter: blur(0);
+              }
+              100% { 
+                opacity: 0; 
+                transform: translateX(-30px) scale(0.95); 
+                filter: blur(4px);
+              }
             }
-            @keyframes cubeIn {
-              0% { transform: rotateY(-65deg) scale(0.96); filter: blur(8px) saturate(120%); opacity: 0; }
-              50% { opacity: 1; }
-              100% { transform: rotateY(0deg) scale(1); filter: blur(0) saturate(105%); opacity: 1; }
+            
+            @keyframes muralsProgress {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
             }
-            @keyframes cubeOut {
-              0% { transform: rotateY(0deg) scale(1); filter: blur(0); opacity: 1; }
-              100% { transform: rotateY(65deg) scale(0.96); filter: blur(8px); opacity: 0; }
+            
+            .murals-shine {
+              background: linear-gradient(
+                105deg, 
+                transparent 40%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 60%
+              );
+              background-size: 200% 100%;
+              animation: muralsShine 2s ease-in-out;
             }
-            .shine {
-              position: absolute;
-              inset: 0;
-              pointer-events: none;
-              background: linear-gradient(105deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.22) 12%, rgba(255,255,255,0) 15%) no-repeat;
-              background-size: 15% 120%;
-              background-position: -20% -10%;
-              animation: shineSweep 900ms ease-out forwards;
-              mix-blend-mode: screen;
-              filter: blur(1px);
+            
+            @keyframes muralsShine {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
             }
-            @keyframes shineSweep {
-              to { background-position: 120% 110%; opacity: 0; }
+            
+            .murals-title {
+              text-shadow: 
+                0 0 10px rgba(0, 247, 255, 0.5),
+                0 2px 4px rgba(0, 0, 0, 0.8);
             }
-            .neon-rect {
-              stroke: #00f7ff;
-              fill: transparent;
-              stroke-width: 3px;
-              filter: drop-shadow(0 0 6px #00f7ff) drop-shadow(0 0 14px #00f7ff) drop-shadow(0 0 22px rgba(0,247,255,0.6));
-              animation-name: neonTimer;
-              animation-timing-function: linear;
-              animation-fill-mode: forwards;
+            
+            .murals-title-optimized {
+              text-shadow: 
+                0 0 12px rgba(0, 247, 255, 0.7),
+                0 0 24px rgba(0, 247, 255, 0.4),
+                0 2px 8px rgba(0, 0, 0, 0.9);
+              filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
             }
-            @keyframes neonTimer {
-              to { stroke-dashoffset: 0; }
+            
+            .murals-subtitle {
+              text-shadow: 
+                0 1px 3px rgba(0, 0, 0, 0.8),
+                0 0 8px rgba(0, 247, 255, 0.3);
+              backdrop-filter: blur(1px);
             }
-            .neon-title {
+            
+            .murals-control {
+              backdrop-filter: blur(8px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            
+            .murals-cta {
+              box-shadow: 0 4px 12px rgba(0, 247, 255, 0.2);
+            }
+            
+            .murals-cta-optimized {
+              backdrop-filter: blur(12px);
+              box-shadow: 
+                0 8px 32px rgba(0, 247, 255, 0.15),
+                0 4px 16px rgba(59, 130, 246, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(0, 247, 255, 0.3);
               position: relative;
-              display: inline-block;
-              letter-spacing: 0.3px;
-              text-shadow:
-                0 0 4px rgba(0,247,255,0.6),
-                0 0 8px rgba(0,247,255,0.6),
-                0 0 14px rgba(0,247,255,0.5),
-                0 0 22px rgba(124,77,255,0.35);
-              animation: neonPulse 2200ms ease-in-out infinite;
+              overflow: hidden;
             }
-            .neon-title::after {
-              content: '';
-              position: absolute;
-              inset: -6px -12px;
-              background: linear-gradient(100deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 65%);
-              transform: translateX(-120%) skewX(-18deg);
-              mix-blend-mode: screen;
-              filter: blur(0.6px);
-              animation: titleShine 3500ms ease-in-out infinite;
-              pointer-events: none;
+            
+            .murals-cta-optimized:hover {
+              box-shadow: 
+                0 12px 40px rgba(0, 247, 255, 0.25),
+                0 6px 20px rgba(59, 130, 246, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+              border-color: rgba(0, 247, 255, 0.5);
             }
-            @keyframes neonPulse {
-              0%, 100% {
-                text-shadow:
-                  0 0 6px rgba(0,247,255,0.85),
-                  0 0 16px rgba(0,247,255,0.75),
-                  0 0 28px rgba(0,247,255,0.45),
-                  0 0 42px rgba(124,77,255,0.55);
+            
+            .murals-cta-optimized:active {
+              box-shadow: 
+                0 4px 16px rgba(0, 247, 255, 0.2),
+                0 2px 8px rgba(59, 130, 246, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+            
+            /* Reduced motion support */
+            @media (prefers-reduced-motion: reduce) {
+              .murals-slide-current,
+              .murals-slide-previous {
+                animation: none;
               }
-              50% {
-                text-shadow:
-                  0 0 3px rgba(0,247,255,0.55),
-                  0 0 9px rgba(0,247,255,0.45),
-                  0 0 16px rgba(0,247,255,0.35),
-                  0 0 28px rgba(124,77,255,0.35);
+              
+              .murals-shine {
+                animation: none;
+              }
+              
+              .murals-progress-ring {
+                animation: none;
               }
             }
-            @keyframes titleShine {
-              0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
-              15% { opacity: 1; }
-              60% { transform: translateX(120%) skewX(-18deg); opacity: 1; }
-              100% { transform: translateX(150%) skewX(-18deg); opacity: 0; }
+            
+            /* High contrast mode support */
+            @media (prefers-contrast: high) {
+              .murals-control {
+                border: 2px solid white;
+                background: black;
+              }
+              
+              .murals-title {
+                text-shadow: 2px 2px 0 black;
+              }
             }
           `}</style>
         </div>
@@ -298,9 +483,9 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
         <WalkingTimeWidget />
         {/* Widget Bar Integrato */}
         <IntegratedWidgetBar 
-          onEventClick={() => console.log('Eventi clicked')}
-          onParkingClick={() => console.log('Parcheggi clicked')}
-          onBeachClick={() => console.log('Spiagge clicked')}
+          onEventClick={() => router.push('/eventi')}
+          onParkingClick={() => router.push('/parcheggi')}
+          onBeachClick={() => router.push('/spiaggia')}
           onReportClick={onReportClick}
         />
 
@@ -318,22 +503,8 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
           </div>
         </div>
 
-        {/* Card servizi */}
-        <div 
-          className="h-[100px] rounded-[20px] p-4 flex flex-col justify-between cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group"
-          style={{
-            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-          }}
-          onClick={() => router.push('/servizi')}
-        >
-          <div className="flex items-center justify-between">
-            <Settings className="w-5 h-5 text-white/80 group-hover:text-white transition-colors duration-200 group-hover:rotate-90" />
-            <span className="text-white/70 text-xs group-hover:text-white/90 transition-colors duration-200">Disponibili</span>
-          </div>
-          <div>
-            <span className="text-white text-sm font-medium group-hover:text-white transition-colors duration-200">Servizi</span>
-          </div>
-        </div>
+        {/* Modern Services Widget */}
+        <ModernServicesWidget />
 
         {/* Love Heart widget (Uiverse.io by barisdogansutcu) + Heart Animation on toggle */}
         <div className="h-[100px] flex items-center justify-center bg-transparent relative">

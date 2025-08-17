@@ -8,6 +8,9 @@ interface PureNeonButtonProps {
   className?: string;
   disabled?: boolean;
   fontSize?: string;
+  animationColor?: string;
+  borderRight?: number;
+  pulseDuration?: number;
 }
 
 export default function PureNeonButton({ 
@@ -15,7 +18,10 @@ export default function PureNeonButton({
   onClick, 
   className = "",
   disabled = false,
-  fontSize = "2em"
+  fontSize = "2em",
+  animationColor = "#37FF8B",
+  borderRight = 6,
+  pulseDuration = 1.5
 }: PureNeonButtonProps) {
   const [isActive, setIsActive] = useState(false);
 
@@ -54,9 +60,21 @@ export default function PureNeonButton({
   }, [disabled]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     if (disabled) return;
     if (onClick) onClick();
+  }, [disabled, onClick]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsActive(true);
+      if ('vibrate' in navigator) {
+        navigator.vibrate(30);
+      }
+      if (onClick) onClick();
+      setTimeout(() => setIsActive(false), 150);
+    }
   }, [disabled, onClick]);
 
   return (
@@ -67,6 +85,7 @@ export default function PureNeonButton({
           --border-right: 6px;
           --text-stroke-color: rgba(255, 255, 255, 0.6);
           --animation-color: #37FF8B;
+          --pulse-duration: 1.5s;
           --fs-size: ${fontSize};
           
           margin: 0;
@@ -90,6 +109,14 @@ export default function PureNeonButton({
           -webkit-tap-highlight-color: transparent;
           user-select: none;
           touch-action: manipulation;
+          will-change: transform;
+          outline: none;
+        }
+
+        .pure-neon-button:focus-visible {
+          outline: 2px solid var(--animation-color);
+          outline-offset: 4px;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--animation-color), transparent 70%);
         }
 
         .pure-neon-button:disabled {
@@ -107,13 +134,14 @@ export default function PureNeonButton({
           border-right: var(--border-right) solid var(--animation-color);
           overflow: hidden;
           clip-path: inset(0% 50% 0% 50%); /* Start fully clipped in the center */
-          transition: clip-path 0.5s, border-right 0.5s; /* Animate clip-path and border */
+          transition: clip-path 0.5s, border-right 0.5s, filter 0.3s; /* Animate clip-path, border and glow */
+          will-change: clip-path, filter;
           -webkit-text-stroke: 1px var(--animation-color);
           text-align: center; /* Ensure text in ::after is centered */
         }
 
         .pure-neon-button.active {
-          animation: pulse-glow 1.5s infinite alternate;
+          animation: pulse-glow var(--pulse-duration) infinite alternate;
           transform: scale(1.05);
         }
 
@@ -129,6 +157,20 @@ export default function PureNeonButton({
           }
           to {
             box-shadow: 0 0 10px #fff, 0 0 20px var(--animation-color), 0 0 30px var(--animation-color), 0 0 40px var(--animation-color);
+          }
+        }
+
+        /* Riduzione animazioni per accessibilità */
+        @media (prefers-reduced-motion: reduce) {
+          .pure-neon-button {
+            transition: none;
+          }
+          .pure-neon-button.active {
+            animation: none;
+            transform: none;
+          }
+          .pure-neon-button::after {
+            transition: none;
           }
         }
 
@@ -149,16 +191,25 @@ export default function PureNeonButton({
       `}</style>
 
       <button
+        type="button"
         className={`pure-neon-button ${isActive ? 'active' : ''} ${className}`}
         data-text={text}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onKeyDown={handleKeyDown}
         onClick={handleClick}
         disabled={disabled}
         aria-label={text}
+        aria-disabled={disabled}
         role="button"
+        style={{
+          ['--animation-color' as any]: animationColor,
+          ['--fs-size' as any]: fontSize,
+          ['--border-right' as any]: `${borderRight}px`,
+          ['--pulse-duration' as any]: `${pulseDuration}s`
+        }}
       >
         <span style={{ display: 'block', width: '100%', textAlign: 'center' }}>{text}</span>
       </button>

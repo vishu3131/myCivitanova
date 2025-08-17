@@ -1,360 +1,970 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  MapPin,
+  Calendar,
+  User,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  Filter,
+  Search,
+  X,
+  Info,
+  Camera,
+  Palette,
+  Star,
+} from 'lucide-react';
 
-const SLIDE_MS = 3500;
+interface ArtworkData {
+  id: number;
+  title: string;
+  artist: string;
+  year: string;
+  location: string;
+  description: string;
+  image: string;
+  category: 'murale' | 'scultura' | 'installazione' | 'pittura';
+  likes: number;
+  views: number;
+  coordinates?: [number, number];
+  tags: string[];
+}
+
+const SLIDE_MS = 5000; // leggermente più lento per migliore leggibilità
+const SWIPE_THRESHOLD = 40; // px
 
 export default function ArtePage() {
-  const muralImages = [
-    "/murales/mural-1.jpg",
-    "/murales/mural-2.jpg",
-    "/murales/mural-3.jpg",
-    "/murales/mural-4.jpg",
-    "/murales/mural-5.jpg",
-    "/murales/mural-6.jpg",
-    "/murales/mural-7.jpg",
-    "/murales/mural-8.jpg",
-    "/murales/mural-9.jpg",
-    "/murales/mural-10.jpg",
-    "/murales/mural-11.jpg",
-    "/murales/mural-12.jpg",
-    "/murales/mural-13.jpg",
+  // Dataset esistente (ottimizzato per UI)
+  const artworks: ArtworkData[] = [
+    {
+      id: 1,
+      title: "Onde del Mare Adriatico",
+      artist: "Marco Rossi",
+      year: "2023",
+      location: "Via del Porto, 15",
+      description:
+        "Un murale che cattura l'essenza del mare Adriatico con onde dinamiche e colori vivaci che cambiano con la luce del giorno.",
+      image: "/murales/mural-1.jpg",
+      category: "murale",
+      likes: 142,
+      views: 1205,
+      coordinates: [43.3102, 13.7343],
+      tags: ["mare", "onde", "blu", "dinamico"],
+    },
+    {
+      id: 2,
+      title: "Memoria Storica",
+      artist: "Elena Bianchi",
+      year: "2022",
+      location: "Piazza XX Settembre",
+      description:
+        "Un'opera che racconta la storia di Civitanova attraverso simboli e figure che rappresentano le diverse epoche della città.",
+      image: "/murales/mural-2.jpg",
+      category: "murale",
+      likes: 98,
+      views: 856,
+      coordinates: [43.3089, 13.7356],
+      tags: ["storia", "memoria", "tradizione", "cultura"],
+    },
+    {
+      id: 3,
+      title: "Giardino Urbano",
+      artist: "Luca Verdi",
+      year: "2023",
+      location: "Via Roma, 42",
+      description:
+        "Una celebrazione della natura urbana con fiori, piante e animali che convivono armoniosamente nell'ambiente cittadino.",
+      image: "/murales/mural-3.jpg",
+      category: "murale",
+      likes: 167,
+      views: 1432,
+      coordinates: [43.3095, 13.7340],
+      tags: ["natura", "fiori", "verde", "armonia"],
+    },
+    {
+      id: 4,
+      title: "Ritmi della Città",
+      artist: "Sofia Neri",
+      year: "2024",
+      location: "Corso Umberto I, 28",
+      description:
+        "Un'interpretazione moderna della vita quotidiana civitanovese attraverso forme geometriche e colori contemporanei.",
+      image: "/murales/mural-4.jpg",
+      category: "murale",
+      likes: 203,
+      views: 1678,
+      coordinates: [43.3087, 13.7349],
+      tags: ["moderno", "geometrico", "vita", "contemporaneo"],
+    },
+    {
+      id: 5,
+      title: "Pescatori al Tramonto",
+      artist: "Antonio Blu",
+      year: "2022",
+      location: "Lungomare Sud, 8",
+      description:
+        "Un omaggio alla tradizione marinara di Civitanova con scene di pesca al tramonto sul mare Adriatico.",
+      image: "/murales/mural-5.jpg",
+      category: "murale",
+      likes: 189,
+      views: 1543,
+      coordinates: [43.3078, 13.7365],
+      tags: ["pesca", "tramonto", "tradizione", "mare"],
+    },
+    {
+      id: 6,
+      title: "Danza delle Stagioni",
+      artist: "Giulia Rosa",
+      year: "2023",
+      location: "Via Garibaldi, 33",
+      description:
+        "Un ciclo che rappresenta le quattro stagioni attraverso figure danzanti e elementi naturali in continua trasformazione.",
+      image: "/murales/mural-6.jpg",
+      category: "murale",
+      likes: 156,
+      views: 1289,
+      coordinates: [43.3092, 13.7352],
+      tags: ["stagioni", "danza", "trasformazione", "natura"],
+    },
+    {
+      id: 7,
+      title: "Futuro Sostenibile",
+      artist: "Marco Verde",
+      year: "2024",
+      location: "Via della Pace, 19",
+      description:
+        "Una visione del futuro sostenibile di Civitanova con energie rinnovabili e tecnologie eco-compatibili.",
+      image: "/murales/mural-7.jpg",
+      category: "murale",
+      likes: 234,
+      views: 1876,
+      coordinates: [43.3101, 13.7338],
+      tags: ["futuro", "sostenibile", "tecnologia", "eco"],
+    },
+    {
+      id: 8,
+      title: "Musica nelle Strade",
+      artist: "Davide Suono",
+      year: "2023",
+      location: "Via Mazzini, 7",
+      description:
+        "Un tributo alla musica di strada con strumenti, note musicali e figure di musicisti che animano la città.",
+      image: "/murales/mural-8.jpg",
+      category: "murale",
+      likes: 178,
+      views: 1367,
+      coordinates: [43.3088, 13.7344],
+      tags: ["musica", "strada", "strumenti", "arte"],
+    },
+    {
+      id: 9,
+      title: "Connessioni Digitali",
+      artist: "Anna Tech",
+      year: "2024",
+      location: "Via Cavour, 51",
+      description:
+        "Un'opera che esplora il tema della connettività digitale e delle relazioni umane nell'era moderna.",
+      image: "/murales/mural-9.jpg",
+      category: "murale",
+      likes: 145,
+      views: 1198,
+      coordinates: [43.3094, 13.7347],
+      tags: ["digitale", "connessioni", "moderno", "tecnologia"],
+    },
+    {
+      id: 10,
+      title: "Mercato dei Colori",
+      artist: "Carla Vivace",
+      year: "2022",
+      location: "Piazza del Mercato, 2",
+      description:
+        "Una celebrazione del mercato locale con frutta, verdura e prodotti tipici rappresentati in colori vivaci.",
+      image: "/murales/mural-10.jpg",
+      category: "murale",
+      likes: 167,
+      views: 1423,
+      coordinates: [43.3086, 13.7341],
+      tags: ["mercato", "colori", "prodotti", "locale"],
+    },
+    {
+      id: 11,
+      title: "Volo di Libertà",
+      artist: "Roberto Cielo",
+      year: "2023",
+      location: "Via Leopardi, 14",
+      description:
+        "Uccelli in volo che simboleggiano la libertà e l'aspirazione verso nuovi orizzonti per la città.",
+      image: "/murales/mural-11.jpg",
+      category: "murale",
+      likes: 192,
+      views: 1567,
+      coordinates: [43.3097, 13.7355],
+      tags: ["libertà", "volo", "uccelli", "orizzonti"],
+    },
+    {
+      id: 12,
+      title: "Radici e Crescita",
+      artist: "Francesca Terra",
+      year: "2024",
+      location: "Via Dante, 26",
+      description:
+        "Un albero maestoso che rappresenta le radici storiche di Civitanova e la sua crescita verso il futuro.",
+      image: "/murales/mural-12.jpg",
+      category: "murale",
+      likes: 211,
+      views: 1734,
+      coordinates: [43.3091, 13.7348],
+      tags: ["radici", "crescita", "albero", "futuro"],
+    },
+    {
+      id: 13,
+      title: "Riflessi Urbani",
+      artist: "Matteo Specchio",
+      year: "2023",
+      location: "Via Verdi, 39",
+      description:
+        "Giochi di riflessi e prospettive che mostrano la città da angolazioni inaspettate e suggestive.",
+      image: "/murales/mural-13.jpg",
+      category: "murale",
+      likes: 158,
+      views: 1312,
+      coordinates: [43.3093, 13.7351],
+      tags: ["riflessi", "prospettive", "urbano", "suggestivo"],
+    },
   ];
 
-  const [slide, setSlide] = useState(0);
-  const [prevSlide, setPrevSlide] = useState(0);
-  const [animMs, setAnimMs] = useState(1200);
-  const [jitter, setJitter] = useState<{x:number;y:number;r:number;s:number}>({ x: 0, y: 0, r: 0, s: 1 });
-  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
-  const [imgSize, setImgSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  const [offset, setOffset] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [tilt, setTilt] = useState<{x:number;y:number}>({ x: 0, y: 0 });
-  const tiltRaf = useRef<number | null>(null);
+  // UI State
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [viewMode, setViewMode] = useState<'carousel' | 'grid'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('arte_view_mode') as 'carousel' | 'grid') || 'carousel' : 'carousel'));
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('arte_category') || 'all' : 'all'));
+  const [searchTerm, setSearchTerm] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('arte_search') || '' : ''));
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedArtwork, setSelectedArtwork] = useState<ArtworkData | null>(null);
+  const [likedArtworks, setLikedArtworks] = useState<Set<number>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = localStorage.getItem('arte_liked');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('arte_autoplay');
+    return stored ? stored === 'true' : true;
+  });
+  const [showInfo, setShowInfo] = useState(false);
+  const [toast, setToast] = useState<string>('');
 
+  // Refs
+  const touchStartX = useRef<number | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = useRef<boolean>(false);
+
+  // Categories with icons
+  const categories = useMemo(
+    () => [
+      { id: 'all', name: 'Tutte', icon: Palette },
+      { id: 'murale', name: 'Murales', icon: Camera },
+      { id: 'scultura', name: 'Sculture', icon: Star },
+      { id: 'installazione', name: 'Installazioni', icon: Grid },
+      { id: 'pittura', name: 'Pitture', icon: Palette },
+    ],
+    []
+  );
+
+  // Counts per categoria (senza filtro di ricerca per coerenza)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: artworks.length };
+    for (const c of ['murale', 'scultura', 'installazione', 'pittura']) {
+      counts[c] = artworks.filter((a) => a.category === (c as ArtworkData['category'])).length;
+    }
+    return counts;
+  }, [artworks.length]);
+
+  // Filtro opere (memoizzato per performance)
+  const filteredArtworks = useMemo(() => {
+    const byCategory = artworks.filter((artwork) => selectedCategory === 'all' || artwork.category === selectedCategory);
+    if (!searchTerm) return byCategory;
+    const s = searchTerm.toLowerCase();
+    return byCategory.filter((artwork) =>
+      artwork.title.toLowerCase().includes(s) ||
+      artwork.artist.toLowerCase().includes(s) ||
+      artwork.tags.some((tag) => tag.toLowerCase().includes(s))
+    );
+  }, [artworks, selectedCategory, searchTerm]);
+
+  // Clamp dello slide quando cambiano i risultati
   useEffect(() => {
-    if (paused) return;
+    if (filteredArtworks.length === 0) {
+      setCurrentSlide(0);
+      return;
+    }
+    setCurrentSlide((prev) => Math.min(prev, filteredArtworks.length - 1));
+  }, [filteredArtworks.length]);
+
+  // Auto-play: preferenze "reduce motion" e tab visibility
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion.current = media.matches;
+    if (media.matches) setIsAutoPlaying(false);
+
+    const onVisibility = () => {
+      if (document.hidden) setIsAutoPlaying(false);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  // Auto-play interval
+  useEffect(() => {
+    if (!isAutoPlaying || viewMode !== 'carousel' || filteredArtworks.length <= 1) return;
     const id = setInterval(() => {
-      setSlide((p) => {
-        const next = (p + 1) % muralImages.length;
-        setPrevSlide(p);
-        return next;
-      });
-      const dur = Math.floor(Math.random() * (1600 - 900) + 900);
-      setAnimMs(dur);
-      setJitter({
-        x: Math.random() * 10 - 5,
-        y: Math.random() * 6 - 3,
-        r: Math.random() * 2 - 1,
-        s: 0.98 + Math.random() * 0.02
-      });
+      setCurrentSlide((prev) => (prev + 1) % filteredArtworks.length);
     }, SLIDE_MS);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [isAutoPlaying, viewMode, filteredArtworks.length]);
 
+  // Persistenza preferenze base
   useEffect(() => {
-    const compute = () => {
-      if (!containerRef.current || !naturalSize) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const cw = rect.width;
-      const ch = rect.height;
-      const ratio = naturalSize.w / naturalSize.h;
-      let w = cw;
-      let h = w / ratio;
-      if (h > ch) {
-        h = ch;
-        w = h * ratio;
-      }
-      // Scala leggermente per evitare upscaling e mantenere margini
-      w *= 0.98;
-      h *= 0.98;
-      setImgSize({ w, h });
-      setOffset({ left: (cw - w) / 2, top: (ch - h) / 2 });
-    };
-    compute();
-    const onResize = () => compute();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [naturalSize, slide]);
+    try {
+      localStorage.setItem('arte_view_mode', viewMode);
+      localStorage.setItem('arte_category', selectedCategory);
+      localStorage.setItem('arte_search', searchTerm);
+      localStorage.setItem('arte_autoplay', String(isAutoPlaying));
+      localStorage.setItem('arte_liked', JSON.stringify(Array.from(likedArtworks)));
+    } catch {}
+  }, [viewMode, selectedCategory, searchTerm, isAutoPlaying, likedArtworks]);
 
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    const rect = el.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    const max = 6;
-    if (tiltRaf.current) cancelAnimationFrame(tiltRaf.current);
-    tiltRaf.current = requestAnimationFrame(() => {
-      setTilt({ x: nx * max, y: -ny * max });
-    });
-  };
-  const handleLeave = () => {
-    if (tiltRaf.current) cancelAnimationFrame(tiltRaf.current);
-    setTilt({ x: 0, y: 0 });
-  };
-  const goNext = () => {
-    setSlide((p) => {
-      const next = (p + 1) % muralImages.length;
-      setPrevSlide(p);
+  // Deep-linking: #id=XX oppure ?id=XX
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const getId = () => {
+      const url = new URL(window.location.href);
+      const fromQuery = url.searchParams.get('id');
+      if (fromQuery) return Number(fromQuery);
+      const hash = url.hash; // e.g. #id=3
+      if (hash.startsWith('#id=')) return Number(hash.replace('#id=', ''));
+      return null;
+    };
+    const id = getId();
+    if (id) {
+      const found = artworks.find((a) => a.id === id);
+      if (found) setSelectedArtwork(found);
+    }
+  }, []);
+
+  // Keyboard navigation (solo carousel attivo)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (viewMode !== 'carousel' || filteredArtworks.length === 0) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setIsAutoPlaying(false);
+        setCurrentSlide((prev) => (prev + 1) % filteredArtworks.length);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setIsAutoPlaying(false);
+        setCurrentSlide((prev) => (prev - 1 + filteredArtworks.length) % filteredArtworks.length);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setIsAutoPlaying((p) => !p);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [viewMode, filteredArtworks.length]);
+
+  // Helpers
+  const nextSlide = useCallback(() => {
+    if (filteredArtworks.length === 0) return;
+    setCurrentSlide((prev) => (prev + 1) % filteredArtworks.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 8000);
+  }, [filteredArtworks.length]);
+
+  const prevSlide = useCallback(() => {
+    if (filteredArtworks.length === 0) return;
+    setCurrentSlide((prev) => (prev - 1 + filteredArtworks.length) % filteredArtworks.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 8000);
+  }, [filteredArtworks.length]);
+
+  const toggleLike = useCallback((artworkId: number) => {
+    setLikedArtworks((prev) => {
+      const next = new Set(prev);
+      if (next.has(artworkId)) next.delete(artworkId);
+      else next.add(artworkId);
       return next;
     });
+  }, []);
+
+  const shareArtwork = useCallback(async (artwork: ArtworkData) => {
+    try {
+      const url = `${window.location.origin}/arte#id=${artwork.id}`;
+      const title = `${artwork.title} – Arte a Civitanova`;
+      const text = `${artwork.title} di ${artwork.artist} (${artwork.year}) – ${artwork.location}`;
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setToast('Link copiato negli appunti');
+        setTimeout(() => setToast(''), 1800);
+      }
+    } catch {
+      setToast('Impossibile condividere');
+      setTimeout(() => setToast(''), 1800);
+    }
+  }, []);
+
+  const openMaps = useCallback((artwork: ArtworkData) => {
+    if (!artwork.coordinates) return;
+    const [lat, lng] = artwork.coordinates;
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    window.open(url, '_blank');
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    setIsAutoPlaying(false);
   };
-  const goPrev = () => {
-    setSlide((p) => {
-      const prev = (p - 1 + muralImages.length) % muralImages.length;
-      setPrevSlide(prev);
-      return prev;
-    });
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > SWIPE_THRESHOLD) {
+      if (delta < 0) nextSlide();
+      else prevSlide();
+    } else {
+      // riprende autoplay se non si è navigato
+      setIsAutoPlaying(true);
+    }
+    touchStartX.current = null;
   };
+
+  const currentArtwork = filteredArtworks.length > 0 ? filteredArtworks[currentSlide] : null;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="px-6 pt-6 flex items-center justify-between max-w-6xl mx-auto">
-        <Link href="/" className="text-white/70 hover:text-white transition-colors">← Home</Link>
-        <h1 className="text-lg font-semibold neon-title">L'arte a Civitanova</h1>
-        <div />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-4 min-w-0">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-white/70 hover:text-white transition-colors group shrink-0"
+                aria-label="Torna alla Home"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="hidden sm:inline">Home</span>
+              </Link>
+              <div className="h-5 w-px bg-white/15 shrink-0" />
+              <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent truncate">
+                Arte a Civitanova
+              </h1>
+            </div>
 
-      <div className="relative max-w-6xl mx-auto mt-4 rounded-2xl overflow-hidden shadow-2xl" style={{ height: '68vh' }}>
-        <div className="absolute inset-0">
-          {/* Wrapper con jitter eccentrico */}
-          <div
-            className="h-full w-full"
-            style={{
-              transform: `translate(${jitter.x}px, ${jitter.y}px) rotate(${jitter.r}deg) scale(${jitter.s})`,
-              transition: `transform ${animMs}ms cubic-bezier(.22,1,.36,1)`
-            }}
-          >
-            {/* Transizione 3D cube modern wow */}
-            <div
-              className="absolute inset-0"
-              ref={containerRef}
-              onMouseMove={handleMove}
-              onMouseLeave={(e) => { handleLeave(); setPaused(false); }}
-              onMouseEnter={() => setPaused(true)}
-              style={{ perspective: '1200px', transformStyle: 'preserve-3d', transform: `rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)` }}
-            >
-              <div className="absolute inset-0 pointer-events-none cyber-grid"></div>
-              <div className="absolute inset-0 pointer-events-none holo-rings"></div>
-              {/* layer uscente */}
-              <div key={`out-${prevSlide}-${slide}`} className="absolute inset-0 slide-out" style={{ animationDuration: `${animMs}ms` }}>
-                <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 18, overflow: 'hidden', backgroundColor: '#000' }}>
-                  <Image src={muralImages[prevSlide]} alt={`Murale ${prevSlide + 1}`} fill className="object-cover" sizes="(max-width: 1280px) 80vw, 1000px" />
-                </div>
-              </div>
-              {/* layer entrante */}
-              <div key={`in-${slide}`} className="absolute inset-0 slide-in" style={{ animationDuration: `${animMs}ms` }}>
-                <div className="absolute" style={{ left: `${offset.left}px`, top: `${offset.top}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px`, borderRadius: 18, overflow: 'hidden', backgroundColor: '#000' }}>
-                  <Image src={muralImages[slide]} alt={`Murale ${slide + 1}`} fill className="object-cover" sizes="(max-width: 1280px) 80vw, 1000px" onLoadingComplete={(img) => { setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight }); }} />
-                  <div className="shine"></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <label className="relative hidden md:block" aria-label="Cerca opere">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Cerca opere, artisti, tag..."
+                  className="bg-white/10 border border-white/20 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 w-60"
+                />
+              </label>
 
-              {/* controlli neon */}
-              <div className="absolute inset-y-0 left-3 z-30 flex items-center">
-                <button aria-label="Precedente" onClick={goPrev} className="nav-btn" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              {/* View Mode Toggle */}
+              <div className="flex bg-white/10 rounded-lg p-1" role="tablist" aria-label="Modalità di visualizzazione">
+                <button
+                  onClick={() => setViewMode('carousel')}
+                  role="tab"
+                  aria-selected={viewMode === 'carousel'}
+                  className={`p-2 rounded transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                    viewMode === 'carousel' ? 'bg-cyan-500 text-white' : 'text-white/70 hover:text-white'
+                  }`}
+                  title="Vista carousel"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  role="tab"
+                  aria-selected={viewMode === 'grid'}
+                  className={`p-2 rounded transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                    viewMode === 'grid' ? 'bg-cyan-500 text-white' : 'text-white/70 hover:text-white'
+                  }`}
+                  title="Vista griglia"
+                >
+                  <Grid className="w-4 h-4" />
                 </button>
               </div>
-              <div className="absolute inset-y-0 right-3 z-30 flex items-center">
-                <button aria-label="Successivo" onClick={goNext} className="nav-btn" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-              </div>
 
-              {/* Neon timer glow maggiorato */}
-              <div className="neon-timer absolute pointer-events-none" style={{ zIndex: 25, top: `${offset.top}px`, left: `${offset.left}px`, width: `${imgSize.w}px`, height: `${imgSize.h}px` }}>
-                <svg width={imgSize.w} height={imgSize.h} className="block">
-                  <defs>
-                    <linearGradient id="neonGradBig" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#00F7FF" />
-                      <stop offset="50%" stopColor="#7C4DFF" />
-                      <stop offset="100%" stopColor="#00F7FF" />
-                    </linearGradient>
-                    <filter id="neonFilterBig" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="2.5" result="blur1" />
-                      <feGaussianBlur in="blur1" stdDeviation="5" result="blur2" />
-                      <feMerge>
-                        <feMergeNode in="blur2" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <rect key={slide}
-                    x={2}
-                    y={2}
-                    width={Math.max(imgSize.w - 4, 0)}
-                    height={Math.max(imgSize.h - 4, 0)}
-                    rx={18}
-                    ry={18}
-                    className="neon-rect-big"
-                    stroke="url(#neonGradBig)"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#neonFilterBig)"
-                    style={{ animationDuration: `${SLIDE_MS}ms` }}
-                    strokeDasharray={`${2 * (imgSize.w + imgSize.h)}`}
-                    strokeDashoffset={`${2 * (imgSize.w + imgSize.h)}`}
-                  />
-                </svg>
-              </div>
+              {/* Filters toggle (mobile + desktop) */}
+              <button
+                onClick={() => setShowFilters((s) => !s)}
+                className={`p-2 rounded-lg transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                  showFilters ? 'bg-cyan-500 text-white' : 'bg-white/10 text-white/70 hover:text-white'
+                }`}
+                aria-expanded={showFilters}
+                aria-controls="filters-panel"
+                title="Filtri"
+              >
+                <Filter className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Spray overlay */}
-          <div key={slide} className="pointer-events-none absolute inset-0 z-20 spray-overlay" style={{ animation: `spritz ${Math.min(animMs + 400, 1800)}ms ease-out` }} />
-
-          {/* Titolo neon */}
-          <div className="absolute bottom-5 left-6 z-30">
-            <span className="neon-title text-white text-xl font-semibold">L'arte a Civitanova</span>
-          </div>
+          {/* Filters Panel */}
+          {showFilters && (
+            <div id="filters-panel" className="mt-3 p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  const isActive = selectedCategory === category.id;
+                  const count = categoryCounts[category.id] ?? 0;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                        isActive ? 'bg-cyan-500 text-white' : 'bg-white/10 text-white/80 hover:bg-white/15'
+                      }`}
+                      aria-pressed={isActive}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{category.name}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${isActive ? 'bg-white/20' : 'bg-white/10'}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <style jsx>{`
-        .spray-overlay {
-          background:
-            radial-gradient(16px 16px at 10% 20%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.2) 45%, transparent 70%),
-            radial-gradient(12px 12px at 30% 70%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.18) 45%, transparent 70%),
-            radial-gradient(18px 18px at 80% 40%, rgba(255,255,255,0.28) 0, rgba(255,255,255,0.16) 45%, transparent 70%),
-            radial-gradient(14px 14px at 60% 80%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
-            radial-gradient(22px 22px at 40% 35%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.14) 45%, transparent 70%),
-            repeating-radial-gradient(circle at 15% 15%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px),
-            repeating-radial-gradient(circle at 70% 60%, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px);
-          mix-blend-mode: screen;
-          opacity: 0;
-          filter: blur(0.6px) contrast(1.08);
-        }
-        @keyframes spritz {
-          0% { opacity: 0.0; transform: scale(0.94) translateY(6px); filter: blur(2px); }
-          10% { opacity: 0.85; }
-          40% { opacity: 0.65; }
-          100% { opacity: 0; transform: scale(1) translateY(0); filter: blur(0); }
-        }
-        .slide-in {
-          transform-origin: left center;
-          animation-name: cubeIn;
-          animation-timing-function: cubic-bezier(.2,.8,.2,1);
-          animation-fill-mode: forwards;
-        }
-        .slide-out {
-          transform-origin: right center;
-          animation-name: cubeOut;
-          animation-timing-function: cubic-bezier(.2,.8,.2,1);
-          animation-fill-mode: forwards;
-        }
-        @keyframes cubeIn {
-          0% { transform: rotateY(-65deg) scale(0.98); filter: blur(10px) saturate(120%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: rotateY(0deg) scale(1); filter: blur(0) saturate(105%); opacity: 1; }
-        }
-        @keyframes cubeOut {
-          0% { transform: rotateY(0deg) scale(1); filter: blur(0); opacity: 1; }
-          100% { transform: rotateY(65deg) scale(0.98); filter: blur(10px); opacity: 0; }
-        }
-        .cyber-grid {
-          background-image:
-            linear-gradient(rgba(0, 247, 255, 0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 247, 255, 0.06) 1px, transparent 1px);
-          background-size: 28px 28px, 28px 28px;
-          background-position: 0 0, 0 0;
-          animation: gridShift 12s linear infinite;
-          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 85%);
-        }
-        @keyframes gridShift {
-          0% { background-position: 0 0, 0 0; }
-          100% { background-position: 280px 280px, 280px 280px; }
-        }
-        .holo-rings {
-          background:
-            radial-gradient(200px 200px at 20% 30%, rgba(124,77,255,0.16), transparent 60%),
-            radial-gradient(260px 260px at 80% 70%, rgba(0,247,255,0.12), transparent 60%);
-          mix-blend-mode: screen;
-          animation: ringsPulse 8s ease-in-out infinite alternate;
-          filter: blur(0.5px);
-        }
-        @keyframes ringsPulse {
-          from { filter: blur(0.6px); opacity: 0.8; }
-          to { filter: blur(1px); opacity: 0.6; }
-        }
-        .nav-btn {
-          width: 44px;
-          height: 44px;
-          border-radius: 9999px;
-          display: grid;
-          place-items: center;
-          color: #00f7ff;
-          background: rgba(0,0,0,0.35);
-          border: 1px solid rgba(0,247,255,0.35);
-          box-shadow: 0 0 8px rgba(0,247,255,0.35), inset 0 0 8px rgba(0,247,255,0.18);
-          transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
-          backdrop-filter: blur(2px);
-        }
-        .nav-btn:hover {
-          transform: scale(1.06);
-          box-shadow: 0 0 12px rgba(0,247,255,0.65), inset 0 0 12px rgba(0,247,255,0.3);
-          background: rgba(0,0,0,0.45);
-        }
-        .neon-rect-big {
-          stroke: #00f7ff;
-          fill: transparent;
-          stroke-width: 4px;
-          filter: drop-shadow(0 0 8px #00f7ff) drop-shadow(0 0 18px #00f7ff) drop-shadow(0 0 28px rgba(0,247,255,0.6));
-          animation-name: neonTimerBig;
-          animation-timing-function: linear;
-          animation-fill-mode: forwards;
-        }
-        @keyframes neonTimerBig {
-          to { stroke-dashoffset: 0; }
-        }
-        .neon-title {
-          position: relative;
-          display: inline-block;
-          letter-spacing: 0.3px;
-          text-shadow:
-            0 0 4px rgba(0,247,255,0.6),
-            0 0 8px rgba(0,247,255,0.6),
-            0 0 14px rgba(0,247,255,0.5),
-            0 0 22px rgba(124,77,255,0.35);
-          animation: neonPulse 2200ms ease-in-out infinite;
-        }
-        .neon-title::after {
-          content: '';
-          position: absolute;
-          inset: -6px -12px;
-          background: linear-gradient(100deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 65%);
-          transform: translateX(-120%) skewX(-18deg);
-          mix-blend-mode: screen;
-          filter: blur(0.6px);
-          animation: titleShine 3500ms ease-in-out infinite;
-          pointer-events: none;
-        }
-        @keyframes neonPulse {
-          0%, 100% {
-            text-shadow:
-              0 0 6px rgba(0,247,255,0.85),
-              0 0 16px rgba(0,247,255,0.75),
-              0 0 28px rgba(0,247,255,0.45),
-              0 0 42px rgba(124,77,255,0.55);
-          }
-          50% {
-            text-shadow:
-              0 0 3px rgba(0,247,255,0.55),
-              0 0 9px rgba(0,247,255,0.45),
-              0 0 16px rgba(0,247,255,0.35),
-              0 0 28px rgba(124,77,255,0.35);
-          }
-        }
-        @keyframes titleShine {
-          0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
-          15% { opacity: 1; }
-          60% { transform: translateX(120%) skewX(-18deg); opacity: 1; }
-          100% { transform: translateX(150%) skewX(-18deg); opacity: 0; }
-        }
-      `}</style>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+        {viewMode === 'carousel' ? (
+          <div className="space-y-6 sm:space-y-8">
+            {/* Carousel principale */}
+            <div
+              ref={carouselRef}
+              className="relative"
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Galleria murales – Arte a Civitanova"
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+            >
+              <div
+                className="relative h-[60vh] sm:h-[65vh] lg:h-[70vh] rounded-2xl overflow-hidden shadow-2xl group"
+                onMouseEnter={() => !reducedMotion.current && setIsAutoPlaying(false)}
+                onMouseLeave={() => !reducedMotion.current && setIsAutoPlaying(true)}
+              >
+                {/* Background Image */}
+                {currentArtwork ? (
+                  <Image
+                    src={currentArtwork.image}
+                    alt={currentArtwork.title}
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900" />
+                )}
+
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                {/* Controls */}
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                  aria-label="Slide precedente"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                  aria-label="Slide successiva"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+
+                {/* Info correnti */}
+                {currentArtwork && (
+                  <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm capitalize">
+                            {currentArtwork.category}
+                          </span>
+                          <span className="text-white/70 text-xs sm:text-sm">{currentArtwork.year}</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 leading-tight truncate">
+                          {currentArtwork.title}
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-white/85 mb-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{currentArtwork.artist}</span>
+                          </div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <MapPin className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{currentArtwork.location}</span>
+                          </div>
+                        </div>
+                        <p className="text-white/90 text-sm sm:text-base max-w-2xl leading-relaxed line-clamp-3 sm:line-clamp-none">
+                          {currentArtwork.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-end gap-2 sm:gap-3 lg:flex-col lg:items-end lg:gap-3 lg:ml-6">
+                        <button
+                          onClick={() => currentArtwork && toggleLike(currentArtwork.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                            currentArtwork && likedArtworks.has(currentArtwork.id)
+                              ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                              : 'bg-white/10 text-white/80 hover:bg-white/20'
+                          }`}
+                          aria-label="Mi piace"
+                        >
+                          <Heart className={`w-5 h-5 ${currentArtwork && likedArtworks.has(currentArtwork.id) ? 'fill-current' : ''}`} />
+                          <span className="text-sm">{currentArtwork ? currentArtwork.likes + (likedArtworks.has(currentArtwork.id) ? 1 : 0) : 0}</span>
+                        </button>
+                        <button
+                          onClick={() => currentArtwork && shareArtwork(currentArtwork)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                          aria-label="Condividi"
+                        >
+                          <Share2 className="w-5 h-5" />
+                          <span className="hidden sm:inline text-sm">Condividi</span>
+                        </button>
+                        {currentArtwork?.coordinates && (
+                          <button
+                            onClick={() => openMaps(currentArtwork)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                            aria-label="Apri in Maps"
+                          >
+                            <MapPin className="w-5 h-5" />
+                            <span className="hidden sm:inline text-sm">Apri in Maps</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setShowInfo(true)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                          aria-label="Dettagli pagina"
+                        >
+                          <Info className="w-5 h-5" />
+                          <span className="hidden sm:inline text-sm">Dettagli</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress & stats */}
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center gap-2" aria-label="Indicatori slide">
+                        {filteredArtworks.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentSlide(i)}
+                            className={`h-2 rounded-full transition-all duration-300 outline-none focus:ring-2 focus:ring-cyan-400/50 ${i === currentSlide ? 'bg-cyan-400 w-8' : 'bg-white/30 w-2 hover:bg-white/50'}`}
+                            aria-label={`Vai alla slide ${i + 1}`}
+                            aria-current={i === currentSlide}
+                          />)
+                        )}
+                      </div>
+                      {currentArtwork && (
+                        <div className="flex items-center gap-4 text-white/70 text-xs sm:text-sm">
+                          <span className="flex items-center gap-1"><Eye className="w-4 h-4" />{currentArtwork.views}</span>
+                          <span>{filteredArtworks.length > 0 ? `${currentSlide + 1} / ${filteredArtworks.length}` : '0/0'}</span>
+                          {isAutoPlaying && <span className="inline-flex w-3 h-3 bg-cyan-400 rounded-full animate-pulse" aria-label="Auto-play attivo" />}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Thumbnails */}
+            {filteredArtworks.length > 0 && (
+              <div className="flex gap-3 overflow-x-auto pb-1" aria-label="Anteprime opere">
+                {filteredArtworks.map((artwork, index) => (
+                  <button
+                    key={artwork.id}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden transition-all duration-200 outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                      index === currentSlide ? 'ring-2 ring-cyan-400 scale-105' : 'hover:scale-105 opacity-80 hover:opacity-100'
+                    }`}
+                    aria-label={`Mostra ${artwork.title}`}
+                    aria-current={index === currentSlide}
+                  >
+                    <Image
+                      src={artwork.image}
+                      alt={artwork.title}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                    {index === currentSlide && <div className="absolute inset-0 bg-cyan-400/15" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          // Grid View
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filteredArtworks.map((artwork) => (
+              <article
+                key={artwork.id}
+                className="group relative bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 hover:scale-[1.01] cursor-pointer outline-none focus:ring-2 focus:ring-cyan-400/50"
+                onClick={() => setSelectedArtwork(artwork)}
+                tabIndex={0}
+                aria-label={`${artwork.title} di ${artwork.artist}`}
+              >
+                <div className="relative h-44 sm:h-48">
+                  <Image
+                    src={artwork.image}
+                    alt={artwork.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+
+                  {/* Quick Actions */}
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLike(artwork.id);
+                      }}
+                      className={`p-2 rounded-full backdrop-blur-sm transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                        likedArtworks.has(artwork.id) ? 'bg-red-500/20 text-red-300' : 'bg-black/30 text-white/80 hover:text-white'
+                      }`}
+                      aria-label="Mi piace"
+                    >
+                      <Heart className={`w-4 h-4 ${likedArtworks.has(artwork.id) ? 'fill-current' : ''}`} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareArtwork(artwork);
+                      }}
+                      className="p-2 rounded-full bg-black/30 text-white/80 hover:text-white backdrop-blur-sm outline-none focus:ring-2 focus:ring-cyan-400/50"
+                      aria-label="Condividi"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Category */}
+                  <div className="absolute top-2 left-2">
+                    <span className="bg-black/50 text-white text-[11px] px-2 py-1 rounded-full backdrop-blur-sm capitalize">
+                      {artwork.category}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  <h3 className="font-semibold text-white mb-1 line-clamp-1">{artwork.title}</h3>
+                  <p className="text-white/70 text-sm mb-2">{artwork.artist} • {artwork.year}</p>
+                  <p className="text-white/85 text-sm line-clamp-2 mb-3">{artwork.description}</p>
+                  <div className="flex items-center justify-between text-xs text-white/60">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1"><Heart className="w-3 h-3" />{artwork.likes + (likedArtworks.has(artwork.id) ? 1 : 0)}</span>
+                      <span className="inline-flex items-center gap-1"><Eye className="w-3 h-3" />{artwork.views}</span>
+                    </div>
+                    <span className="truncate max-w-[50%] text-right">{artwork.location}</span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {/* Nessun risultato */}
+        {filteredArtworks.length === 0 && (
+          <div className="text-center py-16">
+            <Palette className="w-16 h-16 text-white/30 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white/80 mb-2">Nessuna opera trovata</h3>
+            <p className="text-white/60">Modifica i filtri di ricerca o esplora tutte le categorie.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Modale Dettaglio Opera */}
+      {selectedArtwork && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="relative">
+              <button
+                onClick={() => setSelectedArtwork(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50"
+                aria-label="Chiudi"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="relative h-80 sm:h-96">
+                <Image
+                  src={selectedArtwork.image}
+                  alt={selectedArtwork.title}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              </div>
+
+              <div className="p-6 sm:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{selectedArtwork.title}</h2>
+                    <div className="flex flex-wrap items-center gap-3 text-white/75 mb-2">
+                      <span>{selectedArtwork.artist}</span>
+                      <span className="opacity-50">•</span>
+                      <span>{selectedArtwork.year}</span>
+                      <span className="opacity-50">•</span>
+                      <span className="capitalize">{selectedArtwork.category}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleLike(selectedArtwork.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50 ${
+                        likedArtworks.has(selectedArtwork.id) ? 'bg-red-500/20 text-red-300' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                      }`}
+                      aria-label="Mi piace"
+                    >
+                      <Heart className={`w-5 h-5 ${likedArtworks.has(selectedArtwork.id) ? 'fill-current' : ''}`} />
+                      <span>{selectedArtwork.likes + (likedArtworks.has(selectedArtwork.id) ? 1 : 0)}</span>
+                    </button>
+                    <button
+                      onClick={() => shareArtwork(selectedArtwork)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50"
+                      aria-label="Condividi"
+                    >
+                      <Share2 className="w-5 h-5" />
+                      <span>Condividi</span>
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-white/90 text-base sm:text-lg leading-relaxed mb-6">{selectedArtwork.description}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-white mb-3">Dettagli</h4>
+                    <div className="space-y-2 text-white/75">
+                      <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /><span>{selectedArtwork.location}</span></div>
+                      <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /><span>{selectedArtwork.year}</span></div>
+                      <div className="flex items-center gap-2"><User className="w-4 h-4" /><span>{selectedArtwork.artist}</span></div>
+                      {selectedArtwork.coordinates && (
+                        <button
+                          onClick={() => openMaps(selectedArtwork)}
+                          className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50"
+                        >
+                          <MapPin className="w-4 h-4" /> Apri in Maps
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white mb-3">Statistiche</h4>
+                    <div className="space-y-2 text-white/75">
+                      <div className="flex items-center justify-between"><span>Mi piace</span><span>{selectedArtwork.likes + (likedArtworks.has(selectedArtwork.id) ? 1 : 0)}</span></div>
+                      <div className="flex items-center justify-between"><span>Visualizzazioni</span><span>{selectedArtwork.views}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tag */}
+                {selectedArtwork.tags?.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-white mb-3">Tag</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedArtwork.tags.map((tag, i) => (
+                        <span key={i} className="px-3 py-1 bg-white/10 text-white/75 rounded-full text-sm">#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl max-w-2xl w-full p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold text-white">Arte a Civitanova</h3>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors outline-none focus:ring-2 focus:ring-cyan-400/50"
+                aria-label="Chiudi"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4 text-white/85">
+              <p>
+                Scopri la ricca collezione di arte urbana e contemporanea di Civitanova Marche. Questa galleria digitale
+                presenta le opere più significative che decorano la nostra città.
+              </p>
+              <div className="grid grid-cols-2 gap-4 py-3">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-400">{artworks.length}</div>
+                  <div className="text-sm text-white/60">Opere totali</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-400">{new Set(artworks.map((a) => a.artist)).size}</div>
+                  <div className="text-sm text-white/60">Artisti</div>
+                </div>
+              </div>
+              <p className="text-sm text-white/65">
+                Usa i filtri per esplorare le opere per categoria, cerca per titolo o artista e passa dalla vista carousel alla griglia.
+                Suggerimento: con la barra spaziatrice metti in pausa/riprendi il carosello.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className="px-4 py-2 rounded-lg bg-white/10 text-white/90 border border-white/15 shadow backdrop-blur-md">
+            {toast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import DatabaseTest from "@/components/admin/DatabaseTest";
 import { DatabaseService } from "@/lib/database";
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
+import { supabase } from "@/utils/supabaseClient";
 import {
   Users,
   FileText,
@@ -53,6 +54,25 @@ export default function AdminPage() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [showDatabaseTest, setShowDatabaseTest] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dbStatus, setDbStatus] = useState<{ online: boolean; latency?: number; error?: string; checking: boolean }>({
+    online: false,
+    checking: true
+  });
+
+  const checkDb = async () => {
+    setDbStatus((s) => ({ ...s, checking: true }));
+    const start = Date.now();
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .limit(1);
+      if (error) throw error;
+      setDbStatus({ online: true, latency: Date.now() - start, error: undefined, checking: false });
+    } catch (e: any) {
+      setDbStatus({ online: false, latency: undefined, error: e?.message || 'Errore sconosciuto', checking: false });
+    }
+  };
 
   // Carica dati dashboard
   useEffect(() => {
@@ -133,6 +153,12 @@ export default function AdminPage() {
 
     if (user) {
       loadDashboardData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      checkDb();
     }
   }, [user]);
 
@@ -375,10 +401,24 @@ export default function AdminPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    {dbStatus.checking ? (
+                      <Activity className="w-4 h-4 text-yellow-500 animate-spin" />
+                    ) : dbStatus.online ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                    )}
                     <span className="text-sm text-gray-700 dark:text-gray-300">Database</span>
                   </div>
-                  <span className="text-xs text-green-500 font-medium">Online</span>
+                  <div className="text-right">
+                    {dbStatus.checking ? (
+                      <span className="text-xs text-yellow-500 font-medium">Verifica...</span>
+                    ) : dbStatus.online ? (
+                      <span className="text-xs text-green-500 font-medium">Online{typeof dbStatus.latency === 'number' ? ` (${dbStatus.latency}ms)` : ''}</span>
+                    ) : (
+                      <span className="text-xs text-red-500 font-medium">Offline</span>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex items-center justify-between">

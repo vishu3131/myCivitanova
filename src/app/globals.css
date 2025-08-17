@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.3s ease-out forwards;
+}
+
 *,
 *::before,
 *::after {
@@ -768,4 +783,117 @@ div.navbar-fixed {
 
 .group:hover .animate-scroll-loop {
   animation-play-state: paused;
+}
+
+/* Metallic UI styles for MusicPlayer */
+.metallic-btn {
+  background: linear-gradient(145deg, #e5e7eb 0%, #cfd1d4 45%, #b9bcc0 55%, #d8dbde 100%);
+  color: #1f2937; /* neutral-800 for icon stroke */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-right-color: rgba(0, 0, 0, 0.15);
+  border-bottom-color: rgba(0, 0, 0, 0.15);
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.7),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+}
+
+.metallic-btn:hover {
+  background: linear-gradient(145deg, #f0f2f4, #cfd2d6 50%, #bfc3c7);
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.1),
+    0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.metallic-btn:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.2),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.metallic-btn svg {
+  stroke: currentColor; /* ensure icons use parent color */
+  color: #111827; /* neutral-900 */
+}
+
+/* Soft metallic progress bar */
+.metallic-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: linear-gradient(90deg, #eef1f4, #d7dbe0 50%, #eef1f4);
+  border-radius: 9999px;
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+
+.metallic-range:focus {
+  box-shadow:
+    0 0 0 3px rgba(31, 41, 55, 0.15),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.metallic-range::-webkit-slider-runnable-track {
+  height: 8px;
+  background: linear-gradient(90deg, #eef1f4, #d7dbe0 50%, #eef1f4);
+  border-radius: 9999px;
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.metallic-range::-moz-range-track {
+  height: 8px;
+  background: linear-gradient(90deg, #eef1f4, #d7dbe0 50%, #eef1f4);
+  border-radius: 9999px;
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.12);
+}
+
+.metallic-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f9fafb 0%, #e5e7eb 40%, #cbd5e1 60%, #9ca3af 100%);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  margin-top: -4px; /* center thumb on 8px track in WebKit */
+}
+
+.metallic-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f9fafb 0%, #e5e7eb 40%, #cbd5e1 60%, #9ca3af 100%);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+/* Improve hit area on mobile */
+@media (max-width: 768px) {
+  .metallic-range {
+    height: 10px;
+  }
+  .metallic-range::-webkit-slider-runnable-track,
+  .metallic-range::-moz-range-track {
+    height: 10px;
+  }
+  .metallic-range::-webkit-slider-thumb,
+  .metallic-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    margin-top: -4px;
+  }
 }

@@ -1,229 +1,91 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { SearchModal } from './SearchModal';
-import { ArrowLeft, Search, Filter, Star, MapPin, Clock, Users, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Star, MapPin, Globe, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 
-const categories = [
-  { id: 'shopping', label: 'Shopping', count: 7 },
-  { id: 'all', label: 'Tutti', count: 24 },
-  { id: 'culture', label: 'Cultura', count: 8 },
-  { id: 'nature', label: 'Natura', count: 6 },
-  { id: 'food', label: 'Cibo', count: 10 },
-  { id: 'history', label: 'Storia', count: 5 },
-  { id: 'fun', label: 'Divertimento', count: 12 },
-];
-
-const demoPlaces = [
-  {
-    id: 1,
-    name: 'Spiaggia di Civitanova Marche',
-    category: 'Natura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/7/74/Bayside_Civitanova_Marche.JPG',
-    rating: 4.5,
-    reviews: 120,
-    distance: '2 km',
-    time: '10 min',
-    description: 'Una bellissima spiaggia con sabbia fine e mare cristallino.',
-  },
-  {
-    id: 2,
-    name: 'Porto Turistico',
-    category: 'Cultura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/7/73/Porto_di_Civitanova.jpg',
-    rating: 4.0,
-    reviews: 80,
-    distance: '1 km',
-    time: '5 min',
-    description: 'Un vivace porto con molte barche e ristoranti di pesce.',
-  },
-  {
-    id: 3,
-    name: 'Centro Storico',
-    category: 'Storia',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Centro_storico_di_Civitanova_Alta_-_Civitanova_Marche_1.jpg',
-    rating: 4.7,
-    reviews: 150,
-    distance: '3 km',
-    time: '15 min',
-    description: 'Esplora le vie antiche e i palazzi storici della città alta.',
-  },
-  {
-    id: 4,
-    name: 'Lungomare Piermanni',
-    category: 'Natura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/2/20/Panorama_di_Civitanova_Marche.jpg',
-    rating: 4.3,
-    reviews: 95,
-    distance: '0.5 km',
-    time: '2 min',
-    description: 'Una passeggiata panoramica lungo la costa con vista mozzafiato.',
-  },
-  {
-    id: 5,
-    name: 'Varco sul Mare',
-    category: 'Cultura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Varco_sul_Mare_-_Civitanova_Marche_%28MC%29.jpg',
-    rating: 3.8,
-    reviews: 60,
-    distance: '1.5 km',
-    time: '7 min',
-    description: 'Un moderno spazio urbano e punto di riferimento architettonico.',
-  },
-  {
-    id: 6,
-    name: 'Vecchia Pescheria',
-    category: 'Cultura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Esterno_antica_pescheria.jpg',
-    rating: 4.2,
-    reviews: 75,
-    distance: '0.8 km',
-    time: '4 min',
-    description: 'L\'antico mercato del pesce, ora un luogo di eventi e cultura.',
-  },
-  {
-    id: 7,
-    name: 'Santuario Santa Maria Apparente',
-    category: 'Storia',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Civitanova_Marche_-_Torrione_di_Santa_Maria_Apparente_-_2023-09-27_16-19-07_001.jpg',
-    rating: 4.6,
-    reviews: 110,
-    distance: '4 km',
-    time: '20 min',
-    description: 'Un santuario storico con architettura affascinante e vista panoramica.',
-  },
-  {
-    id: 8,
-    name: 'Palazzo Sforza-Cesarini',
-    category: 'Storia',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Palazzo_comunale_sforzA.jpg',
-    rating: 4.4,
-    reviews: 85,
-    distance: '3.2 km',
-    time: '16 min',
-    description: 'Un imponente palazzo storico, sede del municipio.',
-  },
-  {
-    id: 9,
-    name: 'Azienda Agricola San Marco',
-    category: 'Natura',
-    image: 'https://source.unsplash.com/random/800x600?farm',
-    rating: 4.8,
-    reviews: 130,
-    distance: '7 km',
-    time: '25 min',
-    description: 'Una fattoria locale che offre prodotti tipici e degustazioni.',
-  },
-  {
-    id: 10,
-    name: 'Il Trialone',
-    category: 'Divertimento',
-    image: 'https://source.unsplash.com/random/800x600?amusement-park',
-    rating: 4.1,
-    reviews: 70,
-    distance: '5 km',
-    time: '18 min',
-    description: 'Un parco divertimenti per tutta la famiglia con attrazioni e giochi.',
-  },
-  {
-    id: 11,
-    name: 'Pista Ciclabile sul Lungomare',
-    category: 'Natura',
-    image: 'https://source.unsplash.com/random/800x600?bike-path',
-    rating: 4.5,
-    reviews: 90,
-    distance: '0.3 km',
-    time: '1 min',
-    description: 'Percorso ciclabile panoramico lungo la costa, ideale per una pedalata rilassante.'
-  },
-  {
-    id: 12,
-    name: 'Teatro Annibal Caro',
-    category: 'Cultura',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/1/16/Civitanova_Marche_-_Teatro_Annibal_Caro_-_2023-09-27_16-09-36_001.jpg',
-    rating: 4.3,
-    reviews: 55,
-    distance: '2.5 km',
-    time: '12 min',
-    description: 'Storico teatro che ospita spettacoli e eventi culturali.'
-  },
-  {
-    id: 13,
-    name: 'Shopping al Cuore Adriatico',
-    category: 'Shopping',
-    image: 'https://source.unsplash.com/random/800x600?shopping-mall',
-    rating: 4.0,
-    reviews: 110,
-    distance: '6 km',
-    time: '20 min',
-    description: 'Uno dei più grandi centri commerciali della zona, perfetto per lo shopping.'
-  },
-  {
-    id: 14,
-    name: 'Degustazione Vini nelle Cantine Locali',
-    category: 'Cibo',
-    image: 'https://source.unsplash.com/random/800x600?wine-tasting',
-    rating: 4.8,
-    reviews: 70,
-    distance: '8 km',
-    time: '30 min',
-    description: 'Scopri i sapori dei vini locali con una visita guidata alle cantine.'
-  },
-  {
-    id: 15,
-    name: 'Corso Umberto I (Passeggiata Serale)',
-    category: 'Divertimento',
-    image: 'https://source.unsplash.com/random/800x600?night-street',
-    rating: 4.2,
-    reviews: 80,
-    distance: '0.7 km',
-    time: '3 min',
-    description: 'La via principale per una piacevole passeggiata serale, ricca di negozi e caffè.'
-  }
-];
-
-type Place = {
-  id: number;
+// Unified POI item shape from /api/pois
+type PoiItem = {
+  id: string | number;
   name: string;
   category: string;
-  image: string;
-  rating: number;
-  reviews: number;
-  distance: string;
-  time: string;
-  description: string;
+  imageUrl?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  position?: [number, number];
 };
+
+// Category chip shape
+type CategoryChip = { id: string; label: string; count: number };
 
 export function MobileExploreScreen() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [places, setPlaces] = useState<Place[]>(demoPlaces);
+  const [places, setPlaces] = useState<PoiItem[]>([]);
   const [loading, setLoading] = useState(false);
   const { triggerHaptic } = useHapticFeedback();
 
   const handleRefresh = async () => {
     triggerHaptic('light');
-    // Supabase logic removed for now
+    await fetchPlaces();
   };
 
   const pullToRefreshProps = usePullToRefresh({ onRefresh: handleRefresh });
 
-  // useEffect to fetch data from Supabase is removed for now to force demo data
+  // Fetch POIs from unified API (demo ensures many pins and auto-geocoding)
+  const fetchPlaces = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/pois?demo=1');
+      const data: PoiItem[] = await res.json();
+      setPlaces(Array.isArray(data) ? data : []);
+    } catch (_) {
+      setPlaces([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredPlaces = places.filter((place: Place) => {
-    const matchesCategory = activeCategory === 'all' || place.category.toLowerCase() === activeCategory.toLowerCase();
-    const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    fetchPlaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Build category chips dynamically + keep a special shopping pill
+  const categoryChips: CategoryChip[] = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of places) {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    }
+    const chips: CategoryChip[] = [
+      { id: 'shopping', label: 'Shopping', count: 0 },
+      { id: 'all', label: 'Tutti', count: places.length },
+      ...Object.entries(counts).map(([cat, count]) => ({ id: cat.toLowerCase(), label: cat, count })),
+    ];
+    return chips;
+  }, [places]);
+
+  const filteredPlaces = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return places.filter((place) => {
+      const matchesCategory =
+        activeCategory === 'all' ||
+        (activeCategory !== 'shopping' && place.category.toLowerCase() === activeCategory);
+      const matchesSearch =
+        !q || place.name.toLowerCase().includes(q) || (place.description?.toLowerCase().includes(q) ?? false);
+      return matchesCategory && matchesSearch;
+    });
+  }, [places, activeCategory, searchQuery]);
 
   return (
     <div ref={pullToRefreshProps.containerRef} className="min-h-screen bg-black relative overflow-hidden">
@@ -268,7 +130,7 @@ export function MobileExploreScreen() {
 
           {/* Categories */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-6">
-            {categories.map((category) => {
+            {categoryChips.map((category) => {
               const isShopping = category.id === 'shopping';
               const isActive = activeCategory === category.id;
               return (
@@ -285,7 +147,6 @@ export function MobileExploreScreen() {
                     isActive ? 'scale-105' : 'hover:scale-105'
                   } ${isShopping ? 'shopping-pill hover:brightness-110' : ''}`}
                   style={{
-                    // Elegant gold treatment for the Shopping pill
                     background: isShopping
                       ? 'linear-gradient(135deg, rgba(212,175,55,0.35), rgba(212,175,55,0.15))'
                       : (isActive
@@ -298,7 +159,6 @@ export function MobileExploreScreen() {
                       : (isActive
                         ? '1px solid rgba(198, 255, 0, 0.3)'
                         : '1px solid rgba(255, 255, 255, 0.12)'),
-                    // For shopping we delegate the glow to CSS ::before animation
                     boxShadow: isShopping
                       ? 'none'
                       : (isActive
@@ -306,7 +166,6 @@ export function MobileExploreScreen() {
                         : 'none'),
                   }}
                 >
-                  {isShopping && <ShoppingBag className="w-4 h-4 text-yellow-300" />}
                   <span className={`text-sm font-medium ${
                     isShopping ? 'text-yellow-200' : (isActive ? 'text-white' : 'text-white/80')
                   }`}>
@@ -340,10 +199,16 @@ export function MobileExploreScreen() {
             </div>
           )}
 
-          {!loading && filteredPlaces.map((place, index) => (
+          {!loading && filteredPlaces.map((place) => (
             <div
               key={place.id}
               className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50"
+              onClick={() => {
+                if (place.position) {
+                  const [lat, lng] = place.position;
+                  router.push(`/mappa?focus=${lat.toFixed(6)},${lng.toFixed(6)}&name=${encodeURIComponent(place.name)}`);
+                }
+              }}
             >
               <div
                 className="rounded-3xl overflow-hidden border"
@@ -358,14 +223,16 @@ export function MobileExploreScreen() {
               >
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden bg-gray-800">
-                  <Image src={place.image} alt={place.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
+                  <Image src={place.imageUrl || 'https://images.unsplash.com/photo-1503264116251-35a269479413?w=800&h=400&fit=crop'} alt={place.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
-                  {/* Rating Badge */}
-                  <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                    <span className="text-white text-xs font-medium">{place.rating}</span>
-                  </div>
+                  {/* Optional Rating Badge (if available in future) */}
+                  {false && (
+                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                      <span className="text-white text-xs font-medium">4.5</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -376,27 +243,31 @@ export function MobileExploreScreen() {
                         {place.name}
                       </h3>
                       <p className="text-white/70 text-sm leading-relaxed">
-                        {place.description}
+                        {place.description || 'Scopri di più aprendo la mappa con i dettagli.'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
+                  {/* Info */}
+                  <div className="flex flex-col gap-2">
+                    {place.address && (
+                      <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-white/60" />
-                        <span className="text-white/80 text-sm">{place.distance}</span>
+                        <span className="text-white/80 text-sm">{place.address}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-white/60" />
-                        <span className="text-white/80 text-sm">{place.time}</span>
+                    )}
+                    {place.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-white/60" />
+                        <a href={`tel:${place.phone}`} className="text-white/80 text-sm hover:underline">{place.phone}</a>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-white/60" />
-                        <span className="text-white/80 text-sm">{place.reviews}</span>
+                    )}
+                    {place.website && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-white/60" />
+                        <a href={place.website} target="_blank" rel="noopener noreferrer" className="text-white/80 text-sm hover:underline">Sito web</a>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

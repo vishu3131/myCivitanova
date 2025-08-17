@@ -67,7 +67,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
 
   return (
     <div 
-      className="bg-gradient-to-br from-accent/20 via-dark-300/50 to-blue-500/20 backdrop-blur-sm rounded-xl p-4 xp-glow border border-accent/20 cursor-pointer hover:from-accent/30 hover:to-blue-500/30 transition-all duration-300 relative overflow-hidden"
+      className="bg-gradient-to-br from-accent/20 via-dark-300/50 to-blue-500/20 backdrop-blur-sm rounded-xl p-5 xp-glow border border-accent/20 cursor-pointer hover:from-accent/30 hover:to-blue-500/30 transition-all duration-300 relative overflow-hidden"
       onClick={onClick}
     >
       {/* Effetto luminoso di sfondo */}
@@ -91,30 +91,30 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
       {/* Header con icona e livello */}
       <div className="flex items-center justify-between mb-3 relative z-10">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-accent to-blue-500 rounded-full flex items-center justify-center shadow-lg">
-            <span className="text-white text-sm font-bold">⚡</span>
+          <div className="w-9 h-9 bg-gradient-to-br from-accent to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-white text-base font-bold">⚡</span>
           </div>
           <div>
-            <h3 className="text-white font-semibold text-sm">Esperienza</h3>
-            <p className="text-accent text-xs font-medium">{getLevelTitle(currentStats.current_level)}</p>
+            <h3 className="text-white font-semibold text-base">Esperienza</h3>
+            <p className="text-accent text-sm font-medium">{getLevelTitle(currentStats.current_level)}</p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-accent font-bold text-lg">Lv.{currentStats.current_level}</div>
-          <div className="text-white/60 text-xs">#{currentStats.rank_position}</div>
+          <div className="text-accent font-bold text-xl">Lv.{currentStats.current_level}</div>
+          <div className="text-white/60 text-sm">#{currentStats.rank_position}</div>
         </div>
       </div>
 
       {/* XP Totali */}
-      <div className="mb-3 relative z-10">
+      <div className="mb-2 relative z-10">
         <div className="flex justify-between items-baseline">
-          <span className="text-white font-bold text-xl">{currentStats.total_xp.toLocaleString()}</span>
-          <span className="text-white/60 text-xs">XP Totali</span>
+          <span className="text-white font-bold text-2xl">{currentStats.total_xp.toLocaleString()}</span>
+          <span className="text-white/60 text-sm">XP Totali</span>
         </div>
       </div>
 
       {/* Barra Progresso */}
-      <div className="mb-3 relative z-10">
+      <div className="mb-2 relative z-10">
         <div className="flex justify-between text-xs text-white/60 mb-2">
           <span>{xpInCurrentLevel} XP</span>
           <span className="text-accent font-medium">{currentStats.level_progress.toFixed(0)}%</span>
@@ -123,9 +123,9 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
         
         {/* Barra principale */}
         <div className="relative">
-          <div className="w-full bg-dark-400/50 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-dark-400/50 rounded-full h-[14px] overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-accent via-blue-400 to-accent h-3 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+              className="bg-gradient-to-r from-accent via-blue-400 to-accent h-[14px] rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
               style={{ width: `${currentStats.level_progress}%` }}
             >
               {/* Effetto shimmer */}
@@ -134,7 +134,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
           </div>
           
           {/* Indicatori di milestone */}
-          <div className="absolute top-0 left-0 w-full h-3 flex justify-between items-center">
+          <div className="absolute top-0 left-0 w-full h-[14px] flex justify-between items-center">
             {[25, 50, 75].map((milestone) => (
               <div
                 key={milestone}

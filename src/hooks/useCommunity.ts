@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { CommunityAPI, FetchPostsParams } from '@/lib/communityApi';
+import { useLoading } from '@/context/LoadingContext';
 
 export interface CommunityPost {
   id: string;
@@ -81,6 +82,7 @@ export const useCommunity = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [total, setTotal] = useState<number>(0);
+  const { startLoading, stopLoading } = useLoading();
 
   // Carica l'utente corrente
   useEffect(() => {

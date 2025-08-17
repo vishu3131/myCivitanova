@@ -27,6 +27,7 @@ import SocialWidgetsContainer from './SocialWidgetsContainer';
 import LeaderboardWidget from './LeaderboardWidget';
 import SponsoredActivitiesWidget from './SponsoredActivitiesWidget';
 import AngoloWidget from './AngoloWidget';
+import FundraisingWidget from './FundraisingWidget';
 
 export function MobileHomeScreen() {
   const [showNews, setShowNews] = useState(false);
@@ -171,18 +172,9 @@ export function MobileHomeScreen() {
                 onClick={() => setShowBadges(true)}
               />
             </div>
-            {/* Community Widget - Small */}
-            <div className="col-span-2 bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 card-glow border border-white/10">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-white font-semibold text-sm">Community</h3>
-                <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <span className="text-xs text-green-400">👥</span>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{userCount !== null ? userCount : '...'}</div>
-                <div className="text-white/60 text-xs">Cittadini attivi</div>
-              </div>
+            {/* Raccolta Fondi Widget */}
+            <div className="col-span-2">
+              <FundraisingWidget />
             </div>
           </div>
           {/* Bottom Row - Resized for Leaderboard */}
@@ -216,6 +208,20 @@ export function MobileHomeScreen() {
               <LeaderboardWidget
                 className="h-[400px] md:h-[440px]"
               />
+              <div className="mt-2">
+                <SponsoredActivitiesWidget
+                  className="h-[88px] md:h-[96px] p-1"
+                  title="Attività Sponsorizzate"
+                  content={(
+                    <div className="text-white/80 text-xs leading-snug">
+                      <div className="font-semibold text-white text-xs mb-0.5">Scopri le attività sponsorizzate!</div>
+                      <p className="opacity-80">
+                        Un'anteprima delle migliori attività e eventi sponsorizzati a Civitanova.
+                      </p>
+                    </div>
+                  )}
+                />
+              </div>
             </div>
           </div>
 
@@ -295,6 +301,22 @@ export function MobileHomeScreen() {
           {/* Social Widgets con Switch Toggle */}
           <SocialWidgetsContainer />
 
+          {/* Widget: Costruiamo insieme MyCivitanova */}
+          <Link href="/costruiamo">
+            <div className="mt-4 bg-gradient-to-br from-white/5 to-white/0 backdrop-blur-sm rounded-2xl p-4 border border-white/10 card-glow cursor-pointer group overflow-hidden">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center action-button-float">
+                  <span className="text-lg">✨</span>
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold">Costruiamo insieme MyCivitanova</div>
+                  <div className="text-white/70 text-xs">Scopri la visione e come supportare il progetto</div>
+                </div>
+                <div className="text-white/70 group-hover:text-white nav-item-transition">→</div>
+              </div>
+            </div>
+          </Link>
+
           {/* Additional spacing for content */}
           <div className="h-8"></div>
         </div>
@@ -370,20 +392,11 @@ export function MobileHomeScreen() {
         
 
 
+        {/* Spacing for Bottom Navbar */}
+        <div className="h-24"></div>
+
         {/* Bottom Navigation */}
       </div>
     </div>
   );
 }
-
-<SponsoredActivitiesWidget
-  title="Attività Sponsorizzate"
-  content={(
-    <div className="text-white/80 text-xs leading-snug">
-      <div className="font-semibold text-white text-sm mb-1">Scopri le attività sponsorizzate!</div>
-      <p className="opacity-80">
-        Un'anteprima delle migliori attività e eventi sponsorizzati a Civitanova.
-      </p>
-    </div>
-  )}
-/>
