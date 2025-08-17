@@ -4,54 +4,11 @@ import React, { useRef, useState, useEffect } from "react";
 import { Car, CreditCard, Info, MapPin, Clock, Hash, AlertTriangle } from "lucide-react";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import dynamic from "next/dynamic";
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import 'leaflet/dist/leaflet.css'; // Keep Leaflet CSS
 import Switch from "@/components/Switch";
-
-// Dynamic react-leaflet components (module scope so subcomponents can use them)
-const Map = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
-const Polygon = dynamic(() => import('react-leaflet').then(m => m.Polygon), { ssr: false });
-const Polyline = dynamic(() => import('react-leaflet').then(m => m.Polyline), { ssr: false });
-const Tooltip = dynamic(() => import('react-leaflet').then(m => m.Tooltip), { ssr: false });
-const GeoJSON = dynamic(() => import('react-leaflet').then(m => m.GeoJSON), { ssr: false });
-
-// Parking marker icons
-const markerShadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png';
-const paidIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: markerShadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-const freeIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: markerShadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-const unknownIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-  shadowUrl: markerShadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-function getParkingIcon(item: any): L.Icon<any> {
-  if (item?.fee_bool === true) return paidIcon; // a pagamento → blu acceso
-  if (item?.fee_bool === false) return freeIcon; // gratuito → verde
-  return unknownIcon; // sconosciuto → grigio
-}
+import ParkingMap from "@/components/ParkingMap"; // Import the new ParkingMap component
 
 // Parking areas (approximate polygons/polylines) for clarity over clusters
-// type: 'free' | 'paid'; shape: 'polygon' | 'polyline'
 const PARKING_AREAS: Array<
   | { id: string; name: string; type: 'free' | 'paid'; shape: 'polygon'; coords: [number, number][] }
   | { id: string; name: string; type: 'free' | 'paid'; shape: 'polyline'; coords: [number, number][] }
@@ -348,25 +305,16 @@ function AltParkingView({ onToggle, isAlt }: { onToggle: () => void; isAlt: bool
           </div>
         </div>
         <div className="h-64 w-full">
-          <Map center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-            <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' attribution='&copy; OpenStreetMap contributors' />
-            {/* GeoJSON points */}
-            {filteredFeatures.length > 0 && (
-              <GeoJSON
-                data={filteredFC as any}
-                pointToLayer={(feature: any, latlng: any) => {
-                  return L.marker(latlng, { icon: getParkingIcon(feature?.properties) });
-                }}
-                onEachFeature={(feature: any, layer: any) => {
-                  const p = feature.properties || {};
-                  const label = `${p.name || 'Parcheggio'}${p.fee_bool === true ? ' • A pagamento' : p.fee_bool === false ? ' • Gratuito' : ''}`;
-                  layer.bindTooltip(label);
-                }}
-              />
-            )}
-            {/* Evidenzia aree note */}
-            <AreasOverlay />
-          </Map>
+          <ParkingMap
+            center={center}
+            zoom={14}
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
+            filteredFC={filteredFC}
+            filteredFeatures={filteredFeatures}
+            parkingAreas={PARKING_AREAS}
+            getAreaStyle={getAreaStyle}
+          />
         </div>
         {error && (
           <div className="p-3 text-xs text-red-300">{error}</div>
@@ -468,91 +416,7 @@ function AltParkingView({ onToggle, isAlt }: { onToggle: () => void; isAlt: bool
   );
 }
 
-// Subcomponents
-function ParkingMap({ activeTab, onToggleAlt, isAlt }: { activeTab: 'all' | 'free' | 'paid'; onToggleAlt: () => void; isAlt: boolean }) {
-  const [items, setItems] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/parking?fee=${activeTab}`);
-        if (!res.ok) throw new Error(`Errore caricamento parcheggi (${res.status})`);
-        const data = await res.json();
-        setItems(data);
-      } catch (e: any) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [activeTab]);
-
-  const center: [number, number] = [43.307, 13.73];
-
-  return (
-    <div className="rounded-xl overflow-hidden border border-white/10 bg-black/30">
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
-            <MapPin className="w-4 h-4 text-blue-400" />
-          </div>
-          <div>
-            <div className="text-white font-semibold text-sm">Mappa Parcheggi <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Modalità: Standard</span></div>
-            <div className="text-white/60 text-xs">Fonte: OSM/Overpass • {activeTab === 'all' ? 'Tutti' : activeTab === 'free' ? 'Gratuiti' : 'A pagamento'}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-white/70 text-xs hidden sm:inline">Open Data</span>
-          <Switch isOn={isAlt} onToggle={onToggleAlt} />
-          {loading && <span className="text-[10px] text-white/50">Caricamento…</span>}
-        </div>
-      </div>
-      <div className="h-64 w-full">
-        <Map center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-          <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' attribution='&copy; OpenStreetMap contributors' />
-          {/* Evidenzia Aree Parcheggio */}
-          <AreasOverlay />
-          {/* Marker singoli nascosti per ridurre il clutter */}
-        </Map>
-      </div>
-      {error && (
-        <div className="p-3 text-xs text-red-300">{error}</div>
-      )}
-    </div>
-  );
-}
-
-function AreasOverlay() {
-  return (
-    <>
-      {PARKING_AREAS.map((area) => {
-        const style = getAreaStyle(area.type);
-        if (area.shape === 'polygon') {
-          return (
-            <Polygon key={area.id} positions={area.coords as any} pathOptions={style}>
-              <Tooltip permanent direction="center" className="!bg-transparent !border-none !text-white text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                {area.name}
-              </Tooltip>
-            </Polygon>
-          );
-        }
-        // polyline spesso come corridoio lungo il corso
-        return (
-          <Polyline key={area.id} positions={area.coords as any} pathOptions={{ ...style, weight: 12, opacity: 0.6 }}>
-            <Tooltip permanent sticky className="!bg-transparent !border-none !text-white text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              {area.name}
-            </Tooltip>
-          </Polyline>
-        );
-      })}
-    </>
-  );
-}
+// Subcomponents (ParkingList and PaymentStarter remain here)
 
 function PaymentStarter() {
   const { triggerHaptic } = useHapticFeedback();
