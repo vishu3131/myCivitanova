@@ -53,25 +53,31 @@ export const PhotoGallery3D: React.FC<PhotoGallery3DProps> = ({
 
   // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     touchStartX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
     touchEndX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return;
     
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
+    const distanceX = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distanceX > 30;
+    const isRightSwipe = distanceX < -30;
 
     if (isLeftSwipe) {
       goToNext();
     } else if (isRightSwipe) {
       goToPrevious();
     }
+    
+    // Reset touch positions
+    touchStartX.current = 0;
+    touchEndX.current = 0;
   };
 
   // Calcola trasformazione per effetto coverflow
@@ -185,17 +191,23 @@ export const PhotoGallery3D: React.FC<PhotoGallery3DProps> = ({
           
           {/* Navigation buttons */}
           <button
-            onClick={goToPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 hover:scale-110 transition-all duration-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrevious();
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-black/70 backdrop-blur-sm border border-white/30 text-white hover:bg-black/80 hover:scale-110 active:scale-95 transition-all duration-300"
           >
-            <ChevronLeftIcon className="w-5 h-5" />
+            <ChevronLeftIcon className="w-6 h-6" />
           </button>
           
           <button
-            onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 hover:scale-110 transition-all duration-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-black/70 backdrop-blur-sm border border-white/30 text-white hover:bg-black/80 hover:scale-110 active:scale-95 transition-all duration-300"
           >
-            <ChevronRightIcon className="w-5 h-5" />
+            <ChevronRightIcon className="w-6 h-6" />
           </button>
         </div>
 

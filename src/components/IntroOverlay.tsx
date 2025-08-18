@@ -7,28 +7,11 @@ export default function IntroOverlay() {
   const [visible, setVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const startedRef = useRef(false);
-  const startWatchdogRef = useRef<number | null>(null);
-  const waitingTimeoutRef = useRef<number | null>(null);
 
-  const cleanupTimers = () => {
-    if (startWatchdogRef.current) {
-      window.clearTimeout(startWatchdogRef.current);
-      startWatchdogRef.current = null;
-    }
-    if (waitingTimeoutRef.current) {
-      window.clearTimeout(waitingTimeoutRef.current);
-      waitingTimeoutRef.current = null;
-    }
-  };
 
   const handleSkip = () => {
-    cleanupTimers();
     try {
       videoRef.current?.pause();
-    } catch {}
-    try {
-      sessionStorage.setItem("introSeen", "1");
     } catch {}
     setVisible(false);
   };
@@ -37,21 +20,8 @@ export default function IntroOverlay() {
 
   // Decidi se mostrare l'intro: evita di farla comparire in condizioni di rete scarsa o per preferenze utente
   useEffect(() => {
-    try {
-      const seen = sessionStorage.getItem("introSeen") === "1";
-      const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      const saveData = (navigator as any)?.connection?.saveData === true;
-
-      // Se già vista in questa sessione, o l'utente preferisce meno motion, o ha attivo il risparmio dati, non mostrare
-      if (seen || prefersReduced || saveData) {
-        return;
-      }
-
-      setVisible(true);
-    } catch {
-      // In caso di errore sugli storage o matchMedia, mostrare comunque e affidarsi ai watchdog
-      setVisible(true);
-    }
+    // Mostra sempre l'intro al caricamento della pagina
+    setVisible(true);
   }, []);
 
   // Evita lo scroll del body mentre l'intro è visibile
@@ -64,64 +34,14 @@ export default function IntroOverlay() {
     };
   }, [visible]);
 
-  // Gestione play non bloccante con watchdog e fallback
+  // Avvia il video quando l'intro è visibile, senza watchdog né skip automatici
   useEffect(() => {
     if (!visible) return;
     const v = videoRef.current;
     if (!v) return;
-
-    const onPlaying = () => {
-      startedRef.current = true;
-      if (waitingTimeoutRef.current) {
-        window.clearTimeout(waitingTimeoutRef.current);
-        waitingTimeoutRef.current = null;
-      }
-    };
-
-    const onWaiting = () => {
-      // Se va in buffering, non tenere bloccato: dai 2s, poi salta
-      if (waitingTimeoutRef.current) window.clearTimeout(waitingTimeoutRef.current);
-      waitingTimeoutRef.current = window.setTimeout(() => {
-        handleSkip();
-      }, 2000);
-    };
-
-    const onError = () => handleSkip();
-
-    v.addEventListener("playing", onPlaying);
-    v.addEventListener("waiting", onWaiting);
-    v.addEventListener("stalled", onError);
-    v.addEventListener("error", onError);
-    v.addEventListener("abort", onError);
-    v.addEventListener("suspend", onError);
-    v.addEventListener("emptied", onError);
-
-    // Watchdog di avvio: se non parte entro 2s, salta automaticamente
-    startWatchdogRef.current = window.setTimeout(() => {
-      if (!startedRef.current) {
-        handleSkip();
-      }
-    }, 2000);
-
-    // Prova a partire manualmente per intercettare errori di autoplay
-    const playPromise = v.play();
-    if (playPromise && typeof (playPromise as any).catch === "function") {
-      (playPromise as Promise<void>).catch(() => {
-        // Autoplay bloccato o errore: non bloccare l'utente
-        window.setTimeout(() => handleSkip(), 300);
-      });
-    }
-
-    return () => {
-      v.removeEventListener("playing", onPlaying);
-      v.removeEventListener("waiting", onWaiting);
-      v.removeEventListener("stalled", onError);
-      v.removeEventListener("error", onError);
-      v.removeEventListener("abort", onError);
-      v.removeEventListener("suspend", onError);
-      v.removeEventListener("emptied", onError);
-      cleanupTimers();
-    };
+    v.play().catch(() => {
+      // Se l'autoplay è bloccato, l'utente può premere play manualmente
+    });
   }, [visible]);
 
   if (!visible) return null;
@@ -138,7 +58,7 @@ export default function IntroOverlay() {
         onEnded={handleEnded}
       >
         <source
-          src="/intro/Video senza titolo - Realizzato con Clipchamp (9).mp4"
+          src="/intro/tutorial-video.mp4"
           type="video/mp4"
         />
         Il tuo browser non supporta il video HTML5.

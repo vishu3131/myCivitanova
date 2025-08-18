@@ -138,18 +138,18 @@ export const QuartiereParksWidget: React.FC<QuartiereParksWidgetProps> = ({
                 </p>
 
                 {/* Facilities preview */}
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {park.facilities.slice(0, selectedPark?.id === park.id ? park.facilities.length : 4).map((facility, index) => (
                     <span
                       key={index}
-                      className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full bg-${color}-500/20 text-${color}-300 text-xs font-medium`}
+                      className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-${color}-500/20 text-${color}-300 text-xs font-medium`}
                     >
                       <span>{getFacilityIcon(facility)}</span>
-                      <span>{facility}</span>
+                      <span className="truncate max-w-[100px]">{facility}</span>
                     </span>
                   ))}
                   {park.facilities.length > 4 && selectedPark?.id !== park.id && (
-                    <span className="px-2 py-1 rounded-full bg-gray-600 text-gray-300 text-xs font-medium">
+                    <span className="px-2.5 py-1 rounded-full bg-gray-600 text-gray-300 text-xs font-medium">
                       +{park.facilities.length - 4}
                     </span>
                   )}

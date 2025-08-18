@@ -141,7 +141,10 @@ export function MobileHomeScreen() {
         {/* Category Tags */}
         <CategoryTags />
         {/* Info Cards */}
-        <InfoCards onReportClick={() => setShowReport(true)} />
+        <InfoCards 
+          onReportClick={() => setShowReport(true)} 
+          userId={currentUserId || undefined}
+        />
         {/* Widget extra dalla versione desktop */}
         <div className="space-y-4 px-3 mt-4">
 

@@ -7,12 +7,15 @@ import { useRouter } from 'next/navigation';
 import { IntegratedWidgetBar } from './IntegratedWidgetBar';
 import WalkingTimeWidget from './WalkingTimeWidget';
 import ModernServicesWidget from './ModernServicesWidget';
+import { TutorialWidget } from './TutorialWidget';
+import HomeTutorial from './HomeTutorial';
 
 interface InfoCardsProps {
   onReportClick?: () => void;
+  userId?: string;
 }
 
-export function InfoCards({ onReportClick }: InfoCardsProps) {
+export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
   const router = useRouter();
   const [heartActive, setHeartActive] = useState(false);
   const [prevSlide, setPrevSlide] = useState(0);
@@ -21,6 +24,9 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
   const [offset, setOffset] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const SLIDE_MS = 3500;
+
+  // Stati per il tutorial
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Carousel murales - eccentric scrolling + spray overlay
   // Inserisci qui i tuoi file locali sotto public/murales (rinominali come suggerito oppure aggiorna questo array)
@@ -479,8 +485,12 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
           `}</style>
         </div>
 
-        {/* Card percorso - sostituita con widget dinamico a scorrimento */}
-        <div className="h-[100px] rounded-[20px] border border-white/10 bg-white/5" role="presentation" aria-hidden="true"></div>
+        {/* Tutorial Widget - sostituisce il widget vuoto */}
+        <TutorialWidget
+          userId={userId}
+          onStartTutorial={() => setShowTutorial(true)}
+          className="h-[100px]"
+        />
         {/* Widget Bar Integrato */}
         <IntegratedWidgetBar 
           onEventClick={() => router.push('/eventi')}
@@ -678,6 +688,17 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
           )}
         </div>
       </div>
+
+      {/* Modal Tutorial */}
+      <HomeTutorial
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        onComplete={() => {
+          setShowTutorial(false);
+          // Opzionale: mostra un toast di congratulazioni
+        }}
+        userId={userId}
+      />
     </div>
   );
 }
