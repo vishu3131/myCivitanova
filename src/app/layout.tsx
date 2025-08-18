@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { LoadingProvider } from '@/context/LoadingContext';
 import { GlobalLoader } from '@/components/GlobalLoader';
+import IntroOverlay from '@/components/IntroOverlay';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -47,6 +48,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <LoadingProvider>
             <SidebarProvider>
+              <IntroOverlay />
               <GlobalLoader />
               <PageTransition>
                 {children}

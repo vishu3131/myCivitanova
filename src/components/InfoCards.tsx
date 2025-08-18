@@ -480,7 +480,7 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
         </div>
 
         {/* Card percorso - sostituita con widget dinamico a scorrimento */}
-        <WalkingTimeWidget />
+        <div className="h-[100px] rounded-[20px] border border-white/10 bg-white/5" role="presentation" aria-hidden="true"></div>
         {/* Widget Bar Integrato */}
         <IntegratedWidgetBar 
           onEventClick={() => router.push('/eventi')}
@@ -489,19 +489,8 @@ export function InfoCards({ onReportClick }: InfoCardsProps) {
           onReportClick={onReportClick}
         />
 
-        {/* Card meteo */}
-        <div className="h-[100px] rounded-[20px] p-4 flex flex-col justify-between cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl group"
-             style={{
-               background: 'linear-gradient(135deg, #93F9B9, #1D976C)',
-             }}>
-          <div className="flex items-center justify-between">
-            <Sun className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-300" />
-            <span className="text-white/70 text-xs group-hover:text-white/90 transition-colors duration-200">14:30</span>
-          </div>
-          <div>
-            <span className="text-white text-2xl font-bold group-hover:scale-110 transition-transform duration-200 inline-block">24°C</span>
-          </div>
-        </div>
+        {/* Card meteo (sostituita dal widget Percorsi a piedi) */}
+        <WalkingTimeWidget />
 
         {/* Modern Services Widget */}
         <ModernServicesWidget />

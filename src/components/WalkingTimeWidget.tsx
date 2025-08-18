@@ -222,17 +222,14 @@ export default function WalkingTimeWidget() {
         /* From Uiverse.io by Smit-Prajapati (adattato e reso responsive) */
         .parent {
           width: 100%;
-          height: 240px;
+          height: 100px;
           perspective: 1000px;
           position: relative;
-        }
-        @media (min-width: 420px) {
-          .parent { height: 280px; }
         }
 
         .card {
           height: 100%;
-          border-radius: 50px;
+          border-radius: 20px;
           background: linear-gradient(135deg, rgb(0, 255, 214) 0%, rgb(8, 226, 96) 100%);
           transition: all 0.5s ease-in-out;
           transform-style: preserve-3d;
@@ -249,8 +246,7 @@ export default function WalkingTimeWidget() {
           transform-style: preserve-3d;
           position: absolute;
           inset: 8px;
-          border-radius: 55px;
-          border-top-right-radius: 100%;
+          border-radius: 18px;
           background: linear-gradient(0deg, rgba(255, 255, 255, 0.349) 0%, rgba(255, 255, 255, 0.815) 100%);
           -webkit-backdrop-filter: blur(5px);
           backdrop-filter: blur(5px);
@@ -261,33 +257,30 @@ export default function WalkingTimeWidget() {
         }
 
         .content {
-          padding: 20px 16px 0px 16px; /* leggermente più basso */
+          padding: 12px 12px 0px 12px;
           transform: translate3d(0, 0, 26px);
-        }
-        @media (min-width: 420px) {
-          .content { padding: 28px 28px 0px 20px; }
         }
         .content .title {
           display: block;
           color: #00894d;
           font-weight: 900;
-          font-size: 22px; /* maggiore leggibilità */
+          font-size: 16px;
         }
         .content .text {
           display: block;
           color: rgba(0, 137, 78, 0.7647058824);
-          font-size: 15px; /* maggiore leggibilità */
-          margin-top: 10px;
-          line-height: 1.35rem;
+          font-size: 12px;
+          margin-top: 6px;
+          line-height: 1.2rem;
         }
 
         .bottom {
-          padding: 10px 12px;
+          padding: 6px 10px;
           transform-style: preserve-3d;
           position: absolute;
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
+          bottom: 10px;
+          left: 12px;
+          right: 12px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -319,9 +312,9 @@ export default function WalkingTimeWidget() {
         }
         .bottom .social-buttons-container { display: flex; gap: 10px; transform-style: preserve-3d; }
         .bottom .social-buttons-container .social-button {
-          width: 30px; aspect-ratio: 1; padding: 5px; background: rgb(255, 255, 255); border-radius: 50%; border: none; display: grid; place-content: center; box-shadow: rgba(5, 71, 17, 0.5) 0px 7px 5px -5px; cursor: pointer;
+          width: 24px; aspect-ratio: 1; padding: 4px; background: rgb(255, 255, 255); border-radius: 50%; border: none; display: grid; place-content: center; box-shadow: rgba(5, 71, 17, 0.5) 0px 7px 5px -5px; cursor: pointer;
         }
-        .bottom .social-buttons-container .social-button .svg { width: 16px; fill: #00894d; stroke: #00894d; stroke-width: 2px; }
+        .bottom .social-buttons-container .social-button .svg { width: 14px; fill: #00894d; stroke: #00894d; stroke-width: 2px; }
         .bottom .social-buttons-container .social-button:hover { background: black; }
         .bottom .social-buttons-container .social-button:hover .svg { fill: white; stroke: white; }
         .bottom .social-buttons-container .social-button:active { background: rgb(255, 234, 0); }
@@ -331,11 +324,11 @@ export default function WalkingTimeWidget() {
         .logo .circle {
           display: block; position: absolute; aspect-ratio: 1; border-radius: 50%; top: 0; right: 0; box-shadow: rgba(100, 100, 111, 0.2) -10px 10px 20px 0px; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0, 249, 203, 0.2); transition: all 0.5s ease-in-out; will-change: transform;
         }
-        .logo .circle1 { width: 170px; transform: translate3d(0, 0, 20px); top: 8px; right: 8px; }
-        .logo .circle2 { width: 140px; transform: translate3d(0, 0, 40px); top: 10px; right: 10px; backdrop-filter: blur(1px); transition-delay: 0.4s; }
-        .logo .circle3 { width: 110px; transform: translate3d(0, 0, 60px); top: 17px; right: 17px; transition-delay: 0.8s; }
-        .logo .circle4 { width: 80px; transform: translate3d(0, 0, 80px); top: 23px; right: 23px; transition-delay: 1.2s; }
-        .logo .circle5 { width: 50px; transform: translate3d(0, 0, 100px); top: 30px; right: 30px; display: grid; place-content: center; transition-delay: 1.6s; }
+        .logo .circle1 { width: 90px; transform: translate3d(0, 0, 20px); top: 6px; right: 6px; }
+        .logo .circle2 { width: 72px; transform: translate3d(0, 0, 40px); top: 8px; right: 8px; backdrop-filter: blur(1px); transition-delay: 0.4s; }
+        .logo .circle3 { width: 56px; transform: translate3d(0, 0, 60px); top: 12px; right: 12px; transition-delay: 0.8s; }
+        .logo .circle4 { width: 40px; transform: translate3d(0, 0, 80px); top: 16px; right: 16px; transition-delay: 1.2s; }
+        .logo .circle5 { width: 24px; transform: translate3d(0, 0, 100px); top: 20px; right: 20px; display: grid; place-content: center; transition-delay: 1.6s; }
         .logo .circle5 .svg { width: 20px; fill: white; }
 
         .parent.tilted .card { transform: rotate3d(1, 1, 0, 30deg); box-shadow: rgba(5, 71, 17, 0.3) 30px 50px 25px -40px, rgba(5, 71, 17, 0.1) 0px 25px 30px 0px; }
@@ -356,8 +349,8 @@ export default function WalkingTimeWidget() {
         /* Pannello dettagli */
         .details-panel {
           position: absolute;
-          left: 14px; right: 14px;
-          top: 90px; bottom: 70px;
+          left: 10px; right: 10px;
+          top: 8px; bottom: 8px;
           background: rgba(0,0,0,0.25);
           border: 1px solid rgba(255,255,255,0.2);
           border-radius: 16px;

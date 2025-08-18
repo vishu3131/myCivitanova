@@ -17,6 +17,7 @@ import { WeatherWidget } from './WeatherWidget';
 import { TouristSpotWidget } from './TouristSpotWidget';
 import { BeachWidget } from './BeachWidget';
 import { XPWidget } from './XPWidget';
+import DailyXPClaim from './DailyXPClaim';
 import ReportModal from './CommunityReportModal';
 import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
@@ -26,7 +27,7 @@ import Link from 'next/link';
 import SocialWidgetsContainer from './SocialWidgetsContainer';
 import LeaderboardWidget from './LeaderboardWidget';
 import SponsoredActivitiesWidget from './SponsoredActivitiesWidget';
-import AngoloWidget from './AngoloWidget';
+import TreasureHuntWidget from './TreasureHuntWidget';
 import FundraisingWidget from './FundraisingWidget';
 
 export function MobileHomeScreen() {
@@ -120,6 +121,9 @@ export function MobileHomeScreen() {
       {/* Hero Section */}
       <HeroSection />
 
+      {/* Daily XP Claim under Hero */}
+      <DailyXPClaim userId={currentUserId || undefined} />
+
       {/* Pure Neon Mobile Widget Row */}
       <div>
         <div className="grid grid-cols-1">
@@ -194,11 +198,8 @@ export function MobileHomeScreen() {
                   <div className="text-accent text-xs">{currentUserId ? '...' : '5'}</div>
                 </div>
               </div>
-              {/* Angolo Widget */}
-              <AngoloWidget
-                onButton1Click={() => console.log('Angolo Tasto 1 cliccato')}
-                onButton2Click={() => console.log('Angolo Tasto 2 cliccato')}
-              />
+              {/* Caccia al Tesoro Widget */}
+              <TreasureHuntWidget />
               {/* Waste Collection Widget */}
               <WasteCollectionWidget />
             </div>

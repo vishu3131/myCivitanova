@@ -18,7 +18,7 @@ interface UserStats {
   rank_position: number;
 }
 
-export function useXPSystem(userId?: string) {
+export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolean }) {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [xpNotification, setXpNotification] = useState<{
@@ -170,7 +170,9 @@ export function useXPSystem(userId?: string) {
   useEffect(() => {
     if (userId) {
       loadUserStats();
-      dailyLogin(); // Automatico al caricamento
+      if (options?.autoDailyLogin !== false) {
+        dailyLogin(); // Automatico al caricamento
+      }
     }
   }, [userId, loadUserStats, dailyLogin]);
 
