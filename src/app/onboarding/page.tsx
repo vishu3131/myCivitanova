@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { Bell, Map, ShieldCheck, Sparkles, Trophy } from "lucide-react";
@@ -68,6 +68,20 @@ const KEYWORDS = new Set([
 ]);
 
 export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[100dvh] flex items-center justify-center bg-black text-white">
+          <div className="animate-pulse opacity-60">Caricamento…</div>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
+  );
+}
+
+function OnboardingContent() {
   const router = useRouter();
   const search = useSearchParams();
   const replay = search?.get("replay") === "1";
