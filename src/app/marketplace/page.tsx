@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -119,9 +119,10 @@ export default function MarketplacePage() {
   const nearYouCount = filtered.filter((l) => /civitanova|centro/i.test(l.location)).length;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Sticky header con stats e CTA */}
-      <div className="sticky top-0 z-30 bg-black/70 backdrop-blur-md border-b border-white/10">
+    <Suspense fallback={<div>Loading marketplace...</div>}>
+      <div className="min-h-screen bg-black text-white">
+        {/* Sticky header con stats e CTA */}
+        <div className="sticky top-0 z-30 bg-black/70 backdrop-blur-md border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-white/70 hover:text-white">←</Link>
@@ -387,6 +388,6 @@ export default function MarketplacePage() {
           </button>
         </div>
       </div>
-    </div>
+    </Suspense>
   );
 }
