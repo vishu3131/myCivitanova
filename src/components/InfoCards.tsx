@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { IntegratedWidgetBar } from './IntegratedWidgetBar';
 import ModernServicesWidget from './ModernServicesWidget';
 import { TutorialWidget } from './TutorialWidget';
-import HomeTutorial from './HomeTutorial';
 import Link from 'next/link';
 
 interface InfoCardsProps {
@@ -24,9 +23,6 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
   const [offset, setOffset] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const SLIDE_MS = 3500;
-
-  // Stati per il tutorial
-  const [showTutorial, setShowTutorial] = useState(false);
 
   // Carousel murales - eccentric scrolling + spray overlay
   // Inserisci qui i tuoi file locali sotto public/murales (rinominali come suggerito oppure aggiorna questo array)
@@ -492,7 +488,6 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
             {/* Tutorial Widget */}
             <TutorialWidget
               userId={userId}
-              onStartTutorial={() => setShowTutorial(true)}
               className="h-[100px]"
             />
             
@@ -579,16 +574,6 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
         </Link>
       </div>
 
-      {/* Modal Tutorial */}
-      <HomeTutorial
-        isOpen={showTutorial}
-        onClose={() => setShowTutorial(false)}
-        onComplete={() => {
-          setShowTutorial(false);
-          // Opzionale: mostra un toast di congratulazioni
-        }}
-        userId={userId}
-      />
     </div>
   );
 }

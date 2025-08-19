@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { Calendar, Car, Waves, AlertTriangle } from 'lucide-react';
 
+import { LucideProps } from 'lucide-react'; // Import LucideProps
+
 interface WidgetItem {
   id: string;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<LucideProps>; // Use LucideProps for icon type
   bgClass: string;
   onClick?: () => void;
 }
