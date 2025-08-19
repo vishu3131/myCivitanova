@@ -34,8 +34,8 @@ export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-0 sm:p-6"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-6 overflow-y-auto"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
     >
       <div className="relative w-full sm:max-w-lg group">
         {/* Animated gradient glow border */}
