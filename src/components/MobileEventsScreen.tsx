@@ -10,7 +10,7 @@ import { useToast } from './Toast';
 
 
 // Eventi aggiornati: Settembre, Ottobre, Novembre 2025
-const events = [
+export const events = [
   {
     id: 1,
     title: 'Bim Bum Bam Festival - Giorno 1',
@@ -408,25 +408,27 @@ export function MobileEventsScreen() {
           <h2 className="text-white text-lg font-bold mb-4">In Evidenza</h2>
           <div
             className="group transition-all duration-300 hover:scale-[1.02]"
-            style={{ perspective: '1000px' }}
+            style={{ perspective: '1000px', WebkitPerspective: '1000px' }}
             onClick={() => toggleFlip(featured.id)}
           >
             <div
               className="relative rounded-3xl overflow-hidden cursor-pointer"
               style={{
                 transformStyle: 'preserve-3d',
+                WebkitTransformStyle: 'preserve-3d',
+                willChange: 'transform',
                 transform: isFeaturedFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 transition: 'transform 600ms',
-                minHeight: '224px'
+                minHeight: '280px'
               }}
             >
               {/* Front */}
               <div
                 className="absolute inset-0"
-                style={{ backfaceVisibility: 'hidden' }}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(0deg)', WebkitTransform: 'rotateY(0deg)' }}
               >
                 <div
-                  className="relative h-56"
+                  className="relative h-72"
                   style={{
                     background: 'rgba(255, 255, 255, 0.05)',
                     backdropFilter: 'blur(12px)',
@@ -491,15 +493,17 @@ export function MobileEventsScreen() {
 
               {/* Back */}
               <div
-                className="absolute inset-0 p-6 flex flex-col justify-center"
+                className="absolute inset-0 p-6 flex flex-col overflow-y-auto"
                 style={{
                   transform: 'rotateY(180deg)',
+                  WebkitTransform: 'rotateY(180deg)',
                   backfaceVisibility: 'hidden',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+                  WebkitBackfaceVisibility: 'hidden',
+                  background: 'rgba(30, 31, 33, 0.75)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
                 }}
               >
                 <span className="px-3 py-1 self-start rounded-full bg-accent/20 text-accent text-xs font-medium mb-3">{featured.category}</span>
@@ -518,7 +522,7 @@ export function MobileEventsScreen() {
                     <span>{featured.location}</span>
                   </div>
                 </div>
-                <p className="text-white/90 text-sm leading-relaxed mb-4">{featured.description}</p>
+                <p className="text-white/95 text-base leading-relaxed whitespace-pre-wrap mb-4">{featured.description}</p>
                 <span className="text-white/60 text-xs">Tocca per tornare</span>
               </div>
             </div>
@@ -535,16 +539,18 @@ export function MobileEventsScreen() {
                 <div
                   key={event.id}
                   className="group cursor-pointer transition-all duration-300 hover:scale-[1.02]"
-                  style={{ animationDelay: `${index * 0.1}s`, perspective: '1000px' }}
+                  style={{ animationDelay: `${index * 0.1}s`, perspective: '1000px', WebkitPerspective: '1000px' }}
                   onClick={() => toggleFlip(event.id)}
                 >
                   <div
                     className="relative rounded-2xl overflow-hidden border"
                     style={{
                       transformStyle: 'preserve-3d',
+                      WebkitTransformStyle: 'preserve-3d',
+                      willChange: 'transform',
                       transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                       transition: 'transform 600ms',
-                      minHeight: '96px',
+                      minHeight: '200px',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       background: 'rgba(255, 255, 255, 0.05)',
                       backdropFilter: 'blur(12px)',
@@ -553,10 +559,10 @@ export function MobileEventsScreen() {
                     }}
                   >
                     {/* Front */}
-                    <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
+                    <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(0deg)', WebkitTransform: 'rotateY(0deg)' }}>
                       <div className="flex w-full h-full">
                         {/* Image */}
-                        <div className="relative w-24 h-24 flex-shrink-0">
+                        <div className="relative w-32 h-full flex-shrink-0">
                           <Image
                             src={event.image}
                             alt={event.title}
@@ -602,11 +608,17 @@ export function MobileEventsScreen() {
 
                     {/* Back */}
                     <div
-                      className="absolute inset-0 p-4"
+                      className="absolute inset-0 p-4 flex flex-col overflow-y-auto"
                       style={{
                         transform: 'rotateY(180deg)',
+                        WebkitTransform: 'rotateY(180deg)',
                         backfaceVisibility: 'hidden',
-                        background: 'rgba(255, 255, 255, 0.05)'
+                        WebkitBackfaceVisibility: 'hidden',
+                        background: 'rgba(30, 31, 33, 0.75)',
+                        backdropFilter: 'blur(10px)',
+                        WebkitBackdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
                       }}
                     >
                       <div className="flex flex-col h-full">
@@ -631,7 +643,7 @@ export function MobileEventsScreen() {
                             <span>{event.location}</span>
                           </div>
                         </div>
-                        <p className="text-white/90 text-xs leading-relaxed line-clamp-4">
+                        <p className="text-white/95 text-sm leading-relaxed whitespace-pre-wrap">
                           {event.description}
                         </p>
                         <span className="mt-auto text-white/60 text-[10px]">Tocca per tornare</span>

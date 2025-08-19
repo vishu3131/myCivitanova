@@ -9,6 +9,10 @@ import { ArrowLeft, Search, Filter, Star, MapPin, Globe, Phone } from 'lucide-re
 import { useRouter } from 'next/navigation';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+import { ShoppingActivityCard } from '@/components/ShoppingActivityCard';
+import HeliotropeCard from '@/components/explore/HeliotropeCard';
+import TeaExperienceCard from '@/components/explore/TeaExperienceCard';
+import FitFuelCard from '@/components/explore/FitFuelCard';
 
 // Unified POI item shape from /api/pois
 type PoiItem = {
@@ -28,12 +32,35 @@ type CategoryChip = { id: string; label: string; count: number };
 
 export function MobileExploreScreen() {
   const router = useRouter();
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('shopping');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [places, setPlaces] = useState<PoiItem[]>([]);
   const [loading, setLoading] = useState(false);
   const { triggerHaptic } = useHapticFeedback();
+
+  // Mock shopping activities integrated into Explore
+  const shoppingActivities = [
+    {
+      id: 1,
+      name: 'Boutique Eleganza',
+      category: 'shopping',
+      subcategory: 'shopping',
+      image: '/images/boutique-eleganza.jpg',
+      rating: 4.8,
+      reviews: 120,
+      distance: '2.5 km',
+      time: '10-20 min',
+      description: 'Abbigliamento di alta moda e accessori esclusivi.',
+      address: 'Via Roma, 10',
+      openingHours: 'Lun-Sab: 10:00-19:00',
+      tags: ['moda', 'lusso', 'accessori'],
+      priceRange: '€€€',
+      phone: '+39 0733 123456',
+      website: 'www.boutiqueeleganza.it',
+      features: ['Wi-Fi gratuito', 'Parcheggio', 'Accesso disabili', 'Camerini ampi'],
+    },
+  ];
 
   const handleRefresh = async () => {
     triggerHaptic('light');
@@ -68,7 +95,7 @@ export function MobileExploreScreen() {
       counts[p.category] = (counts[p.category] || 0) + 1;
     }
     const chips: CategoryChip[] = [
-      { id: 'shopping', label: 'Shopping', count: 0 },
+      { id: 'shopping', label: 'Shopping', count: shoppingActivities.length },
       { id: 'all', label: 'Tutti', count: places.length },
       ...Object.entries(counts).map(([cat, count]) => ({ id: cat.toLowerCase(), label: cat, count })),
     ];
@@ -138,7 +165,7 @@ export function MobileExploreScreen() {
                   key={category.id}
                   onClick={() => {
                     if (isShopping) {
-                      router.push('/esplora/shopping');
+                      setActiveCategory('shopping');
                     } else {
                       setActiveCategory(category.id);
                     }
@@ -184,96 +211,113 @@ export function MobileExploreScreen() {
           </div>
         </div>
 
-        {/* Places List */}
-        <div className="px-6 space-y-4">
-          {loading && (
-            <div className="grid grid-cols-1 gap-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse rounded-3xl overflow-hidden border border-white/10 bg-white/5 h-48" />
+        {/* Content */}
+        {activeCategory === 'shopping' ? (
+          <div className="px-6 space-y-6">
+            <h2 className="text-2xl font-bold text-white">In Evidenza</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 place-items-center">
+              <div className="w-full max-w-sm"><HeliotropeCard /></div>
+              <div className="w-full max-w-sm"><TeaExperienceCard /></div>
+              <div className="w-full max-w-sm"><FitFuelCard /></div>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Altre Attività</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {shoppingActivities.map((activity) => (
+                <ShoppingActivityCard key={activity.id} activity={activity} />
               ))}
             </div>
-          )}
-          {!loading && filteredPlaces.length === 0 && (
-            <div className="text-center text-white/70 py-10">
-              Nessun luogo trovato per la categoria selezionata.
-            </div>
-          )}
+          </div>
+        ) : (
+          <div className="px-6 space-y-4">
+            {loading && (
+              <div className="grid grid-cols-1 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse rounded-3xl overflow-hidden border border-white/10 bg-white/5 h-48" />
+                ))}
+              </div>
+            )}
+            {!loading && filteredPlaces.length === 0 && (
+              <div className="text-center text-white/70 py-10">
+                Nessun luogo trovato per la categoria selezionata.
+              </div>
+            )}
 
-          {!loading && filteredPlaces.map((place) => (
-            <div
-              key={place.id}
-              className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50"
-              onClick={() => {
-                if (place.position) {
-                  const [lat, lng] = place.position;
-                  router.push(`/mappa?focus=${lat.toFixed(6)},${lng.toFixed(6)}&name=${encodeURIComponent(place.name)}`);
-                }
-              }}
-            >
+            {!loading && filteredPlaces.map((place) => (
               <div
-                className="rounded-3xl overflow-hidden border"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                  transition: 'all 0.3s ease-in-out',
+                key={place.id}
+                className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-accent/50"
+                onClick={() => {
+                  if (place.position) {
+                    const [lat, lng] = place.position;
+                    router.push(`/mappa?focus=${lat.toFixed(6)},${lng.toFixed(6)}&name=${encodeURIComponent(place.name)}`);
+                  }
                 }}
               >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden bg-gray-800">
-                  <Image src={place.imageUrl || 'https://images.unsplash.com/photo-1503264116251-35a269479413?w=800&h=400&fit=crop'} alt={place.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  
-                  {/* Optional Rating Badge (if available in future) */}
-                  {false && (
-                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                      <span className="text-white text-xs font-medium">4.5</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-white text-lg font-bold mb-1 group-hover:text-accent transition-colors duration-200">
-                        {place.name}
-                      </h3>
-                      <p className="text-white/70 text-sm leading-relaxed">
-                        {place.description || 'Scopri di più aprendo la mappa con i dettagli.'}
-                      </p>
-                    </div>
+                <div
+                  className="rounded-3xl overflow-hidden border"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s ease-in-out',
+                  }}
+                >
+                  {/* Image */}
+                  <div className="relative h-48 overflow-hidden bg-gray-800">
+                    <Image src={place.imageUrl || 'https://images.unsplash.com/photo-1503264116251-35a269479413?w=800&h=400&fit=crop'} alt={place.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    
+                    {/* Optional Rating Badge (if available in future) */}
+                    {false && (
+                      <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                        <span className="text-white text-xs font-medium">4.5</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Info */}
-                  <div className="flex flex-col gap-2">
-                    {place.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-white/60" />
-                        <span className="text-white/80 text-sm">{place.address}</span>
+                  {/* Content */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-white text-lg font-bold mb-1 group-hover:text-accent transition-colors duration-200">
+                          {place.name}
+                        </h3>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                          {place.description || 'Scopri di più aprendo la mappa con i dettagli.'}
+                        </p>
                       </div>
-                    )}
-                    {place.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-white/60" />
-                        <a href={`tel:${place.phone}`} className="text-white/80 text-sm hover:underline">{place.phone}</a>
-                      </div>
-                    )}
-                    {place.website && (
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-white/60" />
-                        <a href={place.website} target="_blank" rel="noopener noreferrer" className="text-white/80 text-sm hover:underline">Sito web</a>
-                      </div>
-                    )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex flex-col gap-2">
+                      {place.address && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-white/60" />
+                          <span className="text-white/80 text-sm">{place.address}</span>
+                        </div>
+                      )}
+                      {place.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-white/60" />
+                          <a href={`tel:${place.phone}`} className="text-white/80 text-sm hover:underline">{place.phone}</a>
+                        </div>
+                      )}
+                      {place.website && (
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-white/60" />
+                          <a href={place.website} target="_blank" rel="noopener noreferrer" className="text-white/80 text-sm hover:underline">Sito web</a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="h-8" />
       </div>

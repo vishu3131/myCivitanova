@@ -18,131 +18,83 @@ interface ForecastData {
 }
 
 // Civitanova Marche coordinates
-const CIVITANOVA_COORDS = "43.3062,13.7231";
+const LAT = 43.3062;
+const LON = 13.7231;
 
-// Function to get weather condition and emoji based on temperature, wind, and precipitation
-function getWeatherCondition(temp: number, windSpeed: number, precipitation: number): { condition: string; emoji: string } {
-  if (precipitation > 0.5) {
-    if (precipitation > 5) {
-      return { condition: "Pioggia intensa", emoji: "🌧️" };
-    } else {
-      return { condition: "Pioggia leggera", emoji: "🌦️" };
-    }
-  }
-  
-  if (windSpeed > 15) {
-    return { condition: "Ventoso", emoji: "💨" };
-  }
-  
-  if (temp > 25) {
-    return { condition: "Soleggiato", emoji: "☀️" };
-  } else if (temp > 15) {
-    return { condition: "Nuvoloso", emoji: "☁️" };
-  } else {
-    return { condition: "Freddo", emoji: "🌫️" };
-  }
+function mapWeatherCodeToCondition(code: number): { condition: string; emoji: string } {
+  // WMO weather codes mapping
+  // https://open-meteo.com/en/docs
+  if (code === 0) return { condition: 'Sereno', emoji: '☀️' };
+  if (code === 1) return { condition: 'Poco nuvoloso', emoji: '🌤️' };
+  if (code === 2) return { condition: 'Parzialmente nuvoloso', emoji: '⛅' };
+  if (code === 3) return { condition: 'Coperto', emoji: '☁️' };
+  if (code === 45 || code === 48) return { condition: 'Nebbia', emoji: '🌫️' };
+  if ([51, 53, 55].includes(code)) return { condition: 'Pioviggine', emoji: '🌦️' };
+  if ([56, 57].includes(code)) return { condition: 'Pioggia gelata', emoji: '🌧️' };
+  if ([61, 63, 65].includes(code)) return { condition: 'Pioggia', emoji: '🌧️' };
+  if ([66, 67].includes(code)) return { condition: 'Pioggia gelata', emoji: '🌧️' };
+  if ([71, 73, 75].includes(code)) return { condition: 'Neve', emoji: '❄️' };
+  if (code === 77) return { condition: 'Nevischio', emoji: '🌨️' };
+  if ([80, 81, 82].includes(code)) return { condition: 'Rovesci', emoji: '🌧️' };
+  if ([85, 86].includes(code)) return { condition: 'Rovesci di neve', emoji: '🌨️' };
+  if (code === 95) return { condition: 'Temporale', emoji: '⛈️' };
+  if ([96, 99].includes(code)) return { condition: 'Temporale con grandine', emoji: '⛈️' };
+  return { condition: 'Variabile', emoji: '🌤️' };
 }
 
-// Function to get forecast data for the next 5 days
-function generateForecast(currentTemp: number): ForecastData[] {
-  const days = ["Lun", "Mar", "Mer", "Gio", "Ven"];
-  const today = new Date();
-  const forecast: ForecastData[] = [];
-  
-  for (let i = 0; i < 5; i++) {
-    const futureDate = new Date(today);
-    futureDate.setDate(today.getDate() + i + 1);
-    
-    // Simple forecast logic - vary temperature slightly
-    const tempVariation = Math.random() * 6 - 3; // -3 to +3 degrees
-    const forecastTemp = Math.round(currentTemp + tempVariation);
-    
-    // Determine condition based on temperature
-    let emoji = "☀️";
-    let condition = "Soleggiato";
-    
-    if (forecastTemp < 15) {
-      emoji = "🌫️";
-      condition = "Freddo";
-    } else if (forecastTemp < 20) {
-      emoji = "☁️";
-      condition = "Nuvoloso";
-    } else if (Math.random() > 0.7) {
-      emoji = "🌧️";
-      condition = "Pioggia";
-    }
-    
-    forecast.push({
-      day: days[i],
-      emoji,
-      temp: `${forecastTemp}°`,
-      condition
-    });
-  }
-  
-  return forecast;
+function toItWeekday(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('it-IT', { weekday: 'short' });
 }
 
 export async function GET() {
   try {
-    const username = process.env.METEOMATICS_USERNAME;
-    const password = process.env.METEOMATICS_PASSWORD;
-    
-    if (!username || !password) {
-      console.error("Meteomatics credentials not found in environment variables");
-      return NextResponse.json(
-        { error: "API credentials not configured" },
-        { status: 500 }
-      );
-    }
-    
-    // Use a date within the valid range for the trial account (2025-07-30 to 2027-07-31)
-    const validDate = "2025-08-01T14:00:00Z"; // Fixed date within valid range
-    const url = `https://api.meteomatics.com/${validDate}/t_2m:C,wind_speed_10m:ms,precip_1h:mm,relative_humidity_2m:p/${CIVITANOVA_COORDS}/json`;
-    
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": "Basic " + Buffer.from(username + ":" + password).toString('base64'),
-      }
-    });
-    
+    // Open‑Meteo: no API key required
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true&hourly=relativehumidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,weathercode&forecast_days=5&timezone=Europe/Rome`;
+
+    const response = await fetch(url, { next: { revalidate: 600 } }); // cache for 10 minutes on the server
     if (!response.ok) {
-      throw new Error(`Meteomatics API response error: ${response.status}`);
+      throw new Error(`Open-Meteo API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
-    // Extract weather data
-    const temperature = Math.round(data.data.find((p: any) => p.parameter === "t_2m:C").coordinates[0].dates[0].value);
-    const windSpeedMs = data.data.find((p: any) => p.parameter === "wind_speed_10m:ms").coordinates[0].dates[0].value;
-    const windSpeed = Math.round(windSpeedMs * 3.6); // Convert m/s to km/h
-    const precipitation = data.data.find((p: any) => p.parameter === "precip_1h:mm").coordinates[0].dates[0].value;
-    const humidity = Math.round(data.data.find((p: any) => p.parameter === "relative_humidity_2m:p").coordinates[0].dates[0].value);
-    
-    const { condition, emoji } = getWeatherCondition(temperature, windSpeed, precipitation);
-    
+
+    const cw = data.current_weather;
+    const hourlyTimes: string[] | undefined = data.hourly?.time;
+    const idx = hourlyTimes ? hourlyTimes.indexOf(cw.time) : -1;
+    const humidity = idx >= 0 && data.hourly?.relativehumidity_2m ? Math.round(data.hourly.relativehumidity_2m[idx]) : undefined;
+    const precipitation = idx >= 0 && data.hourly?.precipitation ? Number(data.hourly.precipitation[idx]) : 0;
+
+    const { condition, emoji } = mapWeatherCodeToCondition(cw.weathercode);
+
     const currentWeather: WeatherData = {
-      temperature,
-      windSpeed,
+      temperature: Math.round(cw.temperature),
+      windSpeed: Math.round(cw.windspeed), // already in km/h
       precipitation,
       humidity,
       condition,
       emoji,
       lastUpdated: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
     };
-    
-    const forecast = generateForecast(temperature);
-    
-    return NextResponse.json({
-      current: currentWeather,
-      forecast
-    });
-    
+
+    const forecast: ForecastData[] = [];
+    const days: string[] = data.daily?.time || [];
+    const weathercodes: number[] = data.daily?.weathercode || [];
+    const maxTemps: number[] = data.daily?.temperature_2m_max || [];
+
+    for (let i = 0; i < Math.min(5, days.length); i++) {
+      const { condition: fcCond, emoji: fcEmoji } = mapWeatherCodeToCondition(weathercodes[i]);
+      forecast.push({
+        day: toItWeekday(days[i]),
+        emoji: fcEmoji,
+        temp: `${Math.round(maxTemps[i])}°`,
+        condition: fcCond,
+      });
+    }
+
+    return NextResponse.json({ current: currentWeather, forecast });
   } catch (error) {
-    console.error("Error fetching weather data:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch weather data" },
-      { status: 500 }
-    );
+    console.error('Error fetching weather data:', error);
+    return NextResponse.json({ error: 'Failed to fetch weather data' }, { status: 500 });
   }
 }

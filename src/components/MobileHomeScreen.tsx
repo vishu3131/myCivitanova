@@ -4,9 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { HeroSection } from './HeroSection';
 import { CategoryTags } from './CategoryTags';
 import { InfoCards } from './InfoCards';
-import { SimpleBadgeSystem } from './SimpleBadgeSystem';
 import { StatusBar } from './StatusBar';
-
 import { TouristSpotWidget } from './TouristSpotWidget';
 import { BeachWidget } from './BeachWidget';
 import { XPWidget } from './XPWidget';
@@ -20,6 +18,13 @@ import Link from 'next/link';
 import TreasureHuntWidget from './TreasureHuntWidget';
 import FundraisingWidget from './FundraisingWidget';
 import dynamic from 'next/dynamic';
+import HomeTutorial, { isHomeTutorialHidden } from './HomeTutorial'; // Import HomeTutorial
+import { SearchModal } from './SearchModal';
+import { PullToRefresh } from './PullToRefresh';
+import { NewsCarousel } from './NewsCarousel';
+import { WeatherWidget } from './WeatherWidget';
+import EventsCarousel from './EventsCarousel';
+import LazyRender from './LazyRender';
 
 // Lazy-loaded components for performance
 const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
@@ -46,6 +51,12 @@ const DynamicTourARWidget = dynamic(() => import('./TourARWidget').then(m => m.T
     <div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
   ),
 });
+const DynamicSimpleBadgeSystem = dynamic(() => import('./SimpleBadgeSystem').then(m => m.SimpleBadgeSystem), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
+  ),
+});
 
 // Reusable Section component with optional collapsible behavior
 interface SectionProps {
@@ -64,7 +75,7 @@ function Section({ id, title, collapsible = false, expanded = true, onToggle, ac
   return (
     <section id={id} aria-labelledby={titleId} role="region" className="px-3 mt-6 scroll-mt-20">
       <div className="flex items-center justify-between mb-2">
-        <h3 id={titleId} className="text-white font-semibold text-base">{title}</h3>
+        <h3 id={titleId} className="section-title text-white font-semibold text-base">{title}</h3>
         <div className="flex items-center gap-3">
           {actions}
           {collapsible && (
@@ -141,6 +152,27 @@ export function MobileHomeScreen() {
   const [userCount, setUserCount] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showHomeTutorial, setShowHomeTutorial] = useState(false); // State for HomeTutorial
+  const [heartActiveHome, setHeartActiveHome] = useState(false); // Stato per widget cuore spostato qui
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  useEffect(() => {
+    // Check if tutorial has been hidden before
+    if (!isHomeTutorialHidden()) {
+      setShowHomeTutorial(true);
+    }
+  }, []);
+
+  // Toggle body class when tutorial is active to prevent background scroll
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (showHomeTutorial) {
+      document.body.classList.add('tutorial-is-active');
+    } else {
+      document.body.classList.remove('tutorial-is-active');
+    }
+  }, [showHomeTutorial]);
 
   // Collapsible states with persistence
   const [showProgress, setShowProgress] = useState(false);
@@ -195,19 +227,27 @@ export function MobileHomeScreen() {
 
     initializeData();
 
-    // Realtime update (optional)
-    const subscription = supabase
-      .channel('public:users')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
-        const { count, error } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
-        if (!error) setUserCount(count ?? 0);
-      })
-      .subscribe();
+    // Realtime update (optional) - deferred to idle to not block initial load
+    let channel: any = null;
+    const subscribe = () => {
+      channel = supabase
+        .channel('public:users')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+          const { count, error } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+          if (!error) setUserCount(count ?? 0);
+        })
+        .subscribe();
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(subscribe);
+    } else {
+      setTimeout(subscribe, 1000);
+    }
 
     return () => {
-      supabase.removeChannel(subscription);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -245,7 +285,7 @@ export function MobileHomeScreen() {
   // Quick actions config (Segnala è nella CTA primaria del hero)
   const quickActions: { id: string; label: string; icon: string; href: string; aria: string }[] = [
     { id: 'servizi', label: 'Servizi', icon: '⚙️', href: '#servizi-utili', aria: 'Apri servizi utili' },
-    { id: 'eventi', label: 'Eventi', icon: '📅', href: '/news', aria: 'Vedi novità ed eventi' },
+    { id: 'eventi', label: 'Eventi', icon: '📅', href: '/eventi', aria: 'Vedi eventi' },
     { id: 'ar', label: 'Mappa AR', icon: '🗺️', href: '/ar', aria: 'Apri mappa AR' },
     { id: 'scopri', label: 'Scopri', icon: '🧭', href: '#scopri-citta', aria: 'Vai a Scopri la città' },
   ];
@@ -272,8 +312,12 @@ export function MobileHomeScreen() {
     </div>
   );
 
+  const handleRefresh = async () => {
+    setRefreshToken((t) => t + 1);
+  };
+
   return (
-    <div className="min-h-screen bg-black relative overflow-x-hidden">
+    <div className={`${showHomeTutorial ? 'tutorial-active' : ''} mobile-home-root min-h-screen bg-black relative overflow-x-hidden isolate z-0`}>
       {/* Skip link for accessibility */}
       <a
         href="#novita"
@@ -286,7 +330,7 @@ export function MobileHomeScreen() {
       <StatusBar />
 
       {/* Top App Bar */}
-      <div className="sticky top-0 z-40 bg-black/60 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-10 bg-black/60 backdrop-blur-md border-b border-white/10">
         <div className="px-3 py-2 flex items-center gap-3">
           <div className="text-white font-semibold tracking-wide">MyCivitanova</div>
           <div className="flex-1">
@@ -294,7 +338,18 @@ export function MobileHomeScreen() {
               type="search"
               placeholder="Cerca servizi, eventi, luoghi"
               className="w-full bg-white/5 text-white placeholder-white/50 text-sm rounded-lg px-3 py-2 border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              aria-label="Cerca"
+              aria-label="Apri ricerca"
+              readOnly
+              onClick={() => setIsSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsSearchOpen(true);
+                }
+              }}
+              role="button"
+              aria-haspopup="dialog"
+              aria-expanded={isSearchOpen}
             />
           </div>
           <Link href="/profile" className="text-white/80 hover:text-white" aria-label="Profilo">🙂</Link>
@@ -306,6 +361,7 @@ export function MobileHomeScreen() {
         className="content-with-navbar"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 48px)' }}
       >
+        <PullToRefresh onRefresh={handleRefresh}>
         {/* Hero Section */}
         <HeroSection />
 
@@ -337,47 +393,59 @@ export function MobileHomeScreen() {
           title="Novità vicino a te"
           actions={<Link href="/news" className="text-xs text-white/80 hover:text-white underline">Vedi tutto</Link>}
         >
-          <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 card-glow border border-white/10">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <span className="text-white/80 text-xs">Nuovo evento: Festa del Mare</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span className="text-white/80 text-xs">Meteo: sole per tutta la settimana</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-white/80 text-xs">Apertura nuovo sportello comunale</span>
-              </div>
-            </div>
+          <div className="space-y-3">
+            <LazyRender fallback={<div className="h-[60px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <WeatherWidget key={`weather-${refreshToken}`} />
+            </LazyRender>
+            <LazyRender fallback={<div className="h-[100px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <NewsCarousel key={`news-${refreshToken}`} />
+            </LazyRender>
+            <LazyRender fallback={<div className="h-[120px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <EventsCarousel key={`events-${refreshToken}`} />
+            </LazyRender>
           </div>
         </Section>
 
         {/* Servizi utili */}
         <Section id="servizi-utili" title="Servizi utili">
           <div className="space-y-3">
-            <CategoryTags />
-            <InfoCards onReportClick={() => setShowReport(true)} userId={currentUserId || undefined} />
+            <LazyRender fallback={<div className="h-[36px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <CategoryTags />
+            </LazyRender>
+            <LazyRender fallback={<div className="h-[160px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <InfoCards onReportClick={() => setShowReport(true)} userId={currentUserId || undefined} />
+            </LazyRender>
           </div>
         </Section>
 
-        {/* Costruiamo insieme */}
-        <Link href="/costruiamo">
-          <div className="mt-6 mx-3 bg-gradient-to-br from-white/5 to-white/0 backdrop-blur-sm rounded-2xl p-4 border border-white/10 card-glow cursor-pointer group overflow-hidden">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center action-button-float">
-                <span className="text-lg">✨</span>
+        {/* Cuore (spostato qui) */}
+        <div className="mt-6 mx-3 h-[100px] flex items-center justify-center bg-transparent relative">
+          {!heartActiveHome ? (
+            <>
+              <div className="love relative">
+                <input id="love-switch-home" type="checkbox" onChange={(e) => { if (e.target.checked) { setTimeout(() => setHeartActiveHome(true), 1300); } }} />
+                <label className="love-heart" htmlFor="love-switch-home">
+                  <i className="left"></i>
+                  <i className="right"></i>
+                  <i className="bottom"></i>
+                  <div className="round"></div>
+                </label>
               </div>
-              <div className="flex-1">
-                <div className="font-semibold">Costruiamo insieme MyCivitanova</div>
-                <div className="text-white/70 text-xs">Scopri la visione e come supportare il progetto</div>
+                          </>
+          ) : (
+            <>
+              {/* From Uiverse.io by SouravBandyopadhyay */}
+              <div className="cssload-main">
+                <div className="cssload-heart">
+                  <span className="cssload-heartL"></span>
+                  <span className="cssload-heartR"></span>
+                  <span className="cssload-square"></span>
+                </div>
+                <div className="cssload-shadow"></div>
               </div>
-              <div className="text-white/70 group-hover:text-white nav-item-transition">→</div>
-            </div>
-          </div>
-        </Link>
+                          </>
+          )}
+        </div>
 
         {/* Servizi Avanzati */}
         <Section
@@ -389,13 +457,19 @@ export function MobileHomeScreen() {
         >
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-1">
-              <DynamicMarketplaceWidget />
+              <LazyRender fallback={<div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <DynamicMarketplaceWidget />
+              </LazyRender>
             </div>
             <div className="col-span-1">
-              <WasteCollectionWidget />
+              <LazyRender fallback={<div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <WasteCollectionWidget />
+              </LazyRender>
             </div>
             <div className="col-span-1">
-              <FundraisingWidget />
+              <LazyRender fallback={<div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <FundraisingWidget />
+              </LazyRender>
             </div>
             <div className="col-span-1">
               <div className="h-full bg-dark-300/50 backdrop-blur-sm rounded-xl p-2 sm:p-3 card-glow border border-white/10 flex items-center justify-center">
@@ -414,16 +488,22 @@ export function MobileHomeScreen() {
           onToggle={() => setShowProgress((s) => !s)}
         >
           <div className="space-y-3">
-            <DailyXPClaim userId={currentUserId || undefined} className="-mx-3" />
+            <LazyRender fallback={<div className="h-[60px] bg-white/5 border border-white/10 rounded-xl animate-pulse -mx-3" aria-hidden="true"></div>}>
+              <DailyXPClaim userId={currentUserId || undefined} className="-mx-3" />
+            </LazyRender>
             <div className="grid grid-cols-1 gap-2">
-              <XPWidget userId={currentUserId || undefined} onClick={() => setShowBadges(true)} />
+              <LazyRender fallback={<div className="h-[100px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <XPWidget userId={currentUserId || undefined} onClick={() => setShowBadges(true)} />
+              </LazyRender>
             </div>
             <div className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-3 card-glow border border-white/10">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-white font-medium text-sm">Classifica</h4>
                 <Link href="/classifica" className="text-xs text-white/70 hover:text-white underline">Vedi tutto</Link>
               </div>
-              <DynamicLeaderboardWidget className="h-[180px] md:h-[200px]" />
+              <LazyRender fallback={<div className="h-[180px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <DynamicLeaderboardWidget className="h-[180px] md:h-[200px]" />
+              </LazyRender>
             </div>
           </div>
         </Section>
@@ -438,10 +518,14 @@ export function MobileHomeScreen() {
         >
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-2">
-              <TreasureHuntWidget />
+              <LazyRender fallback={<div className="h-[120px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <TreasureHuntWidget />
+              </LazyRender>
             </div>
             <div>
-              <DynamicSocialWidgetsContainer />
+              <LazyRender fallback={<div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <DynamicSocialWidgetsContainer />
+              </LazyRender>
             </div>
           </div>
         </Section>
@@ -455,9 +539,15 @@ export function MobileHomeScreen() {
           onToggle={() => setShowDiscover((s) => !s)}
         >
           <div className="space-y-3">
-            <TouristSpotWidget />
-            <DynamicTourARWidget />
-            <BeachWidget />
+            <LazyRender fallback={<div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <TouristSpotWidget />
+            </LazyRender>
+            <LazyRender fallback={<div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <DynamicTourARWidget />
+            </LazyRender>
+            <LazyRender fallback={<div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+              <BeachWidget />
+            </LazyRender>
           </div>
         </Section>
 
@@ -471,14 +561,16 @@ export function MobileHomeScreen() {
         >
           <div className="grid grid-cols-1 gap-2 w-full">
             <div className="bg-dark-300/30 backdrop-blur-sm border border-white/10 card-glow rounded-xl">
-              <PureNeonMobileWidget
-                title="✨ MyCivitanova"
-                description="Tocca per l'effetto CSS"
-                className=""
-                onButtonClick={() => {
-                  console.log('Pure Neon CSS Widget cliccato dalla home mobile!');
-                }}
-              />
+              <LazyRender fallback={<div className="h-[100px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <PureNeonMobileWidget
+                  title="✨ MyCivitanova"
+                  description="Tocca per l'effetto CSS"
+                  className=""
+                  onButtonClick={() => {
+                    console.log('Pure Neon CSS Widget cliccato dalla home mobile!');
+                  }}
+                />
+              </LazyRender>
             </div>
           </div>
         </Section>
@@ -512,14 +604,16 @@ export function MobileHomeScreen() {
 
               {/* Content */}
               <div className="max-w-4xl mx-auto px-4 py-6">
-                <SimpleBadgeSystem userId={currentUserId || undefined} />
+                <DynamicSimpleBadgeSystem userId={currentUserId || undefined} />
               </div>
             </div>
           </div>
         )}
 
+        
         {/* Spacing for Bottom Navbar */}
         <div className="h-24"></div>
+        </PullToRefresh>
         <style jsx global>{`
           @keyframes gradientShift {
             0% { background-position: 0% 50%; }
@@ -606,8 +700,7 @@ export function MobileHomeScreen() {
             50% { transform: translateX(120%) rotate(25deg); }
             100% { transform: translateX(120%) rotate(25deg); }
           }
-        `}</style>
-        <style jsx global>{`
+
           .toggle-container {
             position: relative;
             width: 130px;
@@ -1269,8 +1362,7 @@ export function MobileHomeScreen() {
               0 0 20px rgba(0, 255, 150, 0.3),
               inset 0 0 10px rgba(0, 0, 0, 0.8);
           }
-        `}</style>
-        <style jsx global>{`
+
           .holo-appear {
             position: relative;
             animation: sectionIn 700ms cubic-bezier(.2,.7,.2,1) both;
@@ -1283,6 +1375,10 @@ export function MobileHomeScreen() {
             opacity: 0;
             animation: sectionSweep 700ms ease-out forwards;
             pointer-events: none;
+          }
+          .section-panel {
+            content-visibility: auto;
+            contain-intrinsic-size: 1px 600px;
           }
           .section-panel > * {
             opacity: 0;
@@ -1310,8 +1406,238 @@ export function MobileHomeScreen() {
             0% { opacity: 0; transform: translateY(10px); filter: blur(8px); }
             100% { opacity: 1; transform: translateY(0); filter: blur(0); }
           }
+
+          /* Blur and disable interactions on the home screen when tutorial is active */
+          .mobile-home-root.tutorial-active > .content-with-navbar {
+            filter: blur(4px);
+            pointer-events: none;
+            transition: filter 0.3s ease-in-out;
+          }
+
+          /* Ensure the sticky header is also affected */
+          .mobile-home-root.tutorial-active > .sticky {
+            filter: blur(4px);
+            pointer-events: none;
+            transition: filter 0.3s ease-in-out;
+          }
+          
+          body.tutorial-is-active {
+             overflow: hidden;
+          }
+
+          .mobile-home-root.tutorial-active .hide-on-tutorial-active {
+            display: none;
+          }
+
+          /* From Uiverse.io by barisdogansutcu */
+          .love-heart:before, #love-switch-home {
+            display: none;
+          }
+          .love-heart, .love-heart::after {
+            border-color: hsl(231deg 28% 86%);
+            border: 1px solid;
+            border-top-left-radius: 100px;
+            border-top-right-radius: 100px;
+            width: 10px;
+            height: 8px;
+            border-bottom: 0;
+          }
+          .round {
+            position: absolute;
+            z-index: 1;
+            width: 8px;
+            height: 8px;
+            background: hsl(0deg 0% 100%);
+            box-shadow: rgb(0 0 0 / 24%) 0px 0px 4px 0px;
+            border-radius: 100%;
+            left: 0px;
+            bottom: -1px;
+            transition: all 1.2s ease;
+            animation: check-animation2 1.2s forwards;
+          }
+          input:checked + label .round {
+            transform: translate(0px, 0px);
+            animation: check-animation 1.2s forwards;
+            background-color: hsl(0deg 0% 100%);
+          }
+          @keyframes check-animation {
+            0% { transform: translate(0px, 0px); }
+            50% { transform: translate(0px, 7px); }
+            100% { transform: translate(7px, 7px); }
+          }
+          @keyframes check-animation2 {
+            0% { transform: translate(7px, 7px); }
+            50% { transform: translate(0px, 7px); }
+            100% { transform: translate(0px, 0px); }
+          }
+          .love-heart {
+            box-sizing: border-box;
+            position: relative;
+            transform: rotate(-45deg) translate(-50%, -33px) scale(4);
+            display: block;
+            border-color: hsl(231deg 28% 86%);
+            cursor: pointer;
+            top: 0;
+          }
+          input:checked + .love-heart, 
+          input:checked + .love-heart::after, 
+          input:checked + .love-heart .bottom {
+            border-color: hsl(347deg 81% 61%);
+            box-shadow: inset 6px -5px 0px 2px hsl(347deg 99% 72%);
+          }
+          .love-heart::after, .love-heart .bottom {
+            content: "";
+            display: block;
+            box-sizing: border-box;
+            position: absolute;
+            border-color: hsl(231deg 28% 86%);
+          }
+          .love-heart::after {
+            right: -9px;
+            transform: rotate(90deg);
+            top: 7px;
+          }
+          .love-heart .bottom {
+            width: 11px;
+            height: 11px;
+            border-left: 1px solid;
+            border-bottom: 1px solid;
+            border-color: hsl(231deg 28% 86%);
+            left: -1px;
+            top: 5px;
+            border-radius: 0px 0px 0px 5px;
+          }
+
+          /* From Uiverse.io by SouravBandyopadhyay */
+          .cssload-main {
+            position: relative;
+            width: 124px;
+            height: 124px;
+          }
+          .cssload-main * { font-size: 62px; }
+          .cssload-heart {
+            animation: cssload-heart 2.88s cubic-bezier(0.75, 0, 0.5, 1) infinite normal;
+            top: 50%;
+            left: 50%;
+            position: absolute;
+            transform: translate(-50%, -65%);
+          }
+          .cssload-heartL {
+            width: 1em;
+            height: 1em;
+            border: 1px solid rgb(252, 0, 101);
+            background-color: rgb(252, 0, 101);
+            content: '';
+            position: absolute;
+            display: block;
+            border-radius: 100%;
+            animation: cssload-heartL 2.88s cubic-bezier(0.75, 0, 0.5, 1) infinite normal;
+            transform: translate(-28px, -27px);
+          }
+          .cssload-heartR {
+            width: 1em;
+            height: 1em;
+            border: 1px solid rgb(252, 0, 101);
+            background-color: rgb(252, 0, 101);
+            content: '';
+            position: absolute;
+            display: block;
+            border-radius: 100%;
+            transform: translate(28px, -27px);
+            animation: cssload-heartR 2.88s cubic-bezier(0.75, 0, 0.5, 1) infinite normal;
+          }
+          .cssload-square {
+            width: 1em;
+            height: 1em;
+            border: 1px solid rgb(252, 0, 101);
+            background-color: rgb(252, 0, 101);
+            position: relative;
+            display: block;
+            content: '';
+            transform: scale(1) rotate(-45deg);
+            animation: cssload-square 2.88s cubic-bezier(0.75, 0, 0.5, 1) infinite normal;
+          }
+          .cssload-shadow {
+            left: 50%;
+            position: absolute;
+            bottom: 2px;
+            transform: translateX(-50%);
+            width: 1em;
+            height: .24em;
+            background-color: rgb(215,215,215);
+            border: 1px solid rgb(215,215,215);
+            border-radius: 50%;
+            animation: cssload-shadow 2.88s cubic-bezier(0.75, 0, 0.5, 1) infinite normal;
+          }
+          @keyframes cssload-square {
+            50% { border-radius: 100%; transform: scale(0.5) rotate(-45deg); }
+            100% { transform: scale(1) rotate(-45deg); }
+          }
+          @keyframes cssload-heart {
+            50% { transform: translate(-50%, -65%) rotate(360deg); }
+            100% { transform: translate(-50%, -65%) rotate(720deg); }
+          }
+          @keyframes cssload-heartL { 60% { transform: translate(-28px, -27px) scale(0.4); } }
+          @keyframes cssload-heartR { 40% { transform: translate(28px, -27px) scale(0.4); } }
+          @keyframes cssload-shadow { 50% { transform: translateX(-50%) scale(0.5); border-color: rgb(228,228,228); } }
+
+          /* Subtle section title effect */
+          .section-title {
+            position: relative;
+            display: inline-block;
+            padding-bottom: 2px;
+            letter-spacing: 0.02em;
+            text-shadow: 0 0 6px rgba(168, 85, 247, 0.08), 0 0 10px rgba(6, 182, 212, 0.06);
+          }
+          .section-title::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            height: 2px;
+            width: 100%;
+            background: linear-gradient(90deg, rgba(168,85,247,0.6), rgba(6,182,212,0.4), rgba(99,102,241,0.6));
+            background-size: 200% 100%;
+            transform-origin: left;
+            transform: scaleX(0.65);
+            opacity: 0.7;
+            border-radius: 9999px;
+            filter: drop-shadow(0 0 6px rgba(168,85,247,0.25));
+            transition: transform .4s cubic-bezier(.2,.7,.2,1), opacity .3s ease, background-position .6s ease;
+          }
+          .section-title:hover::after {
+            transform: scaleX(1);
+            opacity: 0.9;
+            background-position: 100% 0;
+          }
+          .section-title:focus-visible::after {
+            transform: scaleX(1);
+            opacity: 1;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .section-title::after {
+              transition: none;
+              background-size: 100% 100%;
+            }
+          }
+
         `}</style>
       </div>
+
+      {/* Home Tutorial */}
+      <HomeTutorial isOpen={showHomeTutorial} onClose={() => setShowHomeTutorial(false)} />
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSearch={(q) => {
+          setIsSearchOpen(false);
+          if (typeof window !== 'undefined') {
+            window.location.href = `/explore?query=${encodeURIComponent(q)}`;
+          }
+        }}
+      />
     </div>
   );
 }

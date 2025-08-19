@@ -34,6 +34,10 @@ export function NewsCarousel() {
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [index, setIndex] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
+  const [activeItem, setActiveItem] = useState<NewsItem | null>(null);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -119,8 +123,9 @@ export function NewsCarousel() {
       }
     }
 
-    // Mostra i dettagli (per ora un alert)
-    alert(`Visualizzazione dettagli: ${newsItem.title}\n\n${newsItem.description}\n\n${newsItem.content}`);
+    // Apri modal dettagli
+    setActiveItem(newsItem);
+    setShowDetails(true);
   };
 
   const handleLike = async (newsItem: NewsItem, e: React.MouseEvent) => {
@@ -177,11 +182,30 @@ export function NewsCarousel() {
       } else {
         // Fallback: copia il link negli appunti
         await navigator.clipboard.writeText(window.location.href);
-        alert('Link copiato negli appunti!');
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Link copiato negli appunti', type: 'success' } }));
       }
     } catch (error) {
       console.error('Errore nella condivisione:', error);
     }
+  };
+
+  const submitComment = async () => {
+    if (!currentUser || !activeItem || !commentText.trim()) return;
+    try {
+      await newsService.addComment(activeItem.id, currentUser.id, commentText.trim());
+      setNews(prev => prev.map(n => n.id === activeItem.id ? { ...n, comments_count: n.comments_count + 1 } : n));
+      setCommentText('');
+      setShowCommentModal(false);
+    } catch (err) {
+      console.error('Errore nell\'aggiunta del commento:', err);
+    }
+  };
+
+  const handleComment = async (newsItem: NewsItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    setActiveItem(newsItem);
+    setShowCommentModal(true);
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -222,6 +246,7 @@ export function NewsCarousel() {
 
   const currentNews = news[index];
   const styles = typeStyles[currentNews.type];
+  const eventCount = news.filter(n => n.type === 'event').length;
 
   return (
     <div className="mb-8">
@@ -229,7 +254,7 @@ export function NewsCarousel() {
         <h2 className="text-white text-xl font-heading font-medium">In Evidenza</h2>
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Star className="w-4 h-4 text-yellow-400 fill-current" />
-          <span>{news.length} news</span>
+          <span>{currentNews.type === 'event' ? `${eventCount} eventi` : `${news.length} news`}</span>
         </div>
       </div>
 
@@ -304,8 +329,9 @@ export function NewsCarousel() {
                 </button>
                 
                 <button 
-                  onClick={() => handleViewNews(currentNews)}
+                  onClick={(e) => handleComment(currentNews, e)}
                   className="flex items-center text-white hover:text-yellow-400 transition-colors"
+                  disabled={!currentUser}
                 >
                   <MessageCircle className="w-5 h-5 mr-1" />
                   {currentNews.comments_count}
@@ -352,6 +378,61 @@ export function NewsCarousel() {
           </>
         )}
       </div>
+    {/* Details Modal */}
+      {showDetails && activeItem && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 overscroll-contain" role="dialog" aria-modal="true">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.25 }}
+            className="w-full sm:max-w-lg sm:rounded-2xl bg-gray-900 border border-white/10 p-4 sm:p-6 max-h-[85vh] overflow-y-auto mx-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-white text-lg font-semibold pr-6">{activeItem.title}</h3>
+              <button className="text-white/60 hover:text-white" onClick={() => setShowDetails(false)} aria-label="Chiudi">✕</button>
+            </div>
+            {activeItem.description && <p className="text-white/80 text-sm mb-3">{activeItem.description}</p>}
+            {activeItem.content && <div className="text-white/70 text-sm whitespace-pre-line pr-1">{activeItem.content}</div>}
+            <div className="mt-4 flex justify-end">
+              <button className="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20" onClick={() => setShowDetails(false)}>Chiudi</button>
+            </div>
+          </motion.div>
+          <button className="absolute inset-0 w-full h-full" onClick={() => setShowDetails(false)} aria-hidden="true"></button>
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal && activeItem && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 overscroll-contain" role="dialog" aria-modal="true">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.25 }}
+            className="w-full sm:max-w-md sm:rounded-2xl bg-gray-900 border border-white/10 p-4 sm:p-6 max-h-[85vh] overflow-y-auto mx-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-white text-lg font-semibold pr-6">Commenta: {activeItem.title}</h3>
+              <button className="text-white/60 hover:text-white" onClick={() => setShowCommentModal(false)} aria-label="Chiudi">✕</button>
+            </div>
+            <textarea
+              className="w-full bg-white/10 text-white text-sm rounded-lg p-3 border border-white/10 outline-none focus:ring-2 focus:ring-purple-500"
+              rows={4}
+              placeholder="Scrivi il tuo commento..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20" onClick={() => setShowCommentModal(false)}>Annulla</button>
+              <button className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50" onClick={submitComment} disabled={!commentText.trim()}>Invia</button>
+            </div>
+          </motion.div>
+          <button className="absolute inset-0 w-full h-full" onClick={() => setShowCommentModal(false)} aria-hidden="true"></button>
+        </div>
+      )}
     </div>
   );
 }

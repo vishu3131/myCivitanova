@@ -39,25 +39,29 @@ export function WeatherWidget() {
   const [forecast, setForecast] = useState<ForecastData[]>([]);
 
   useEffect(() => {
-    // Temporary static data; replace with real API in future
-    const now = new Date();
-    setWeather({
-      temperature: 26,
-      windSpeed: 8,
-      precipitation: 0,
-      humidity: 60,
-      condition: "Sereno",
-      emoji: "☀️",
-      lastUpdated: now.toLocaleTimeString("it-IT")
-    });
-
-    const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-    const sampleForecast: ForecastData[] = Array.from({ length: 5 }).map((_, i) => ({
-      day: days[(now.getDay() + i) % 7],
-      emoji: ["☀️", "🌤", "🌧", "⛅", "❄️"][i % 5],
-      temp: `${23 + i}°`
-    }));
-    setForecast(sampleForecast);
+    let abort = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/weather');
+        if (!res.ok) throw new Error(`weather api error: ${res.status}`);
+        const json = await res.json();
+        if (abort) return;
+        const { current, forecast } = json || {};
+        if (current) setWeather(current as WeatherData);
+        if (forecast) {
+          const mapped: ForecastData[] = (forecast as any[]).map((f: any) => ({
+            day: f.day,
+            emoji: f.emoji,
+            temp: f.temp,
+          }));
+          setForecast(mapped);
+        }
+      } catch (e) {
+        console.error('WeatherWidget fetch failed', e);
+      }
+    }
+    load();
+    return () => { abort = true; };
   }, []);
 
   if (!weather) return null;

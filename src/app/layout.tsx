@@ -42,8 +42,28 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseHostname = (() => {
+    try {
+      return supabaseUrl ? new URL(supabaseUrl).hostname : null;
+    } catch {
+      return null;
+    }
+  })();
+
   return (
     <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        {/* Network preconnects to reduce handshake latency */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {supabaseHostname && (
+          <>
+            <link rel="dns-prefetch" href={`//${supabaseHostname}`} />
+            <link rel="preconnect" href={`https://${supabaseHostname}`} crossOrigin="anonymous" />
+          </>
+        )}
+      </head>
       <body className="font-sans bg-black text-white">
         <ErrorBoundary>
           <LoadingProvider>
