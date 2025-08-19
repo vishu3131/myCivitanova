@@ -9,7 +9,7 @@ export interface HomeTutorialProps {
   onClose: () => void;
 }
 
-const TUTORIAL_KEY = "homeTutorialHiddenV1";
+export const TUTORIAL_KEY = "homeTutorialHiddenV1";
 
 export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);

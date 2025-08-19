@@ -1,6 +1,7 @@
 import { useState, MouseEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabaseClient';
+import { TUTORIAL_KEY } from '@/components/HomeTutorial'; // Import TUTORIAL_KEY
 import './neon-login.css';
 
 interface LoginModalProps {
@@ -115,10 +116,10 @@ export default function LoginModal(props: LoginModalProps) {
     } else {
       setSuccess('Accesso effettuato!');
       onLogin && onLogin();
-      setTimeout(() => {
-        onClose && onClose();
-        router.push('/profilo');
-      }, 1000);
+      // Mark tutorial as hidden on successful login to prevent blurring
+      try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
+      onClose && onClose();
+      router.push('/profilo');
     }
     setLoading(false);
   };
