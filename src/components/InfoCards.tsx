@@ -2,10 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Sun, Settings } from 'lucide-react';
+import { Sun, Settings, Newspaper, Map, Waves, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { IntegratedWidgetBar } from './IntegratedWidgetBar';
-import WalkingTimeWidget from './WalkingTimeWidget';
 import ModernServicesWidget from './ModernServicesWidget';
 import { TutorialWidget } from './TutorialWidget';
 import HomeTutorial from './HomeTutorial';
@@ -499,8 +498,15 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
           onReportClick={onReportClick}
         />
 
-        {/* Card meteo (sostituita dal widget Percorsi a piedi) */}
-        <WalkingTimeWidget />
+        {/* Widget duplicato (4 opzioni) al posto del widget Percorsi a piedi - rinominato e con icone aggiornate */}
+        <IntegratedWidgetBar
+          items={[
+            { id: 'novita', label: 'Novità', icon: Newspaper, bgClass: 'widget-btn-eventi', onClick: () => router.push('/news') },
+            { id: 'mappa', label: 'Mappa', icon: Map, bgClass: 'widget-btn-parcheggi', onClick: () => router.push('/mappa') },
+            { id: 'spiagge', label: 'Spiagge', icon: Waves, bgClass: 'widget-btn-spiagge', onClick: () => router.push('/spiaggia') },
+            { id: 'community', label: 'Community', icon: Users, bgClass: 'widget-btn-segnala', onClick: () => router.push('/community') },
+          ]}
+        />
 
         {/* Modern Services Widget */}
         <ModernServicesWidget />

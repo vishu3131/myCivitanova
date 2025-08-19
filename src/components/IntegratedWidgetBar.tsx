@@ -3,22 +3,31 @@
 import React, { useState } from 'react';
 import { Calendar, Car, Waves, AlertTriangle } from 'lucide-react';
 
+interface WidgetItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  bgClass: string;
+  onClick?: () => void;
+}
 interface IntegratedWidgetBarProps {
   onEventClick?: () => void;
   onParkingClick?: () => void;
   onBeachClick?: () => void;
   onReportClick?: () => void;
+  items?: WidgetItem[];
 }
 
 export const IntegratedWidgetBar: React.FC<IntegratedWidgetBarProps> = ({
   onEventClick,
   onParkingClick,
   onBeachClick,
-  onReportClick
+  onReportClick,
+  items
 }) => {
   const [activeWidget, setActiveWidget] = useState<string | null>(null);
 
-  const widgets = [
+  const defaultWidgets: WidgetItem[] = [
     {
       id: 'eventi',
       label: 'Eventi',
@@ -48,8 +57,9 @@ export const IntegratedWidgetBar: React.FC<IntegratedWidgetBarProps> = ({
       onClick: onReportClick
     }
   ];
+  const widgets: WidgetItem[] = items && items.length ? items : defaultWidgets;
 
-  const handleWidgetClick = (widget: typeof widgets[0]) => {
+  const handleWidgetClick = (widget: WidgetItem) => {
     setActiveWidget(widget.id);
     widget.onClick?.();
     

@@ -1,0 +1,27 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder immagine Marketplace">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f0f0f"/>
+      <stop offset="100%" stop-color="#1f1f1f"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.25"/>
+    </linearGradient>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <g filter="url(#soft)">
+    <circle cx="200" cy="120" r="120" fill="url(#glow)"/>
+    <circle cx="660" cy="520" r="160" fill="url(#glow)"/>
+  </g>
+  <g transform="translate(0, -10)">
+    <circle cx="400" cy="260" r="60" fill="#ffffff10" stroke="#ffffff22" stroke-width="2"/>
+    <text x="400" y="270" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="40" fill="#ffffffcc">🛍️</text>
+  </g>
+  <text x="400" y="360" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="20" fill="#ffffffaa">MyCivitanova • Marketplace</text>
+  <text x="400" y="392" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="14" fill="#ffffff77">Immagine non disponibile</text>
+  <rect x="32" y="32" width="736" height="536" fill="none" stroke="#ffffff14" rx="20"/>
+</svg>

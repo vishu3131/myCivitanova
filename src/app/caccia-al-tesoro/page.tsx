@@ -1,478 +1,412 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useXPSystem } from "@/hooks/useXPSystem";
-import TreasureHuntTutorial, { isTutorialHidden } from "@/components/TreasureHuntTutorial";
+import { useHapticFeedback } from "@/hooks/usehapticfeedback";
+import { useXPSystem } from "@/hooks/usexpsystem";
 
-// Simple types
-type LatLng = { lat: number; lng: number };
-
+// Tipi base
 type Step = {
   id: string;
   title: string;
   description: string;
-  clue: string;
-  location: LatLng;
-  radiusM: number; // acceptance radius in meters
-  hint?: string;
-  image?: string;
+  lat: number;
+  lng: number;
+  radiusM: number; // raggio entro il quale attivare l'indovinello
+  riddle: {
+    question: string;
+    answers: string[]; // risposte valide normalizzate
+    hint?: string; // suggerimento base
+  };
+  rewardXp?: number;
 };
 
-type Hunt = {
-  id: string;
-  name: string;
-  city: string;
-  steps: Step[];
-  rewardXP: number;
-  badgeId?: string;
-};
-
-type Progress = {
-  huntId: string;
-  currentIndex: number; // index of the next step to complete
-  completed: string[]; // step ids
-  startedAt: string;
-  finishedAt?: string;
-  points: number;
+type ProgressState = {
+  currentIndex: number;
+  stepsCompleted: number;
+  total: number;
+  startedAt?: string;
+  points?: number;
 };
 
 const STORAGE_KEY = "treasureHuntProgressV1";
 
-function saveProgress(p: Progress) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        currentIndex: p.currentIndex,
-        stepsCompleted: p.completed.length,
-        total: pTotalSteps(p.huntId),
-        startedAt: p.startedAt,
-        points: p.points,
-      })
-    );
-    localStorage.setItem(`${STORAGE_KEY}:${p.huntId}`, JSON.stringify(p));
-  } catch {}
-}
-
-function loadProgress(huntId: string): Progress | null {
-  try {
-    const raw = localStorage.getItem(`${STORAGE_KEY}:${huntId}`);
-    return raw ? (JSON.parse(raw) as Progress) : null;
-  } catch {
-    return null;
+// Dataset demo di tappe a Civitanova (coordinate indicative per demo)
+const STEPS: Step[] = [
+  {
+    id: "fontanella-xx",
+    title: "La Fontanella di Piazza",
+    description: "Raggiungi la fontanella in piazza e osserva i dettagli...",
+    lat: 43.3074, // coord demo
+    lng: 13.7203, // coord demo
+    radiusM: 60,
+    riddle: {
+      question: "Quanti beccucci ha la fontanella?",
+      answers: ["6", "sei"],
+      hint: "Conta i beccucci della fontanella principale."
+    },
+    rewardXp: 50
+  },
+  {
+    id: "molo-ovest",
+    title: "Verso il Molo",
+    description: "Avvicinati al molo e guarda i cartelli informativi.",
+    lat: 43.3047, // demo
+    lng: 13.7302, // demo
+    radiusM: 70,
+    riddle: {
+      question: "Quanti sono i pescherecci indicati nell'ultima banchina?",
+      answers: ["3", "tre"],
+      hint: "Controlla il tabellone con le assegnazioni."
+    },
+    rewardXp: 60
+  },
+  {
+    id: "largo-municipio",
+    title: "Davanti al Municipio",
+    description: "Raggiungi l'ingresso del Municipio e osserva la targa.",
+    lat: 43.3089, // demo
+    lng: 13.7209, // demo
+    radiusM: 60,
+    riddle: {
+      question: "Qual è l'anno riportato in fondo alla targa commemorativa?",
+      answers: ["1913"],
+      hint: "È inciso in basso a destra."
+    },
+    rewardXp: 80
   }
+];
+
+function loadProgress(): ProgressState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (
+      typeof data.currentIndex === "number" &&
+      typeof data.stepsCompleted === "number" &&
+      typeof data.total === "number"
+    ) {
+      return data as ProgressState;
+    }
+  } catch (e) {
+    console.warn("TreasureHunt: invalid progress in storage", e);
+  }
+  return null;
 }
 
-function haversineM(a: LatLng, b: LatLng) {
-  const R = 6371e3;
+function saveProgress(progress: ProgressState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+}
+
+function normalizeAnswer(a: string) {
+  return a.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000; // metri
   const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const sinDlat = Math.sin(dLat / 2);
-  const sinDlng = Math.sin(dLng / 2);
-  const c = 2 * Math.asin(
-    Math.sqrt(sinDlat * sinDlat + Math.cos(lat1) * Math.cos(lat2) * sinDlng * sinDlng)
-  );
-  return R * c;
-}
-
-// Demo hunt data for Civitanova
-const CIVITANOVA_CENTER: LatLng = { lat: 43.3059, lng: 13.7264 };
-
-const demoHunt: Hunt = {
-  id: "cvt-hunt-001",
-  name: "Caccia al Tesoro: Civitanova",
-  city: "Civitanova Marche",
-  rewardXP: 250,
-  badgeId: "treasure_hunter",
-  steps: [
-    {
-      id: "step-1",
-      title: "Piazza XX Settembre",
-      description: "Il cuore della città, dove si incontrano cultura e vita quotidiana.",
-      clue: "Cerca la fontana e conta i getti d'acqua. Sei nel posto giusto?",
-      location: { lat: 43.3066, lng: 13.7232 },
-      radiusM: 120,
-      hint: "Vicino al Teatro Rossini.",
-      image: "https://images.unsplash.com/photo-1523419409543-a7cbe5d6f98b?w=1200&h=900&fit=crop",
-    },
-    {
-      id: "step-2",
-      title: "Lungomare Sud",
-      description: "Il mare che abbraccia la città: ascolta le onde, segui l'indizio.",
-      clue: "Dove le barche riposano, trova il pontile che guarda l'orizzonte.",
-      location: { lat: 43.3046, lng: 13.7296 },
-      radiusM: 150,
-      hint: "Allineati con il faro e il molo.",
-      image: "https://images.unsplash.com/photo-1530543787849-128d94430c6b?w=1200&h=900&fit=crop",
-    },
-    {
-      id: "step-3",
-      title: "Chiesa di San Marone",
-      description: "Antiche pietre e storia secolare.",
-      clue: "Cerca il portale in legno e una statua del santo: sei vicino.",
-      location: { lat: 43.3103, lng: 13.7187 },
-      radiusM: 120,
-      hint: "A nord della piazza, verso l'interno.",
-      image: "https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?w=1200&h=900&fit=crop",
-    },
-    {
-      id: "step-4",
-      title: "Porto Turistico",
-      description: "L'anima marinara della città.",
-      clue: "Osserva le reti e gli ormeggi: c'è un edificio blu con una torretta.",
-      location: { lat: 43.3076, lng: 13.7238 },
-      radiusM: 140,
-      hint: "Vicino alle cooperative dei pescatori.",
-      image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&h=900&fit=crop",
-    },
-    {
-      id: "step-5",
-      title: "Belvedere Nord",
-      description: "Vista mozzafiato sulla città e il mare.",
-      clue: "Trova la panchina con vista e scatta una foto mentale del panorama.",
-      location: { lat: 43.312, lng: 13.72 },
-      radiusM: 180,
-      hint: "Sali verso la collina.",
-      image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1200&h=900&fit=crop",
-    },
-  ],
-};
-
-function pTotalSteps(huntId: string) {
-  // For now we only have one hunt
-  return demoHunt.steps.length;
-}
-
-function StepCard({
-  step,
-  index,
-  isCurrent,
-  completed,
-  onVerify,
-  verifying,
-  distanceM,
-}: {
-  step: Step;
-  index: number;
-  isCurrent: boolean;
-  completed: boolean;
-  onVerify: () => void;
-  verifying: boolean;
-  distanceM?: number | null;
-}) {
-  return (
-    <div className={`rounded-2xl border border-white/10 overflow-hidden bg-white/5 ${completed ? 'opacity-70' : ''}`}>
-      {step.image && (
-        <div className="relative h-36 w-full">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={step.image} alt={step.title} className="object-cover w-full h-full" />
-        </div>
-      )}
-      <div className="p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-white font-semibold text-sm">{index + 1}. {step.title}</div>
-          {completed ? (
-            <span className="text-emerald-400 text-xs">Completata ✅</span>
-          ) : isCurrent ? (
-            <span className="text-amber-300 text-xs">Prossima ➜</span>
-          ) : (
-            <span className="text-white/40 text-xs">Bloccata 🔒</span>
-          )}
-        </div>
-        <div className="text-white/80 text-xs">{step.description}</div>
-        <div className="bg-black/30 rounded-lg p-3 border border-white/10">
-          <div className="text-white text-xs">Indizio: {step.clue}</div>
-          {step.hint && (
-            <details className="mt-1">
-              <summary className="text-emerald-300 text-[11px] cursor-pointer">Serve un aiuto?</summary>
-              <div className="text-white/70 text-[11px] mt-1">Suggerimento: {step.hint}</div>
-            </details>
-          )}
-        </div>
-        <div className="flex items-center justify-between text-[11px] text-white/70">
-          <span>Raggio: {Math.round(step.radiusM)} m</span>
-          <span>{distanceM != null ? `Distanza: ${Math.round(distanceM)} m` : 'Distanza: -'}</span>
-        </div>
-        <button
-          disabled={!isCurrent || completed || verifying}
-          onClick={onVerify}
-          className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${!isCurrent || completed ? 'bg-white/10 text-white/40 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'} ${verifying ? 'opacity-70' : ''}`}
-        >
-          {completed ? 'Già completata' : verifying ? 'Verifica…' : isCurrent ? 'Verifica posizione' : 'Completa gli step precedenti'}
-        </button>
-      </div>
-    </div>
-  );
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
 }
 
 export default function TreasureHuntPage() {
-  const router = useRouter();
-  const hunt = demoHunt;
-  const [userId, setUserId] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('currentUser');
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u?.id) setUserId(u.id);
-      }
-    } catch {}
-  }, []);
-  const { addXP } = useXPSystem(userId);
-  const REWARD_KEY = `${STORAGE_KEY}:rewarded:${hunt.id}`;
-
-  const [progress, setProgress] = useState<Progress>(() => {
-    if (typeof window === 'undefined') {
-      return {
-        huntId: hunt.id,
-        currentIndex: 0,
-        completed: [],
-        startedAt: new Date().toISOString(),
-        points: 0,
-      };
-    }
-    const loaded = loadProgress(hunt.id);
+  const [progress, setProgress] = useState<ProgressState>(() => {
+    const loaded = loadProgress();
     return (
-      loaded ?? {
-        huntId: hunt.id,
+      loaded || {
         currentIndex: 0,
-        completed: [],
+        stepsCompleted: 0,
+        total: STEPS.length,
         startedAt: new Date().toISOString(),
-        points: 0,
       }
     );
   });
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  const { addXP } = useXPSystem(userId);
+  const { triggerHaptic } = useHapticFeedback();
 
-  // Watch geolocation to show live distance to current step
-  const [userPos, setUserPos] = useState<LatLng | null>(null);
+  // Geo state
+  const [allowedByGPS, setAllowedByGPS] = useState(false);
+  const [distance, setDistance] = useState<number | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
 
+  // Riddle state
+  const [userAnswer, setUserAnswer] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+
+  const currentStep = useMemo(() => STEPS[Math.min(progress.currentIndex, STEPS.length - 1)], [progress.currentIndex]);
+
+  // Carica userId da localStorage se presente
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setGeoError('Geolocalizzazione non supportata dal dispositivo.');
-      return;
+    if (typeof window === "undefined") return;
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed?.id) setUserId(parsed.id as string);
+      } catch {}
     }
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      },
-      (err) => {
-        setGeoError(err.message || 'Impossibile ottenere la posizione.');
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
-    );
+  }, []);
+
+  // Watch posizione
+  useEffect(() => {
+    if (!currentStep) return;
+
+    let watchId: number | null = null;
+    setGeoError(null);
+
+    const onSuccess = (pos: GeolocationPosition) => {
+      const d = haversineDistanceMeters(pos.coords.latitude, pos.coords.longitude, currentStep.lat, currentStep.lng);
+      setDistance(d);
+      setAllowedByGPS(d <= currentStep.radiusM);
+    };
+
+    const onError = (err: GeolocationPositionError) => {
+      setGeoError(err.message || "Geolocalizzazione non disponibile");
+    };
+
+    if ("geolocation" in navigator) {
+      watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      });
+    } else {
+      setGeoError("Geolocalizzazione non supportata dal dispositivo");
+    }
+
     return () => {
-      if (watchIdRef.current != null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
+      if (watchId !== null && navigator.geolocation && navigator.geolocation.clearWatch) {
+        navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, []);
+  }, [currentStep]);
 
-  const currentStep = hunt.steps[progress.currentIndex] || null;
-
-  const distances = useMemo(() => {
-    if (!userPos) return {} as Record<string, number>;
-    const res: Record<string, number> = {};
-    for (const s of hunt.steps) {
-      res[s.id] = haversineM(userPos, s.location);
-    }
-    return res;
-  }, [userPos, hunt.steps]);
-
-  const [verifying, setVerifying] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
+  // Sincronizza progress con storage (widget home ascolta evento storage)
   useEffect(() => {
-    // Apri tutorial al primo accesso se non disabilitato
+    saveProgress(progress);
+    // dispatch manuale per forzare aggiornamento altri tab/iframe (soprattutto su stesso tab non serve)
     try {
-      if (!isTutorialHidden()) setShowTutorial(true);
+      window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
     } catch {}
-  }, []);
-  const verifyCurrent = useCallback(() => {
-    if (!currentStep) return;
-    if (!navigator.geolocation) {
-      alert('Geolocalizzazione non disponibile.');
-      return;
-    }
-    setVerifying(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        const d = haversineM(here, currentStep.location);
-        if (d <= currentStep.radiusM) {
-          // success
-          const newCompleted = [...progress.completed, currentStep.id];
-          const nextIndex = progress.currentIndex + 1;
-          const finished = nextIndex >= hunt.steps.length;
-          const newProgress: Progress = {
-            ...progress,
-            completed: newCompleted,
-            currentIndex: Math.min(nextIndex, hunt.steps.length - 1),
-            points: progress.points + 50, // per step
-            finishedAt: finished ? new Date().toISOString() : progress.finishedAt,
-          };
-          setProgress(newProgress);
-          saveProgress(newProgress);
-          if (finished) {
-            try {
-              const rewarded = localStorage.getItem(REWARD_KEY) === '1';
-              if (!rewarded) {
-                // Accredi XP per il completamento della caccia (una sola volta)
-                addXP('treasure_hunt_complete', hunt.rewardXP, { huntId: hunt.id, steps: hunt.steps.length });
-                localStorage.setItem(REWARD_KEY, '1');
-              }
-            } catch {}
-            setTimeout(() => {
-              alert('Complimenti! Caccia al tesoro completata! Hai guadagnato XP e (se previsto) un badge.');
-            }, 50);
-          }
-        } else {
-          alert(`Non sei abbastanza vicino. Distanza attuale: ${Math.round(d)} m`);
-        }
-        setVerifying(false);
-      },
-      (err) => {
-        alert(`Errore geolocalizzazione: ${err.message}`);
-        setVerifying(false);
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
-    );
-  }, [currentStep, progress, hunt.steps.length]);
+  }, [progress]);
 
-  const stepsCompleted = progress.completed.length;
-  const total = hunt.steps.length;
-  const pct = Math.round((stepsCompleted / total) * 100);
-  const done = stepsCompleted >= total;
+  const pct = Math.min(100, Math.round(((progress.stepsCompleted || 0) / (progress.total || 1)) * 100));
+
+  const canAttemptRiddle = demoMode || allowedByGPS;
+
+  const verifyAnswer = useCallback(async () => {
+    if (!currentStep) return;
+    if (!canAttemptRiddle) return;
+    setChecking(true);
+    const normalized = normalizeAnswer(userAnswer);
+    const isCorrect = currentStep.riddle.answers.map(normalizeAnswer).includes(normalized);
+
+    setTimeout(async () => {
+      setChecking(false);
+      if (isCorrect) {
+        triggerHaptic("heavy");
+        setCelebrate(true);
+        // XP opzionale
+        if (currentStep.rewardXp && userId) {
+          try {
+            await addXP("treasure_hunt_step", currentStep.rewardXp, { stepId: currentStep.id });
+          } catch {}
+        }
+
+        // Avanza allo step successivo
+        setTimeout(() => {
+          const nextIndex = Math.min(progress.currentIndex + 1, STEPS.length - 1);
+          const nextCompleted = Math.min(progress.stepsCompleted + 1, STEPS.length);
+          setProgress((p) => ({ ...p, currentIndex: nextIndex, stepsCompleted: nextCompleted }));
+          setUserAnswer("");
+          setAttempts(0);
+          setCelebrate(false);
+        }, 900);
+      } else {
+        triggerHaptic("medium");
+        setAttempts((a) => a + 1);
+      }
+    }, 600);
+  }, [currentStep, userAnswer, canAttemptRiddle, progress.currentIndex, progress.stepsCompleted, triggerHaptic, addXP, userId]);
+
+  const hint = useMemo(() => {
+    if (!currentStep) return "";
+    // Suggerimenti progressivi in base ai tentativi
+    if (attempts >= 3) {
+      // ultimo aiuto, maschera parziale risposta
+      const any = currentStep.riddle.answers[0] || "";
+      if (/^\d+$/.test(any)) return `È un numero di ${any.length} cifre.`;
+      return `Inizia per "${any.slice(0, 1)}" e ha ${any.length} lettere.`;
+    }
+    if (attempts >= 1) return currentStep.riddle.hint || "Osserva meglio i dettagli sul posto.";
+    return "";
+  }, [attempts, currentStep]);
+
+  const completedAll = progress.stepsCompleted >= progress.total;
+
+  const resetHunt = () => {
+    setProgress({ currentIndex: 0, stepsCompleted: 0, total: STEPS.length, startedAt: new Date().toISOString() });
+    setUserAnswer("");
+    setAttempts(0);
+    setCelebrate(false);
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-dark-300/50 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => router.back()} className="text-white/70 hover:text-white">← Indietro</button>
-          <div className="text-sm font-semibold">Caccia al Tesoro</div>
-          <Link href="/" className="text-white/70 hover:text-white">Home</Link>
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {/* Hero */}
-        <div className="rounded-2xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10">
+      <div className="sticky top-0 z-10 bg-black/70 backdrop-blur border-b border-white/10">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center">🧭</div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 grid place-items-center">🧭</div>
             <div>
-              <div className="text-lg font-bold">{hunt.name}</div>
-              <div className="text-white/70 text-xs">{hunt.city} • {total} tappe • Ricompensa: {hunt.rewardXP} XP</div>
+              <div className="text-sm text-white/80">Caccia al Tesoro</div>
+              <div className="text-xs text-white/60">{progress.stepsCompleted}/{progress.total} tappe completate</div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
-            </div>
-            <div className="text-xs text-white/70 mt-1">Progresso: {stepsCompleted}/{total} ({pct}%)</div>
-          </div>
-          {geoError && (
-            <div className="mt-2 text-amber-300 text-xs">⚠️ {geoError}</div>
-          )}
-          <div className="mt-3 flex gap-2">
-            <a href="/caccia-al-tesoro/tutorial" className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs">Tutorial</a>
-            <button onClick={() => setShowTutorial(true)} className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs">Apri Tutorial</button>
-          </div>
+          <div className="text-xs text-white/70 hidden sm:block">Progresso {pct}%</div>
         </div>
-
-        {/* How to play */}
-        <div className="rounded-2xl p-4 border border-white/10 bg-white/5">
-          <div className="font-semibold text-sm mb-1">Come si gioca</div>
-          <ol className="list-decimal list-inside text-white/80 text-xs space-y-1">
-            <li>Raggiungi la località suggerita dall'indizio.</li>
-            <li>Quando sei vicino, premi "Verifica posizione".</li>
-            <li>Completa tutte le tappe per ottenere XP e un badge.</li>
-            <li>Puoi tornare più tardi: i progressi vengono salvati automaticamente.</li>
-          </ol>
-        </div>
-
-        {/* Steps */}
-        <div className="space-y-4">
-          {hunt.steps.map((step, idx) => {
-            const isCompleted = progress.completed.includes(step.id);
-            const isCurrent = idx === progress.currentIndex;
-            const d = distances[step.id];
-            return (
-              <StepCard
-                key={step.id}
-                step={step}
-                index={idx}
-                isCurrent={isCurrent}
-                completed={isCompleted}
-                onVerify={verifyCurrent}
-                verifying={verifying && isCurrent}
-                distanceM={userPos ? d : null}
-              />
-            );
-          })}
-        </div>
-
-        {/* Finish box */}
-        <div className="rounded-2xl p-4 border border-white/10 bg-white/5">
-          <div className="font-semibold text-sm mb-1">Ricompense</div>
-          <div className="text-white/80 text-xs">
-            Completa la caccia per ottenere {hunt.rewardXP} XP {hunt.badgeId ? `e il badge "${hunt.badgeId}"` : ''}.
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => {
-                // Reset progress
-                const fresh: Progress = {
-                  huntId: hunt.id,
-                  currentIndex: 0,
-                  completed: [],
-                  startedAt: new Date().toISOString(),
-                  points: 0,
-                };
-                setProgress(fresh);
-                saveProgress(fresh);
-              }}
-              className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs"
-            >
-              Resetta
-            </button>
-            {done && (
-              <button
-                onClick={() => {
-                  const fresh: Progress = {
-                    huntId: hunt.id,
-                    currentIndex: 0,
-                    completed: [],
-                    startedAt: new Date().toISOString(),
-                    points: 0,
-                  };
-                  setProgress(fresh);
-                  saveProgress(fresh);
-                }}
-                className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-              >
-                Rigioca
-              </button>
-            )}
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${(currentStep ?? hunt.steps[0]).location.lat},${(currentStep ?? hunt.steps[0]).location.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs"
-            >
-              Apri in Maps
-            </a>
-          </div>
-        </div>
-
-        <div className="h-24" />
       </div>
-      <TreasureHuntTutorial isOpen={showTutorial} onClose={() => setShowTutorial(false)} onStart={() => { setShowTutorial(false); }} />
-    </div>
+
+      <div className="max-w-3xl mx-auto px-4 py-4">
+        {/* Barra progresso */}
+        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/0 to-white/5 animate-pulse" />
+          <div className="h-full bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+        </div>
+
+        {/* Stato GPS + Toggle Demo */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs text-white/70">
+            {geoError ? (
+              <span className="text-amber-300">GPS: {geoError}</span>
+            ) : distance !== null ? (
+              <span>
+                Sei a <span className="text-emerald-300 font-semibold">~{distance} m</span> dall'obiettivo — raggio utile {currentStep.radiusM} m
+              </span>
+            ) : (
+              <span>Acquisizione posizione in corso…</span>
+            )}
+          </div>
+          <label className="flex items-center gap-2 text-xs select-none cursor-pointer">
+            <input type="checkbox" className="accent-emerald-500" checked={demoMode} onChange={(e) => setDemoMode(e.target.checked)} />
+            Modalità prova
+          </label>
+        </div>
+
+        {/* Card step corrente o stato finale */}
+        {!completedAll ? (
+          <div className="relative bg-gradient-to-br from-white/[0.06] to-white/[0.02] rounded-2xl p-4 border border-white/10 overflow-hidden card-glow">
+            {/* FX */}
+            <div className="absolute -inset-1 opacity-20 bg-[radial-gradient(800px_200px_at_10%_0%,rgba(16,185,129,0.25),transparent),radial-gradient(800px_200px_at_90%_100%,rgba(20,184,166,0.2),transparent)]" />
+            <div className="relative">
+              <div className="text-xs text-white/60">Tappa {progress.currentIndex + 1} di {progress.total}</div>
+              <h1 className="text-xl font-bold mt-0.5">{currentStep.title}</h1>
+              <p className="text-white/80 text-sm mt-1">{currentStep.description}</p>
+
+              {/* Stato distanza */}
+              <div className="mt-3 text-xs">
+                {canAttemptRiddle ? (
+                  <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-200 border border-emerald-300/20">Sei nel raggio utile. Risolvi l'indovinello!</span>
+                ) : (
+                  <span className="px-2 py-1 rounded bg-white/10 text-white/80 border border-white/15">Avvicinati alla posizione per sbloccare l'indovinello.</span>
+                )}
+              </div>
+
+              {/* Indovinello */}
+              <div className={`mt-4 transition-opacity ${canAttemptRiddle ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+                <div className="text-sm font-semibold text-emerald-200">Indovinello</div>
+                <div className="text-white/90 text-sm mt-1">{currentStep.riddle.question}</div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    placeholder="Scrivi la risposta…"
+                    className="flex-1 bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400/40"
+                  />
+                  <button
+                    onClick={verifyAnswer}
+                    disabled={checking || !userAnswer.trim()}
+                    className="px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-400 text-black hover:bg-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {checking ? "Verifica…" : "Verifica"}
+                  </button>
+                </div>
+
+                {/* Hint / feedback */}
+                {attempts > 0 && (
+                  <div className="mt-2 text-xs text-amber-200/90">
+                    {attempts < 3 ? (
+                      <span>Non è corretto. {hint}</span>
+                    ) : (
+                      <span>Ancora nulla? {hint}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Celebrations */}
+                {celebrate && (
+                  <div className="mt-3 text-sm text-emerald-300 font-semibold flex items-center gap-2">
+                    <span>✅</span>
+                    Ottimo! Tappa superata.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative bg-gradient-to-br from-emerald-900/30 to-emerald-800/10 rounded-2xl p-6 border border-emerald-400/20 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(600px_180px_at_20%_10%,rgba(16,185,129,0.2),transparent),radial-gradient(600px_180px_at_80%_90%,rgba(20,184,166,0.15),transparent)] opacity-40" />
+            <div className="relative">
+              <div className="text-2xl font-bold text-emerald-300">Complimenti! 🎉</div>
+              <p className="text-white/85 mt-2">Hai completato la caccia al tesoro. Vuoi rigiocare per migliorare il tempo o aiutare un amico?</p>
+              <button onClick={resetHunt} className="mt-4 px-4 py-2 bg-emerald-400 text-black rounded-lg font-semibold hover:bg-emerald-300">Ricomincia</button>
+            </div>
+          </div>
+        )}
+
+        {/* Elenco tappe con stato */}
+        <div className="mt-6">
+          <h2 className="text-sm text-white/70 mb-2">Tappe</h2>
+          <ul className="space-y-2">
+            {STEPS.map((s, idx) => {
+              const done = idx < progress.stepsCompleted;
+              const current = idx === progress.currentIndex && !completedAll;
+              return (
+                <li key={s.id} className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${done ? "border-emerald-400/30 bg-emerald-400/10" : current ? "border-white/15 bg-white/5" : "border-white/10"}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full grid place-items-center text-xs ${done ? "bg-emerald-400 text-black" : current ? "bg-white/20 text-white" : "bg-white/10 text-white/60"}`}>
+                      {done ? "✓" : idx + 1}
+                    </div>
+                    <div>
+                      <div className="font-semibold">{s.title}</div>
+                      <div className="text-white/60 text-xs">Raggio utile {s.radiusM} m</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-white/70">{done ? "Fatta" : current ? "In corso" : "In attesa"}</div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Info */}
+        <div className="mt-6 text-xs text-white/60">
+          Suggerimento: per motivi di privacy, la tua posizione non viene salvata sui nostri server. Tutti i dati di progresso rimangono sul tuo dispositivo.
+        </div>
+      </div>
+    </main>
   );
 }

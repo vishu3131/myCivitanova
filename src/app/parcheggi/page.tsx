@@ -3,7 +3,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Car, CreditCard, Info, MapPin, Clock, Hash, AlertTriangle } from "lucide-react";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
-import dynamic from "next/dynamic";
 import 'leaflet/dist/leaflet.css'; // Keep Leaflet CSS
 import Switch from "@/components/Switch";
 import ParkingMap from "@/components/ParkingMap"; // Import the new ParkingMap component

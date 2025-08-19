@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css'; // Ensure CSS is loaded
 import { MapPin } from "lucide-react";
 import Switch from "@/components/Switch";
 
-// Import Leaflet and react-leaflet components only on client side
-const Leaflet = dynamic(async () => {
-  const L = await import('leaflet');
-  const { MapContainer, TileLayer, Marker, Polygon, Polyline, Tooltip, GeoJSON } = await import('react-leaflet');
+// Import Leaflet and react-leaflet components only on client side, senza usare dynamic()
+async function loadLeaflet() {
+  const LMod = await import('leaflet');
+  const L: any = (LMod as any).default ?? LMod;
+  const rl = await import('react-leaflet');
+  const { MapContainer, TileLayer, Marker, Polygon, Polyline, Tooltip, GeoJSON } = rl as any;
 
   // Parking marker icons
   const markerShadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png';
@@ -38,14 +39,14 @@ const Leaflet = dynamic(async () => {
     shadowSize: [41, 41],
   });
 
-  function getParkingIcon(item: any): L.Icon<any> {
+  function getParkingIcon(item: any): any {
     if (item?.fee_bool === true) return paidIcon; // a pagamento → blu acceso
     if (item?.fee_bool === false) return freeIcon; // gratuito → verde
     return unknownIcon; // sconosciuto → grigio
   }
 
   return { MapContainer, TileLayer, Marker, Polygon, Polyline, Tooltip, GeoJSON, getParkingIcon, L };
-}, { ssr: false });
+}
 
 // Parking areas (approximate polygons/polylines) for clarity over clusters
 const PARKING_AREAS: Array<
@@ -113,12 +114,12 @@ function getAreaStyle(type: 'free' | 'paid') {
     : { color: '#22c55e', weight: 3, fillColor: '#22c55e', fillOpacity: 0.2 };
 }
 
-function AreasOverlay({ L, getParkingIcon, MapContainer, TileLayer, Marker, Polygon, Polyline, Tooltip, GeoJSON }: any) {
+function AreasOverlay({ areas, getAreaStyle, L, MapContainer, TileLayer, Marker, Polygon, Polyline, Tooltip, GeoJSON }: any) {
   if (!L || !MapContainer) return null; // Ensure Leaflet is loaded
 
   return (
     <>
-      {PARKING_AREAS.map((area) => {
+      {areas.map((area) => {
         const style = getAreaStyle(area.type);
         if (area.shape === 'polygon') {
           return (
@@ -142,37 +143,44 @@ function AreasOverlay({ L, getParkingIcon, MapContainer, TileLayer, Marker, Poly
   );
 }
 
-export default function ParkingMap({ activeTab, onToggleAlt, isAlt }: { activeTab: 'all' | 'free' | 'paid'; onToggleAlt: () => void; isAlt: boolean }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+type ParkingMapProps = {
+  activeTab?: 'all' | 'free' | 'paid';
+  onToggleAlt?: () => void;
+  isAlt?: boolean;
+  center?: [number, number];
+  zoom?: number;
+  style?: React.CSSProperties;
+  zoomControl?: boolean;
+  filteredFC?: any;
+  filteredFeatures?: any[];
+  parkingAreas?: typeof PARKING_AREAS;
+  getAreaStyle?: (type: 'free' | 'paid') => any;
+};
+
+export default function ParkingMap(props: ParkingMapProps) {
+    const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leafletComponents, setLeafletComponents] = useState<any>(null);
 
   useEffect(() => {
-    Leaflet.then(comps => {
-      setLeafletComponents(comps);
-    });
+    let mounted = true;
+    loadLeaflet()
+      .then((comps) => { if (mounted) setLeafletComponents(comps); })
+      .catch((err) => { console.error('Leaflet load failed', err); });
+    return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/parking?fee=${activeTab}`);
-        if (!res.ok) throw new Error(`Errore caricamento parcheggi (${res.status})`);
-        const data = await res.json();
-        setItems(data);
-      } catch (e: any) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [activeTab]);
-
-  const center: [number, number] = [43.307, 13.73];
+  
+  const activeTab = props.activeTab ?? 'all';
+  const isAlt = props.isAlt ?? false;
+  const onToggleAlt = props.onToggleAlt ?? (() => {});
+  const mapCenter: [number, number] = props.center ?? [43.307, 13.73];
+  const mapZoom: number = props.zoom ?? 14;
+  const mapStyle: React.CSSProperties = props.style ?? { height: '100%', width: '100%' };
+  const mapZoomControl: boolean = props.zoomControl ?? false;
+  const areas = props.parkingAreas ?? PARKING_AREAS;
+  const areaStyleFn = props.getAreaStyle ?? getAreaStyle;
+  const filteredFC = props.filteredFC;
 
   if (!leafletComponents) {
     return (
@@ -222,10 +230,21 @@ export default function ParkingMap({ activeTab, onToggleAlt, isAlt }: { activeTa
         </div>
       </div>
       <div className="h-64 w-full">
-        <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+        <MapContainer center={mapCenter} zoom={mapZoom} style={mapStyle} zoomControl={mapZoomControl}>
           <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' attribution='&copy; OpenStreetMap contributors' />
           {/* Evidenzia Aree Parcheggio */}
-          <AreasOverlay L={L} getParkingIcon={getParkingIcon} MapContainer={MapContainer} TileLayer={TileLayer} Marker={Marker} Polygon={Polygon} Polyline={Polyline} Tooltip={Tooltip} GeoJSON={GeoJSON} />
+          <AreasOverlay areas={areas} getAreaStyle={areaStyleFn} L={L} MapContainer={MapContainer} TileLayer={TileLayer} Marker={Marker} Polygon={Polygon} Polyline={Polyline} Tooltip={Tooltip} GeoJSON={GeoJSON} />
+          {/* Overlay GeoJSON se fornito (Open Data) */}
+          {filteredFC ? (
+            <GeoJSON
+              data={filteredFC as any}
+              pointToLayer={(feature: any = {}, latlng: any) => L.marker(latlng, { icon: getParkingIcon(feature?.properties) })}
+              onEachFeature={(feature: any = {}, layer: any) => {
+                const name = feature?.properties?.name || 'Parcheggio';
+                layer.bindTooltip(name);
+              }}
+            />
+          ) : null}
           {/* Marker singoli nascosti per ridurre il clutter */}
         </MapContainer>
       </div>

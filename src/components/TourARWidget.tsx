@@ -59,6 +59,8 @@ export const TourARWidget = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanStep, setScanStep] = useState(0);
   const [hotspots, setHotspots] = useState<DemoHotspot[]>([]);
+  const [isStartingCamera, setIsStartingCamera] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -126,7 +128,12 @@ export const TourARWidget = () => {
     setIsDemoActive(true);
     setIsScanning(true);
     initHotspots();
-    await startCamera();
+    try {
+      setIsStartingCamera(true);
+      await startCamera();
+    } finally {
+      setIsStartingCamera(false);
+    }
   }, [initHotspots, startCamera]);
 
   const stopDemo = useCallback(() => {
@@ -148,12 +155,32 @@ export const TourARWidget = () => {
     };
   }, [isScanning]);
 
+  // Respect user motion preferences
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    setReduceMotion(mq.matches);
+    try {
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    } catch {
+      // Safari fallback
+      // @ts-ignore
+      mq.addListener?.(onChange);
+      return () => {
+        // @ts-ignore
+        mq.removeListener?.(onChange);
+      };
+    }
+  }, []);
+
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
 
   return (
-    <section className="relative p-4 md:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between overflow-hidden min-h-[280px] md:min-h-[220px] col-span-2 bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] border border-white/10">
+    <section className="relative p-4 md:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between overflow-hidden min-h-[280px] md:min-h-[220px] col-span-2 bg-dark-300/50 backdrop-blur-sm card-glow border border-white/10">
       {/* FX Background */}
       <div className="pointer-events-none absolute inset-0 opacity-30 mix-blend-screen">
         <div className="absolute -inset-40 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.35),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.35),transparent_40%)]" />
@@ -175,18 +202,18 @@ export const TourARWidget = () => {
           avvia la fotocamera e prova l&apos;overlay in realtà aumentata.
         </p>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {!isDemoActive ? (
             <button
               onClick={startDemo}
-              className="px-4 py-2 bg-emerald-400 text-black font-semibold rounded-lg shadow hover:bg-emerald-300 transition-all text-sm flex items-center gap-2"
+              className="h-11 px-5 w-full bg-emerald-400 text-black font-semibold rounded-xl shadow hover:bg-emerald-300 transition-all text-sm md:text-base flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" /> Avvia Demo AR
             </button>
           ) : (
             <button
               onClick={stopDemo}
-              className="px-4 py-2 bg-white/15 text-white font-semibold rounded-lg shadow hover:bg-white/25 transition-all text-sm"
+              className="h-11 px-5 w-full bg-white/15 text-white font-semibold rounded-xl shadow hover:bg-white/25 transition-all text-sm md:text-base"
             >
               Arresta Demo
             </button>
@@ -194,7 +221,7 @@ export const TourARWidget = () => {
 
           <Link
             href="/ar"
-            className="px-4 py-2 bg-white text-[#302b63] font-semibold rounded-lg shadow hover:bg-white/90 transition-all text-sm"
+            className="h-11 px-5 w-full bg-white text-[#302b63] font-semibold rounded-xl shadow hover:bg-white/90 transition-all text-sm md:text-base inline-flex items-center justify-center"
           >
             Vai al servizio completo
           </Link>
@@ -205,7 +232,7 @@ export const TourARWidget = () => {
           {features.slice(0, 3).map((f, i) => (
             <li key={f.title} className="mb-1">
               <button
-                className="w-full flex items-center bg-white/10 hover:bg-white/20 text-white rounded-lg px-3 py-2 font-medium shadow transition-all text-sm"
+                className="w-full h-11 flex items-center bg-white/10 hover:bg-white/20 text-white rounded-xl px-4 font-medium shadow transition-all text-sm md:text-base"
                 onClick={() => setSelected(i)}
               >
                 {f.icon}
@@ -225,8 +252,15 @@ export const TourARWidget = () => {
             ref={videoRef}
             muted
             playsInline
+            aria-label="Anteprima fotocamera per esperienza AR"
+            aria-describedby="ar-instructions"
             className={`absolute inset-0 w-full h-full object-cover ${isDemoActive ? 'opacity-100' : 'opacity-30'} transition-opacity`}
           />
+
+          <div id="ar-instructions" className="sr-only">
+            Quando attivi la demo, la fotocamera posteriore si avvia. Sposta il telefono per cercare punti di interesse.
+            I contenuti in sovrimpressione mostrano nome, distanza e categoria del luogo.
+          </div>
 
           {/* Placeholder when inactive */}
           {!isDemoActive && (
@@ -247,7 +281,7 @@ export const TourARWidget = () => {
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]" />
 
             {/* Scanning line */}
-            {isDemoActive && (
+            {isDemoActive && !reduceMotion && (
               <div className="absolute left-0 right-0" style={{ top: `${10 + (scanStep * 0.8)}%` }}>
                 <div className="h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
               </div>
@@ -292,10 +326,44 @@ export const TourARWidget = () => {
             </div>
           </div>
 
+          {/* Loading overlay while starting camera */}
+          {isStartingCamera && (
+            <div className="absolute inset-0 grid place-items-center bg-black/50">
+              <div className="flex items-center gap-2 text-white/90">
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden="true"></span>
+                <span className="text-sm font-medium">Avvio fotocamera…</span>
+              </div>
+            </div>
+          )}
+
+          {/* Inline controls */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
+            {!isDemoActive ? (
+              <button
+                onClick={startDemo}
+                className="h-11 px-5 bg-emerald-400 text-black font-semibold rounded-full shadow hover:bg-emerald-300 transition-all text-sm"
+                aria-label="Avvia demo realtà aumentata"
+              >
+                Avvia Demo
+              </button>
+            ) : (
+              <button
+                onClick={stopDemo}
+                className="h-11 px-5 bg-white/15 text-white font-semibold rounded-full shadow hover:bg-white/25 transition-all text-sm"
+                aria-label="Arresta demo realtà aumentata"
+              >
+                Arresta
+              </button>
+            )}
+            <span className="px-2 py-1 rounded-full bg-white/10 text-white/80 text-[10px] hidden sm:inline">
+              Sicurezza: fai attenzione all’ambiente
+            </span>
+          </div>
+
           {/* Camera error */}
           {streamError && (
             <div className="absolute inset-0 flex items-end">
-              <div className="w-full p-2 text-[11px] text-yellow-200 bg-yellow-900/60">{streamError}</div>
+              <div className="w-full p-2 text-[11px] text-yellow-200 bg-yellow-900/60" role="status" aria-live="polite">{streamError}</div>
             </div>
           )}
         </div>

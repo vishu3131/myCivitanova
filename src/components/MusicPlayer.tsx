@@ -97,10 +97,13 @@ const MusicPlayer = () => {
   const MusicIcon = () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="26"
-      height="26"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
-      className="animate-[spin_10s_linear_infinite]"
+      className="block animate-[spin_10s_linear_infinite]"
+      aria-hidden="true"
+      focusable="false"
+      style={{ transform: 'translate(0px, -1px)' }}
     >
       <defs>
         <linearGradient id="noteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -138,8 +141,9 @@ const MusicPlayer = () => {
       {/* Pulsante fluttuante per aprire il player */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-16 right-5 z-50 w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-purple-700 transition-all touch-manipulation touch-feedback no-select will-change-transform"
+        className="fixed top-16 right-5 z-50 w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center leading-none shadow-lg hover:bg-purple-700 transition-all touch-manipulation touch-feedback no-select will-change-transform"
         aria-label="Apri o chiudi lettore musicale"
+        style={{ transform: 'translate(0px, 1px)' }}
       >
         <MusicIcon />
       </button>
