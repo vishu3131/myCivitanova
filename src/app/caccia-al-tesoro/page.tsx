@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useHapticFeedback } from "@/hooks/usehapticfeedback";
-import { useXPSystem } from "@/hooks/usexpsystem";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
+import { useXPSystem } from "@/hooks/useXPSystem";
 
 // Tipi base
 type Step = {
