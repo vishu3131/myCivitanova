@@ -90,12 +90,10 @@ export default function TutorialIntroVideo({ isVisible, onComplete, onSkip }: Tu
             controls
             onEnded={onComplete}
           >
-            {/*
-              You can place a local video at public/videos/tutorial-intro.mp4 and uncomment the source below.
-              <source src="/videos/tutorial-intro.mp4" type="video/mp4" />
-            */}
-            {/* Fallback: an example hosted video. Replace with local asset when available. */}
-            <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4" />
+            {/* Assicurati di aver inserito il tuo video nella cartella `public/videos/` */}
+            <source src="/videos/tutorial-intro.mp4" type="video/mp4" />
+            {/* La riga sottostante che usava un video di esempio è stata rimossa. */}
+            {/* <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4" /> */}
             Il tuo browser non supporta il tag video.
           </video>
         </div>

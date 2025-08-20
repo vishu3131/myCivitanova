@@ -285,7 +285,7 @@ export function CircularDevNavigation() {
           handleCentralClick(e as any);
         }}
         onKeyDown={handleKeyDown}
-        className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-400 touch-manipulation"
+        className="fixed bottom-24 left-[45%] transform -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-400 touch-manipulation"
         style={{ 
           zIndex: 9997,
           WebkitTapHighlightColor: 'transparent'
@@ -360,7 +360,7 @@ export function CircularDevNavigation() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed bottom-24 left-1/2 w-80 h-80 rounded-full pointer-events-none"
+            className="fixed bottom-24 left-[45%] w-80 h-80 rounded-full pointer-events-none"
             style={{ 
               zIndex: 9995,
               background: "radial-gradient(circle, transparent 30%, rgba(139, 92, 246, 0.05) 50%, transparent 70%)",
@@ -386,7 +386,7 @@ export function CircularDevNavigation() {
       <AnimatePresence>
         {isOpen && (
           <div 
-            className="fixed bottom-24 left-1/2 transform -translate-x-1/2"
+            className="fixed bottom-24 left-[45%] transform -translate-x-1/2"
             style={{ zIndex: 9996 }}
             role="navigation"
             aria-label="Menu di navigazione principale"

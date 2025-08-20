@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { slides } from '@/data/tutorialSlides';
-import { useXPSystem } from '@/hooks/useXPSystem'; // Assuming this hook is available and works client-side
+import { useXPSystem } from '@/hooks/useXPSystem';
 import Link from 'next/link';
 
 interface TutorialSlidePageProps {
@@ -12,30 +12,40 @@ interface TutorialSlidePageProps {
   };
 }
 
+// Utility types
+type Slide = typeof slides[number];
+
 export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
   const router = useRouter();
-  const { slideId } = params;
-  const userId = "some_user_id"; // TODO: Replace with actual user ID from context/auth
 
+  // TODO: Replace with actual user ID from auth context/session
+  const userId = 'some_user_id';
   const { addXP } = useXPSystem(userId);
 
-  const currentSlideIndex = slides.findIndex(slide => slide.id === slideId);
-  const slide = slides[currentSlideIndex];
+  // Resolve current slideId, index and slide data
+  const slideId = params?.slideId;
+  const currentSlideIndex = useMemo(
+    () => slides.findIndex((s) => s.id === slideId),
+    [slideId]
+  );
+  const slide: Slide | null =
+    currentSlideIndex >= 0 ? slides[currentSlideIndex] : null;
 
+  // Redirect if slide not found and award XP when slide loads
   useEffect(() => {
     if (!slide) {
-      router.replace('/404'); // Or redirect to a default tutorial start page
-    } else {
-      // Award XP for viewing the slide
-      if (userId && slide.xpReward) {
-        addXP('tutorial_slide_viewed', slide.xpReward, {
-          slide_id: slide.id,
-          slide_index: currentSlideIndex,
-          source: 'tutorial_page'
-        });
-      }
+      router.replace('/404');
+      return;
     }
-  }, [slide, userId, addXP, currentSlideIndex, router]);
+
+    if (userId && slide.xpReward) {
+      addXP('tutorial_slide_viewed', slide.xpReward, {
+        slide_id: slide.id,
+        slide_index: currentSlideIndex,
+        source: 'tutorial_page',
+      });
+    }
+  }, [slide, currentSlideIndex, router, userId, addXP]);
 
   if (!slide) {
     return (
@@ -49,23 +59,21 @@ export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
   const progress = ((currentSlideIndex + 1) / slides.length) * 100;
 
   const handleComplete = async () => {
-    // This logic might need to be moved or re-thought if the tutorial is now multi-page
-    // For now, just redirect to home or a completion page
     if (userId) {
       await addXP('tutorial_completed', 100, {
-        session_duration: 0, // Cannot track session duration easily across pages
-        completion_rate: 100, // Assuming completion if they reach the end
-        total_interactions: 0, // Cannot track total interactions easily across pages
+        session_duration: 0,
+        completion_rate: 100,
+        total_interactions: 0,
         slides_viewed: slides.length,
-        source: 'tutorial_page_completion'
+        source: 'tutorial_page_completion',
       });
 
       await addXP('badge_earned', 50, {
         badge_id: 'tutorial_master',
-        source: 'tutorial_page_completion'
+        source: 'tutorial_page_completion',
       });
     }
-    router.push('/'); // Redirect to home after completion
+    router.push('/');
   };
 
   return (
@@ -94,8 +102,10 @@ export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
           </div>
 
           {/* Progress Bar */}
-          <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 ease-out"
-               style={{ width: `${progress}%` }} />
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
         </div>
 
         {/* Slide Content */}
@@ -109,12 +119,8 @@ export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
               <h2 className="text-white font-bold text-xl leading-tight mb-2">
                 {slide.title}
               </h2>
-              <p className="text-white/80 text-sm font-medium mb-3">
-                {slide.subtitle}
-              </p>
-              <p className="text-white/70 text-sm leading-relaxed">
-                {slide.description}
-              </p>
+              <p className="text-white/80 text-sm font-medium mb-3">{slide.subtitle}</p>
+              <p className="text-white/70 text-sm leading-relaxed">{slide.description}</p>
             </div>
           </div>
 
@@ -154,34 +160,34 @@ export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-3 justify-end"> {/* Adjusted for spacing */}
-              {currentSlideIndex > 0 && (
-                <Link
-                  href={`/tutorial/${slides[currentSlideIndex - 1].id}`}
-                  className="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                >
-                  Indietro
-                </Link>
-              )}
+          <div className="flex items-center gap-3 justify-end">
+            {currentSlideIndex > 0 && (
+              <Link
+                href={`/tutorial/${slides[currentSlideIndex - 1].id}`}
+                className="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                Indietro
+              </Link>
+            )}
 
-              {!isLast ? (
-                <Link
-                  href={`/tutorial/${slides[currentSlideIndex + 1].id}`}
-                  className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-medium transition-all shadow-lg"
-                >
-                  {slide.ctaText || 'Avanti'}
-                </Link>
-              ) : (
-                <button
-                  onClick={handleComplete}
-                  className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold transition-all shadow-lg"
-                >
-                  {slide.ctaText || 'Completa Tutorial!'}
-                </button>
-              )}
-            </div>
+            {!isLast ? (
+              <Link
+                href={`/tutorial/${slides[currentSlideIndex + 1].id}`}
+                className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-medium transition-all shadow-lg"
+              >
+                {slide.ctaText || 'Avanti'}
+              </Link>
+            ) : (
+              <button
+                onClick={handleComplete}
+                className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold transition-all shadow-lg"
+              >
+                {slide.ctaText || 'Completa Tutorial!'}
+              </button>
+            )}
           </div>
         </div>
       </div>
+    </div>
   );
 }

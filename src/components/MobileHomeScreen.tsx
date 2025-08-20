@@ -1625,7 +1625,13 @@ export function MobileHomeScreen() {
       </div>
 
       {/* Home Tutorial */}
-      <HomeTutorial isOpen={showHomeTutorial} onClose={() => setShowHomeTutorial(false)} />
+      <HomeTutorial
+        isOpen={showHomeTutorial}
+        onClose={() => {
+          try { localStorage.setItem('homeTutorialHiddenV1', '1'); } catch {}
+          setShowHomeTutorial(false);
+        }}
+      />
 
       {/* Search Modal */}
       <SearchModal

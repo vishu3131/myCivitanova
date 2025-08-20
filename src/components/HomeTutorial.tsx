@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { slides } from '@/data/tutorialSlides'; // Import slides from the new file
+import TutorialIntroVideo from './TutorialIntroVideo';
 
 export interface HomeTutorialProps {
   isOpen: boolean;
@@ -13,14 +14,19 @@ export const TUTORIAL_KEY = "homeTutorialHiddenV1";
 
 export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [showIntroVideo, setShowIntroVideo] = useState(false);
 
-  const handleStartTutorial = () => {
+  const startTutorialFlow = () => {
     if (dontShowAgain) {
       try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
     }
-    onClose(); // Close the modal/widget
-    // Open the first slide in a new tab
-    window.open(`/tutorial/${slides[0].id}`, '_blank');
+    onClose();
+    // Open the first slide in the same tab (better UX on mobile)
+    window.location.href = `/tutorial/${slides[0].id}`;
+  };
+
+  const handleStartTutorial = () => {
+    setShowIntroVideo(true);
   };
 
   const handleClose = () => {
@@ -34,8 +40,8 @@ export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-6 overflow-y-auto"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex justify-center p-0 sm:p-6 overflow-y-auto pt-16"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
     >
       <div className="relative w-full sm:max-w-lg group">
         {/* Animated gradient glow border */}
@@ -70,12 +76,11 @@ export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
             </button>
 
             <button
-              disabled
-              aria-disabled="true"
-              className="sm:flex-none px-5 py-2.5 text-base rounded-xl border border-white/20 bg-white/10 text-white/80 backdrop-blur-md shadow-inner opacity-85 hover:opacity-90 hover:text-white transition-all cursor-not-allowed"
-              title="In arrivo"
+              onClick={handleStartTutorial}
+              className="sm:flex-none px-5 py-2.5 text-base rounded-xl border border-white/20 bg-white/10 text-white hover:text-white backdrop-blur-md shadow-inner transition-all"
+              title="Continua il tutorial"
             >
-              Coming Soon
+              Continua
             </button>
           </div>
 
@@ -126,6 +131,14 @@ export default function HomeTutorial({ isOpen, onClose }: HomeTutorialProps) {
           }
         `}</style>
       </div>
+
+      {showIntroVideo && (
+        <TutorialIntroVideo
+          isVisible={showIntroVideo}
+          onComplete={startTutorialFlow}
+          onSkip={startTutorialFlow}
+        />
+      )}
     </div>
   );
 }

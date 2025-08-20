@@ -117,7 +117,8 @@ export default function LoginModal(props: LoginModalProps) {
       setSuccess('Accesso effettuato!');
       onLogin && onLogin();
       // Mark tutorial as hidden on successful login to prevent blurring
-      try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
+      // Removed line to allow tutorial to appear after login
+      // try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
       onClose && onClose();
       router.push('/profilo');
     }

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
+const INTRO_KEY = 'introUnlockedV1';
+
 export default function IntroOverlay() {
   const [visible, setVisible] = useState(true); // Start visible to show intro or password
   const [showPasswordScreen, setShowPasswordScreen] = useState(false);
@@ -10,7 +12,15 @@ export default function IntroOverlay() {
   const [error, setError] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-
+  // Persist: if already unlocked, don't show overlay again
+  useEffect(() => {
+    try {
+      const unlocked = localStorage.getItem(INTRO_KEY) === '1';
+      if (unlocked) {
+        setVisible(false);
+      }
+    } catch {}
+  }, []);
 
   const handleSkip = () => {
     try {
@@ -26,6 +36,7 @@ export default function IntroOverlay() {
     if (password === "1131") {
       setVisible(false);
       setError("");
+      try { localStorage.setItem(INTRO_KEY, '1'); } catch {}
     } else {
       setError("Password errata. Riprova.");
     }
