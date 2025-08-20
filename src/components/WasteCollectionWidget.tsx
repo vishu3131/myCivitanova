@@ -1,13 +1,80 @@
 import { useState } from 'react';
 import ReactDOM from 'react-dom';
-import WasteReportForm from './WasteReportForm';
+import { createClient } from '@supabase/supabase-js';
+import WasteReportForm, { WasteReportData } from './WasteReportForm';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export function WasteCollectionWidget() {
   const [showReportForm, setShowReportForm] = useState(false);
 
-  const handleReportSubmit = (data) => {
-    console.log('Dati segnalazione:', data);
-    alert('Segnalazione inviata con successo!');
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `waste-reports/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload foto:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Errore durante l\'upload:', error);
+      return null;
+    }
+  };
+
+  const handleReportSubmit = async (data: WasteReportData): Promise<void> => {
+    try {
+      let photoUrl: string | null = null;
+      
+      // Upload foto se presente
+      if (data.photo) {
+        photoUrl = await uploadPhoto(data.photo);
+      }
+
+      // Ottieni l'utente corrente
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Inserisci la segnalazione nel database
+      const { error } = await supabase
+        .from('waste_reports')
+        .insert({
+          issue_type: data.issueType,
+          description: data.description,
+          location: data.location,
+          photo_url: photoUrl,
+          reporter_id: user?.id || null,
+          reporter_email: data.reporterEmail,
+          reporter_phone: data.reporterPhone,
+          status: 'pending',
+          priority: 'medium'
+        });
+
+      if (error) {
+        console.error('Errore inserimento segnalazione:', error);
+        throw new Error('Errore durante il salvataggio della segnalazione');
+      }
+
+      // Mostra messaggio di successo
+      alert('Segnalazione inviata con successo! Riceverai aggiornamenti sullo stato.');
+    } catch (error) {
+      console.error('Errore durante l\'invio:', error);
+      throw error; // Rilancia l'errore per gestirlo nel form
+    }
   };
 
   return (

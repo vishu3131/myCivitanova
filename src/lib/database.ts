@@ -185,6 +185,29 @@ export interface SystemLog {
   created_at: string;
 }
 
+export interface CityReport {
+  id: string;
+  reporter_id: string;
+  title: string;
+  description: string;
+  category: 'infrastructure' | 'safety' | 'environment' | 'transport' | 'noise' | 'other';
+  urgency: 'low' | 'medium' | 'high';
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  photos: string[];
+  contact_info?: string;
+  status: 'pending' | 'in_progress' | 'resolved' | 'rejected';
+  assigned_to?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  resolution_notes?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  reporter?: Profile;
+}
+
 export interface SiteImageSection {
   id: string;
   name: string;
@@ -491,6 +514,15 @@ export class DatabaseService {
     return data as Profile[];
   }
 
+  static async getUsersCount() {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+    return { count };
+  }
+
   static async updateUserRole(userId: string, role: Profile['role']) {
     const { data, error } = await supabase
       .from('profiles')
@@ -662,5 +694,160 @@ export class DatabaseService {
 
     if (error) throw error;
     return data as SystemLog;
+  }
+
+  // City Reports methods
+  static async getCityReports(filters?: {
+    status?: string;
+    category?: string;
+    urgency?: string;
+    reporter_id?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    try {
+      let query = supabase
+        .from('city_reports')
+        .select(`
+          *,
+          reporter:profiles!city_reports_reporter_id_fkey (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.category && filters.category !== 'all') {
+        query = query.eq('category', filters.category);
+      }
+      if (filters?.urgency && filters.urgency !== 'all') {
+        query = query.eq('urgency', filters.urgency);
+      }
+      if (filters?.reporter_id) {
+        query = query.eq('reporter_id', filters.reporter_id);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+      if (filters?.offset) {
+        query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as CityReport[];
+    } catch (error) {
+      console.error('Error fetching city reports:', error);
+      throw error;
+    }
+  }
+
+  static async getCityReportById(id: string) {
+    try {
+      const { data, error } = await supabase
+        .from('city_reports')
+        .select(`
+          *,
+          reporter:profiles!city_reports_reporter_id_fkey (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data as CityReport;
+    } catch (error) {
+      console.error('Error fetching city report:', error);
+      throw error;
+    }
+  }
+
+  static async createCityReport(report: Partial<CityReport>) {
+    try {
+      const { data, error } = await supabase
+        .from('city_reports')
+        .insert([report])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as CityReport;
+    } catch (error) {
+      console.error('Error creating city report:', error);
+      throw error;
+    }
+  }
+
+  static async updateCityReport(id: string, updates: Partial<CityReport>) {
+    try {
+      const { data, error } = await supabase
+        .from('city_reports')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as CityReport;
+    } catch (error) {
+      console.error('Error updating city report:', error);
+      throw error;
+    }
+  }
+
+  static async getCityReportsStats() {
+    try {
+      const { data, error } = await supabase
+        .from('city_reports')
+        .select('status');
+
+      if (error) throw error;
+
+      const stats = {
+        total: data?.length || 0,
+        pending: data?.filter(r => r.status === 'pending').length || 0,
+        in_progress: data?.filter(r => r.status === 'in_progress').length || 0,
+        resolved: data?.filter(r => r.status === 'resolved').length || 0,
+        rejected: data?.filter(r => r.status === 'rejected').length || 0
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('Error fetching city reports stats:', error);
+      throw error;
+    }
+  }
+
+  static async searchCityReports(searchTerm: string) {
+    try {
+      const { data, error } = await supabase
+        .from('city_reports')
+        .select(`
+          *,
+          reporter:profiles!city_reports_reporter_id_fkey (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as CityReport[];
+    } catch (error) {
+      console.error('Error searching city reports:', error);
+      throw error;
+    }
   }
 }

@@ -489,7 +489,7 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
                   <TrendingUp className="w-4 h-4 text-yellow-400" />
                   <span className="text-yellow-400 text-sm font-medium">XP Distribuiti</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats.total_xp_distributed.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-white">{(stats.total_xp_distributed || 0).toLocaleString()}</p>
               </div>
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -804,7 +804,7 @@ function StatsTab({ stats }: { stats: GamificationStats | null }) {
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-400">XP Totali Distribuiti</span>
-              <span className="text-white font-semibold">{stats.total_xp_distributed.toLocaleString()}</span>
+              <span className="text-white font-semibold">{(stats.total_xp_distributed || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">Utenti con XP</span>
@@ -831,7 +831,7 @@ function StatsTab({ stats }: { stats: GamificationStats | null }) {
             <div className="flex justify-between">
               <span className="text-gray-400">XP Medi per Utente</span>
               <span className="text-white font-semibold">
-                {Math.round(stats.total_xp_distributed / stats.active_users_with_xp).toLocaleString()}
+                {Math.round((stats.total_xp_distributed || 0) / (stats.active_users_with_xp || 1)).toLocaleString()}
               </span>
             </div>
           </div>

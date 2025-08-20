@@ -27,11 +27,13 @@ export interface CommunityPost {
   created_at: string;
   updated_at: string;
   // Dati dell'autore
-  author_name?: string;
-  author_avatar?: string;
-  author_role?: string;
   user_reaction?: string;
   time_ago?: string;
+  profiles?: {
+    display_name: string;
+    avatar: string;
+    role: string;
+  };
 }
 
 export interface CommunityComment {
@@ -124,10 +126,17 @@ export const useCommunity = () => {
       setHasMore(result.hasMore);
       setTotal(result.total);
       
+      const processedPosts = result.posts.map(post => ({
+        ...post,
+        author_name: post.profiles?.display_name || 'Utente Sconosciuto',
+        author_avatar: post.profiles?.avatar || undefined,
+        author_role: post.profiles?.role || undefined,
+      }));
+
       // Se l'utente è loggato, recupera le sue reazioni per ogni post
       if (currentUser) {
         const postsWithReactions = await Promise.all(
-          result.posts.map(async (post) => {
+          processedPosts.map(async (post) => {
             try {
               const userReaction = await CommunityAPI.getUserReaction(post.id, currentUser.id);
               return { ...post, user_reaction: userReaction || undefined };
@@ -139,7 +148,7 @@ export const useCommunity = () => {
         );
         setPosts(postsWithReactions);
       } else {
-        setPosts(result.posts);
+        setPosts(processedPosts);
       }
       
     } catch (err) {
@@ -165,9 +174,16 @@ export const useCommunity = () => {
       setHasMore(result.hasMore);
       setTotal(result.total);
 
+      const processedNewPosts = result.posts.map(post => ({
+        ...post,
+        author_name: post.profiles?.display_name || 'Utente Sconosciuto',
+        author_avatar: post.profiles?.avatar || undefined,
+        author_role: post.profiles?.role || undefined,
+      }));
+
       if (currentUser) {
         const postsWithReactions = await Promise.all(
-          result.posts.map(async (post) => {
+          processedNewPosts.map(async (post) => {
             try {
               const userReaction = await CommunityAPI.getUserReaction(post.id, currentUser.id);
               return { ...post, user_reaction: userReaction || undefined };
@@ -179,7 +195,7 @@ export const useCommunity = () => {
         );
         setPosts(prev => [...prev, ...postsWithReactions]);
       } else {
-        setPosts(prev => [...prev, ...result.posts]);
+        setPosts(prev => [...prev, ...processedNewPosts]);
       }
     } catch (err) {
       console.error('Errore nel caricamento incrementale dei post:', err);

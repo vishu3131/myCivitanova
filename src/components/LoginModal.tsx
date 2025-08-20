@@ -160,103 +160,33 @@ export default function LoginModal(props: LoginModalProps) {
     }
     setLoading(true);
     setDebugInfo('🚀 Avvio registrazione Supabase Auth...');
-    
-    // SOLUZIONE TEMPORANEA: Salta completamente Supabase Auth
-    // e salva direttamente nel database
-    setDebugInfo(prev => prev + '\n🔄 Bypassing Supabase Auth, inserimento diretto...');
-    
-    try {
-      // 1. Controlla se email esiste già
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', signupEmail)
-        .single();
 
-      if (existingUser) {
-        setSignupError('Email già registrata');
-        setLoading(false);
-        return;
-      }
+    const { data, error } = await supabase.auth.signUp({
+      email: signupEmail,
+      password: signupPassword,
+      options: {
+        data: {
+          full_name: `${signupName} ${signupSurname}`,
+          username: signupUsername,
+          phone: signupPhone,
+          date_of_birth: signupBirth,
+          role: signupRole,
+        },
+      },
+    });
 
-      // 2. Genera un UUID per l'utente
-      const generateUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0;
-          const v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
-
-      // 3. Inserisci direttamente nel database
-      const newUserId = generateUUID();
-      const userData = {
-        id: newUserId,
-        email: signupEmail,
-        display_name: `${signupName} ${signupSurname}`,
-        username: signupUsername,
-        phone: signupPhone,
-        birthdate: signupBirth,
-        role: signupRole,
-      };
-
-      const { data: insertedData, error: insertError } = await supabase
-        .from('users')
-        .insert(userData)
-        .select();
-
-      if (insertError) {
-        setDebugInfo(prev => prev + '\n❌ Errore inserimento diretto: ' + JSON.stringify(insertError, null, 2));
-        setSignupError('Errore salvataggio: ' + insertError.message);
-        setLoading(false);
-        return;
-      }
-
-      setDebugInfo(prev => prev + '\n✅ Utente salvato direttamente nel database!');
-      
-      // Simula il successo di Supabase Auth
-      const data = { user: { id: newUserId, email: signupEmail } };
-      const error = null;
-
-      setDebugInfo(prev => prev + '\n✅ Registrazione completata con successo!');
-      
-      // Aggiungi XP di benvenuto per nuovo utente
-      try {
-        await supabase.rpc('add_xp_simple', {
-          p_user_id: newUserId,
-          p_activity_type: 'welcome',
-          p_xp_amount: 25,
-          p_metadata: { 
-            registration_date: new Date().toISOString(),
-            source: 'new_user_registration'
-          }
-        });
-        setDebugInfo(prev => prev + '\n🎉 XP di benvenuto aggiunti!');
-      } catch (xpError) {
-        setDebugInfo(prev => prev + '\n⚠️ Sistema XP non ancora attivo: ' + (xpError instanceof Error ? xpError.message : String(xpError)));
-      }
-      
-    } catch (directInsertError) {
-      setDebugInfo(prev => prev + '\n❌ Errore inserimento diretto: ' + (directInsertError instanceof Error ? directInsertError.message : String(directInsertError)));
-      setSignupError('Errore registrazione: ' + (directInsertError instanceof Error ? directInsertError.message : String(directInsertError)));
-      setLoading(false);
-      return;
+    if (error) {
+      setDebugInfo(prev => prev + '\n❌ Errore registrazione Supabase Auth: ' + JSON.stringify(error, null, 2));
+      setSignupError(error.message);
+      setEmailConfirmationSent(false);
+    } else {
+      // If no error, but user is null, it means email confirmation is pending
+      setDebugInfo(prev => prev + '\n✅ Registrazione avviata, attesa conferma email.');
+      setSignupSuccess('Registrazione completata! Controlla la tua email per la conferma.');
+      setEmailConfirmationSent(true);
+      setResendAttempts(0);
+      startResendTimer(0);
     }
-    
-    // Mostra messaggio di successo
-    setSignupSuccess('Registrazione completata con successo! Ora puoi effettuare il login.');
-    setTimeout(() => {
-      setShowSignup(false);
-      setSignupEmail('');
-      setSignupPassword('');
-      setSignupUsername('');
-      setSignupName('');
-      setSignupSurname('');
-      setSignupPhone('');
-      setSignupBirth('');
-      setSignupRole('utente');
-      setSignupSuccess('');
-    }, 3000);
     setLoading(false);
   };
 
@@ -309,16 +239,11 @@ export default function LoginModal(props: LoginModalProps) {
                 </div>
                 <button
                   type="button"
-                  className="neon-btn relative cursor-not-allowed opacity-50"
-                  disabled
+                  onClick={handleGoogleLogin}
+                  className="neon-btn"
+                  disabled={loading}
                 >
-                  Accedi con Google
-                  <span
-                    className="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full"
-                    style={{ transform: 'translate(50%, -50%)' }}
-                  >
-                    Coming Soon
-                  </span>
+                  {loading ? 'Accesso con Google...' : 'Accedi con Google'}
                 </button>
               </form>
             ) : (
@@ -411,6 +336,20 @@ export default function LoginModal(props: LoginModalProps) {
             </select>
             {signupError && <div className="neon-error">{signupError}</div>}
             {signupSuccess && <div className="neon-success">{signupSuccess}</div>}
+            {emailConfirmationSent && resendCooldown > 0 && (
+              <div className="neon-info">
+                Puoi reinviare l'email tra {resendCooldown} secondi.
+              </div>
+            )}
+            {emailConfirmationSent && resendCooldown === 0 && resendAttempts < resendTimers.length && (
+              <button
+                onClick={handleResendEmail}
+                className="neon-btn"
+                disabled={loading}
+              >
+                Reinvia Email di Conferma
+              </button>
+            )}
             {debugInfo && (
               <div className="neon-debug" style={{
                 background: '#1a1a1a',
@@ -432,7 +371,7 @@ export default function LoginModal(props: LoginModalProps) {
             <button
               onClick={handleSignup}
               className="neon-btn"
-              disabled={loading}
+              disabled={loading || emailConfirmationSent}
             >{loading ? 'Registrazione...' : 'Sign up'}</button>
             <span className="neon-link" onClick={() => setShowSignup(false)}>Torna al login</span>
           </form>

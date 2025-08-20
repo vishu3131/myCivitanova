@@ -9,20 +9,38 @@ interface BeachData {
   name: string;
   image: string;
   temperature: number;
+  seaTemperature?: number;
   windSpeed: number;
+  windDirection?: number;
   waveHeight: string;
+  waveHeightMeters?: number;
+  wavePeriod?: number;
+  waveDirection?: number;
+  swellHeight?: number;
   uvIndex: number;
   condition: string;
+  visibility?: string;
+  currentVelocity?: number;
+  currentDirection?: number;
 }
 
 const defaultBeachData: BeachData = {
   name: "Lungomare Sud",
   image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=200&fit=crop",
   temperature: 28,
+  seaTemperature: 26,
   windSpeed: 12,
+  windDirection: 180,
   waveHeight: "0.5-1m",
+  waveHeightMeters: 0.7,
+  wavePeriod: 4,
+  waveDirection: 180,
+  swellHeight: 0.3,
   uvIndex: 7,
-  condition: "Soleggiato"
+  condition: "Soleggiato",
+  visibility: "Ottima",
+  currentVelocity: 0.2,
+  currentDirection: 90
 };
 
 export function BeachWidget() {
@@ -115,12 +133,19 @@ export function BeachWidget() {
 
         {/* Weather Info */}
         <div className="px-4 pb-4">
-          <div className="grid grid-cols-3 gap-3">
-            {/* Temperature */}
+          <div className="grid grid-cols-4 gap-2">
+            {/* Air Temperature */}
             <div className="text-center">
               <Thermometer className="w-4 h-4 text-red-400 mx-auto mb-1" />
-              <div className="text-xs text-white/60">Temp</div>
+              <div className="text-xs text-white/60">Aria</div>
               <div className="text-sm font-semibold text-white">{beachData.temperature}°</div>
+            </div>
+
+            {/* Sea Temperature */}
+            <div className="text-center">
+              <Waves className="w-4 h-4 text-cyan-400 mx-auto mb-1" />
+              <div className="text-xs text-white/60">Mare</div>
+              <div className="text-sm font-semibold text-white">{beachData.seaTemperature || '--'}°</div>
             </div>
 
             {/* Wind */}
@@ -140,15 +165,36 @@ export function BeachWidget() {
             </div>
           </div>
 
-          {/* Wave Height */}
-          <div className="mt-3 p-2 bg-black/20 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Waves className="w-4 h-4 text-cyan-400 mr-2" />
-                <span className="text-xs text-white/60">Altezza onde</span>
+          {/* Wave Info */}
+          <div className="mt-3 space-y-2">
+            {/* Wave Height */}
+            <div className="p-2 bg-black/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Waves className="w-4 h-4 text-cyan-400 mr-2" />
+                  <span className="text-xs text-white/60">Altezza onde</span>
+                </div>
+                <span className="text-sm font-medium text-white">{beachData.waveHeight}</span>
               </div>
-              <span className="text-sm font-medium text-white">{beachData.waveHeight}</span>
             </div>
+
+            {/* Additional Marine Info */}
+            {(beachData.wavePeriod || beachData.swellHeight) && (
+              <div className="grid grid-cols-2 gap-2">
+                {beachData.wavePeriod && (
+                  <div className="p-2 bg-black/10 rounded text-center">
+                    <div className="text-xs text-white/60">Periodo</div>
+                    <div className="text-sm font-medium text-white">{beachData.wavePeriod}s</div>
+                  </div>
+                )}
+                {beachData.swellHeight && (
+                  <div className="p-2 bg-black/10 rounded text-center">
+                    <div className="text-xs text-white/60">Swell</div>
+                    <div className="text-sm font-medium text-white">{beachData.swellHeight}m</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

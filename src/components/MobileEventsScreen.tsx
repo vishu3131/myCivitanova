@@ -425,7 +425,7 @@ export function MobileEventsScreen() {
               {/* Front */}
               <div
                 className="absolute inset-0"
-                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(0deg)', WebkitTransform: 'rotateY(0deg)' }}
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
               >
                 <div
                   className="relative h-72"
@@ -499,31 +499,49 @@ export function MobileEventsScreen() {
                   WebkitTransform: 'rotateY(180deg)',
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
-                  background: 'rgba(30, 31, 33, 0.75)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+                  background: 'rgba(30, 31, 33, 0.85)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
                 }}
               >
-                <span className="px-3 py-1 self-start rounded-full bg-accent/20 text-accent text-xs font-medium mb-3">{featured.category}</span>
-                <h3 className="text-white text-lg font-bold mb-2">{featured.title}</h3>
-                <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm mb-3">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(featured.date)}</span>
+                <div className="flex flex-col h-full justify-between">
+                  {/* Header con categoria */}
+                  <div className="mb-4">
+                    <span className="px-4 py-2 self-start rounded-full bg-accent/25 text-accent text-sm font-semibold border border-accent/30">{featured.category}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{featured.time}</span>
+                  
+                  {/* Titolo ottimizzato */}
+                  <h3 className="text-white text-xl font-bold mb-5 leading-tight">{featured.title}</h3>
+                  
+                  {/* Info evento con layout verticale */}
+                  <div className="flex flex-col gap-3 mb-5">
+                    <div className="flex items-center gap-3 text-white/80 text-base">
+                      <Calendar className="w-5 h-5 text-accent" />
+                      <span className="font-medium">{formatDate(featured.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-white/80 text-base">
+                      <Clock className="w-5 h-5 text-accent" />
+                      <span className="font-medium">{featured.time}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-white/80 text-base">
+                      <MapPin className="w-5 h-5 text-accent" />
+                      <span className="font-medium">{featured.location}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{featured.location}</span>
+                  
+                  {/* Descrizione ottimizzata */}
+                  <div className="flex-1 mb-5">
+                    <h4 className="text-white/90 text-base font-semibold mb-3 uppercase tracking-wide">Descrizione</h4>
+                    <p className="text-white/95 text-lg leading-relaxed whitespace-pre-wrap font-light">{featured.description}</p>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="flex items-center justify-center pt-4 border-t border-white/10">
+                    <span className="text-white/60 text-sm font-medium bg-white/5 px-4 py-2 rounded-full">Tocca per tornare</span>
                   </div>
                 </div>
-                <p className="text-white/95 text-base leading-relaxed whitespace-pre-wrap mb-4">{featured.description}</p>
-                <span className="text-white/60 text-xs">Tocca per tornare</span>
               </div>
             </div>
           </div>
@@ -559,7 +577,7 @@ export function MobileEventsScreen() {
                     }}
                   >
                     {/* Front */}
-                    <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(0deg)', WebkitTransform: 'rotateY(0deg)' }}>
+                    <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
                       <div className="flex w-full h-full">
                         {/* Image */}
                         <div className="relative w-32 h-full flex-shrink-0">
@@ -608,45 +626,59 @@ export function MobileEventsScreen() {
 
                     {/* Back */}
                     <div
-                      className="absolute inset-0 p-4 flex flex-col overflow-y-auto"
+                      className="absolute inset-0 p-5 flex flex-col overflow-y-auto"
                       style={{
                         transform: 'rotateY(180deg)',
                         WebkitTransform: 'rotateY(180deg)',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
-                        background: 'rgba(30, 31, 33, 0.75)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+                        background: 'rgba(30, 31, 33, 0.85)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
                       }}
                     >
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
+                      <div className="flex flex-col h-full justify-between">
+                        {/* Header con categoria e prezzo */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="px-3 py-1.5 rounded-full bg-accent/25 text-accent text-sm font-semibold border border-accent/30">
                             {event.category}
                           </span>
-                          <span className="text-white/60 text-xs">{event.price}</span>
+                          <span className="text-white/70 text-sm font-medium bg-white/10 px-2 py-1 rounded-lg">{event.price}</span>
                         </div>
-                        <h3 className="text-white text-sm font-bold mb-2">{event.title}</h3>
-                        <div className="flex items-center gap-3 text-white/70 text-xs mb-2">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(event.date)}</span>
+                        
+                        {/* Titolo ottimizzato */}
+                        <h3 className="text-white text-lg font-bold mb-4 leading-tight">{event.title}</h3>
+                        
+                        {/* Info evento con icone più grandi */}
+                        <div className="flex flex-col gap-2 mb-4">
+                          <div className="flex items-center gap-2 text-white/80 text-sm">
+                            <Calendar className="w-4 h-4 text-accent" />
+                            <span className="font-medium">{formatDate(event.date)}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{event.time}</span>
+                          <div className="flex items-center gap-2 text-white/80 text-sm">
+                            <Clock className="w-4 h-4 text-accent" />
+                            <span className="font-medium">{event.time}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            <span>{event.location}</span>
+                          <div className="flex items-center gap-2 text-white/80 text-sm">
+                            <MapPin className="w-4 h-4 text-accent" />
+                            <span className="font-medium">{event.location}</span>
                           </div>
                         </div>
-                        <p className="text-white/95 text-sm leading-relaxed whitespace-pre-wrap">
-                          {event.description}
-                        </p>
-                        <span className="mt-auto text-white/60 text-[10px]">Tocca per tornare</span>
+                        
+                        {/* Descrizione ottimizzata */}
+                        <div className="flex-1 mb-4">
+                          <h4 className="text-white/90 text-sm font-semibold mb-2 uppercase tracking-wide">Descrizione</h4>
+                          <p className="text-white/95 text-base leading-relaxed whitespace-pre-wrap font-light">
+                            {event.description}
+                          </p>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="flex items-center justify-center pt-3 border-t border-white/10">
+                          <span className="text-white/60 text-xs font-medium bg-white/5 px-3 py-1.5 rounded-full">Tocca per tornare</span>
+                        </div>
                       </div>
                     </div>
                   </div>

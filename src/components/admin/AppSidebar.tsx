@@ -80,6 +80,7 @@ const othersItems: NavItem[] = [
     subItems: [
       { name: "Commenti", path: "/admin/comments", pro: false },
       { name: "Segnalazioni", path: "/admin/reports", pro: false },
+      { name: "Segnalazioni Rifiuti", path: "/admin/waste-reports", pro: false },
       { name: "Contenuti in Attesa", path: "/admin/pending", pro: false },
     ],
   },

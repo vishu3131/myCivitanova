@@ -108,7 +108,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
       {/* XP Totali */}
       <div className="mb-2 relative z-10">
         <div className="flex justify-between items-baseline">
-          <span className="text-white font-bold text-2xl">{currentStats.total_xp.toLocaleString()}</span>
+          <span className="text-white font-bold text-2xl">{(currentStats.total_xp || 0).toLocaleString()}</span>
           <span className="text-white/60 text-sm">XP Totali</span>
         </div>
       </div>
@@ -230,7 +230,7 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
       </div>
 
       <div className="mb-2">
-        <div className="text-white font-bold text-lg">{currentStats.total_xp.toLocaleString()}</div>
+        <div className="text-white font-bold text-lg">{(currentStats.total_xp || 0).toLocaleString()}</div>
       </div>
 
       <div className="w-full bg-dark-400/50 rounded-full h-2">

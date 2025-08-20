@@ -36,59 +36,79 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState<User['role']>('user');
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10); // Number of users per page
+  const [totalUsersCount, setTotalUsersCount] = useState(0); // Total count of users
 
   const loadUsers = useCallback(async () => {
+    setLoading(true);
     try {
-      const usersData = await DatabaseService.getUsers();
+      // Fetch total count first (if needed for pagination UI)
+      const { count } = await DatabaseService.getUsersCount();
+      setTotalUsersCount(count || 0);
+
+      const offset = (currentPage - 1) * usersPerPage;
+      const usersData = await DatabaseService.getUsers({
+        limit: usersPerPage,
+        offset: offset,
+        role: selectedRole === 'all' ? undefined : (selectedRole as User['role']),
+      });
       setUsers(usersData);
     } catch (error) {
       console.error('Errore caricamento utenti:', error);
-      // Mock data in caso di errore
-      setUsers([
-        {
-          id: '1',
-          email: 'admin@civitanova.it',
-          full_name: 'Marco Amministratore',
-          role: 'admin',
-          is_active: true,
-          is_verified: true,
-          created_at: '2024-01-15T10:00:00Z',
-          phone: '+39 0733 123456',
-          address: 'Via Roma 1, Civitanova Marche'
-        },
-        {
-          id: '2',
-          email: 'mario.rossi@email.com',
-          full_name: 'Mario Rossi',
-          role: 'user',
-          is_active: true,
-          is_verified: true,
-          created_at: '2024-02-01T09:15:00Z',
-          phone: '+39 333 1234567',
-          address: 'Via Garibaldi 12, Civitanova Marche'
-        },
-        {
-          id: '3',
-          email: 'giulia.bianchi@email.com',
-          full_name: 'Giulia Bianchi',
-          role: 'user',
-          is_active: true,
-          is_verified: false,
-          created_at: '2024-02-10T16:30:00Z',
-          phone: '+39 334 2345678',
-          address: 'Via Mazzini 8, Civitanova Marche'
-        }
-      ]);
+      setUsers([]); // Clear users on error
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, usersPerPage, selectedRole]);
 
   useEffect(() => {
     if (currentUser) {
       loadUsers();
     }
   }, [currentUser, loadUsers]);
+
+  const handleEditClick = (user: User) => {
+    if (role !== 'admin') {
+      setEditError('Solo gli amministratori possono modificare i ruoli.');
+      return;
+    }
+    setUserToEdit(user);
+    setNewRole(user.role);
+    setEditError('');
+    setEditSuccess('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!userToEdit || role !== 'admin') {
+      setEditError('Operazione non autorizzata.');
+      return;
+    }
+
+    if (userToEdit.id === currentUser?.id && newRole !== 'admin') {
+      setEditError('Non puoi declassare il tuo ruolo di amministratore.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await DatabaseService.updateUserRole(userToEdit.id, newRole);
+      setEditSuccess('Ruolo utente aggiornato con successo!');
+      loadUsers(); // Refresh the list
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Errore aggiornamento ruolo:', error);
+      setEditError('Errore durante l\'aggiornamento del ruolo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,6 +132,14 @@ export default function UsersPage() {
       case 'staff': return <Shield className="w-4 h-4" />;
       case 'moderator': return <Star className="w-4 h-4" />;
       default: return <Users className="w-4 h-4" />;
+    }
+  };
+
+  const totalPages = Math.ceil(totalUsersCount / usersPerPage);
+
+  const handlePageChange = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
@@ -153,7 +181,7 @@ export default function UsersPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {filteredUsers.length} di {users.length} utenti
+              {filteredUsers.length} di {totalUsersCount} utenti
             </div>
           </div>
         </div>
@@ -171,7 +199,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {users.length}
+                  {totalUsersCount}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">Totali</div>
               </div>
@@ -342,7 +370,11 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                        <button
+                          onClick={() => handleEditClick(user)}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          title="Modifica ruolo"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -357,6 +389,29 @@ export default function UsersPage() {
           </div>
         </div>
 
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 py-4">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Precedente
+            </button>
+            <span className="text-gray-700 dark:text-gray-300">
+              Pagina {currentPage} di {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Successiva
+            </button>
+          </div>
+        )}
+
         {/* Empty State */}
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
@@ -370,6 +425,59 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Role Modal */}
+      {isEditModalOpen && userToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700"
+          >
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Modifica Ruolo Utente</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Modifica il ruolo per <span className="font-semibold">{userToEdit.full_name || userToEdit.email}</span>.
+            </p>
+
+            <div className="mb-4">
+              <label htmlFor="user-role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Seleziona Nuovo Ruolo
+              </label>
+              <select
+                id="user-role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as User['role'])}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="user">Utente</option>
+                <option value="moderator">Moderatore</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Amministratore</option>
+              </select>
+            </div>
+
+            {editError && <div className="text-red-500 text-sm mb-4">{editError}</div>}
+            {editSuccess && <div className="text-green-500 text-sm mb-4">{editSuccess}</div>}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleSaveRole}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || (userToEdit.role === newRole)}
+              >
+                {loading ? 'Salvataggio...' : 'Salva Ruolo'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

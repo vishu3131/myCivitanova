@@ -18,7 +18,9 @@ import {
   Menu,
   X,
   Image,
-  MapPin
+  MapPin,
+  AlertTriangle,
+  Heart
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,6 +34,8 @@ const navigation = [
   { name: 'Contenuti', href: '/admin/content', icon: FileText },
   { name: 'Eventi', href: '/admin/events', icon: Calendar },
   { name: 'POI', href: '/admin/pois', icon: MapPin },
+  { name: 'Raccolta Fondi', href: '/admin/fundraising', icon: Heart },
+  { name: 'Segnalazioni', href: '/admin/reports', icon: AlertTriangle },
   { name: 'Statistiche', href: '/admin/stats', icon: BarChart3 },
   { name: 'Gamification', href: '/admin/gamification', icon: Trophy },
   { name: 'Immagini Sito', href: '/admin/site-images', icon: Image },

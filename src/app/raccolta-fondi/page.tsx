@@ -1,324 +1,470 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Heart, Sparkles, TrendingUp, Timer, Users, ShieldCheck, MapPin, Zap, Coins, Star, Flame, Share2, CheckCircle2, BadgeCheck, Bell, MessageSquare, Video, Camera, Cpu, Bot, Lock, Building, Crown, Waves, Compass, Wrench, Blocks, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Heart, 
+  Plus, 
+  Search, 
+  Filter, 
+  TrendingUp, 
+  Timer, 
+  Users, 
+  MapPin, 
+  Euro, 
+  Calendar,
+  Target,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Eye,
+  Share2
+} from 'lucide-react';
+import { FundraisingAPI, formatCurrency, calculateProgress, type FundraisingCampaign } from '@/lib/fundraisingApi';
+import { CreateCampaignForm } from '@/components/fundraising/CreateCampaignForm';
+import DonationModal from '@/components/fundraising/DonationModal';
+import LoginPromptModal from '@/components/ui/LoginPromptModal';
+import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 
 export default function RaccoltaFondiPage() {
-  const [showDonors, setShowDonors] = React.useState(false);
-  const donors = [
-    { name: "Mario", surname: "Rossi", nickname: "marior", avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=marior", amount: 5 },
-    { name: "Luca", surname: "Bianchi", nickname: "lucky", avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=lucky", amount: 25 },
-    { name: "Sara", surname: "Verdi", nickname: "sara.v", avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=sarav", amount: 100 }
+  const { user, role, loading: authLoading } = useAuthWithRole();
+  const [campaigns, setCampaigns] = useState<FundraisingCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedCampaignForDonation, setSelectedCampaignForDonation] = useState<FundraisingCampaign | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [stats, setStats] = useState({ totalCampaigns: 0, totalRaised: 0, activeDonors: 0 });
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  const categories = [
+    { value: 'all', label: 'Tutti' },
+    { value: 'community', label: 'Comunità' },
+    { value: 'environment', label: 'Ambiente' },
+    { value: 'culture', label: 'Cultura' },
+    { value: 'sport', label: 'Sport' },
+    { value: 'education', label: 'Educazione' },
+    { value: 'health', label: 'Salute' },
+    { value: 'infrastructure', label: 'Infrastrutture' },
+    { value: 'other', label: 'Altro' }
   ];
-  const specialCardRef = React.useRef<HTMLDivElement | null>(null);
-  const [modalTop, setModalTop] = React.useState<number>(24);
-  const getDollarCount = (amount: number) => (amount >= 50 ? 3 : amount >= 10 ? 2 : amount >= 1 ? 1 : 0);
+
+  useEffect(() => {
+    loadCampaigns();
+    loadStats();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      setLoading(true);
+      const data = await FundraisingAPI.getApprovedCampaigns();
+      setCampaigns(data);
+    } catch (err: any) {
+      console.error('Error loading campaigns:', err);
+      setError(err.message || 'Errore nel caricamento delle campagne');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const statsData = await FundraisingAPI.getStats();
+      setStats(statsData);
+    } catch (err) {
+      console.error('Error loading stats:', err);
+    }
+  };
+
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = campaign.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         campaign.short_description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || campaign.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleCreateSuccess = () => {
+    loadCampaigns();
+    loadStats();
+    setShowCreateForm(false);
+  };
+
+  const handleDonationSuccess = () => {
+    loadCampaigns();
+    loadStats();
+    setSelectedCampaignForDonation(null);
+  };
+
+  const getCategoryLabel = (category: string) => {
+    return categories.find(c => c.value === category)?.label || category;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-400 bg-green-400/10 border-green-400/20';
+      case 'completed': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'expired': return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+      default: return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Attiva';
+      case 'completed': return 'Completata';
+      case 'expired': return 'Scaduta';
+      default: return 'In corso';
+    }
+  };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-dark-300/40 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-white/70 hover:text-white">←</Link>
-            <h1 className="text-lg sm:text-xl font-bold">CityaApp • Crowdfunding</h1>
+            <Link href="/" className="text-white/70 hover:text-white transition-colors">←</Link>
+            <h1 className="text-lg sm:text-xl font-bold">Raccolta Fondi</h1>
           </div>
-          <div className="text-[10px] px-2 py-1 rounded bg-white/10 text-white/80 border border-white/10">In arrivo</div>
+          <div className="flex items-center gap-3">
+            {user && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Crea Campagna
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <div className="md:col-span-2">
-              <h2 className="text-2xl md:text-3xl font-bold leading-tight">Trasforma Civitanova Marche insieme a noi</h2>
-              <p className="text-white/70 mt-2">Sostieni i progetti che rendono la nostra città più innovativa e vivibile. Piattaforma in fase beta, molte funzioni sono in arrivo.</p>
-              <div className="mt-4 flex items-center gap-2">
-                <button className="px-3 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition-colors shadow">Scopri i Progetti</button>
-                <button className="px-3 py-2 rounded-lg text-sm font-semibold bg-white/10 border border-white/10 hover:bg-white/15 transition-colors">Proponi il tuo Progetto</button>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+            <div className="lg:col-span-2">
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                Trasforma Civitanova Marche insieme a noi
+              </h2>
+              <p className="text-white/70 mt-3 text-lg">
+                Sostieni i progetti che rendono la nostra città più innovativa e vivibile. 
+                Ogni contributo fa la differenza per la nostra comunità.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button 
+                  onClick={() => document.getElementById('campaigns')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-6 py-3 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+                >
+                  Scopri i Progetti
+                </button>
+                {user ? (
+                  <button 
+                    onClick={() => setShowCreateForm(true)}
+                    className="px-6 py-3 rounded-lg text-sm font-semibold bg-white/10 border border-white/20 hover:bg-white/15 transition-colors"
+                  >
+                    Proponi il tuo Progetto
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setShowLoginPrompt(true)}
+                    className="px-6 py-3 rounded-lg text-sm font-semibold bg-white/10 border border-white/20 hover:bg-white/15 transition-colors"
+                  >
+                    Accedi per Creare
+                  </button>
+                )}
               </div>
             </div>
-            <div className="md:col-span-1">
-              <div className="rounded-2xl p-4 border border-white/10 bg-gradient-to-br from-blue-600/20 to-emerald-500/10">
-                <div className="text-xs text-white/60">Fondi totali simulati</div>
-                <div className="text-2xl font-bold text-emerald-300">€ 0</div>
-                <div className="text-xs text-white/60 mt-2">Donatori</div>
-                <div className="text-lg font-semibold">0</div>
+            <div className="lg:col-span-1">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="rounded-2xl p-6 border border-white/10 bg-gradient-to-br from-blue-600/20 to-emerald-500/10">
+                  <div className="text-sm text-white/60 mb-1">Fondi Raccolti</div>
+                  <div className="text-3xl font-bold text-emerald-300">
+                    €{(stats.totalRaised || 0).toLocaleString()}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl p-4 border border-white/10 bg-white/5">
+                    <div className="text-xs text-white/60 mb-1">Campagne</div>
+                    <div className="text-xl font-bold">{stats.totalCampaigns}</div>
+                  </div>
+                  <div className="rounded-xl p-4 border border-white/10 bg-white/5">
+                    <div className="text-xs text-white/60 mb-1">Donatori</div>
+                    <div className="text-xl font-bold">{stats.activeDonors}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        {/* Decorative waves */}
         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-blue-500/10 to-transparent" />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Filtri e Ricerca (in arrivo) */}
-        <div className="bg-dark-300/40 backdrop-blur-sm rounded-xl border border-white/10 p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {['Cultura','Sport','Ambiente','Tecnologia','Sociale'].map(cat => (
-              <div key={cat} className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/80">
-                {cat}
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Search and Filters */}
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Cerca campagne..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
-            ))}
-            <div className="ml-auto text-[10px] px-2 py-1 rounded bg-white/10 text-white/80 border border-white/10">Ricerca avanzata • In arrivo</div>
-          </div>
-        </div>
-
-        {/* Grid Progetti (placeholder + speciale MyCivitanova) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Card Speciale: MyCivitanova – Costruiamo */}
-          <motion.div
-            className="rounded-xl border border-yellow-400/30 bg-gradient-to-br from-yellow-500/10 via-emerald-400/5 to-transparent overflow-hidden relative sm:col-span-2 special-card"
-            ref={specialCardRef}
-            animate={{ boxShadow: ["0 0 0px rgba(255,215,0,0.0)", "0 0 24px rgba(255,215,0,0.25)", "0 0 0px rgba(255,215,0,0.0)"] }}
-            transition={{ repeat: Infinity, duration: 4 }}
-          >
-            <div className="relative p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-yellow-300/80">Special</div>
-                  <div className="text-lg font-bold">MyCivitanova – Costruiamo</div>
-                  <div className="text-[12px] text-white/70">Sostieni lo sviluppo dell'app. Ogni euro resta nel progetto.</div>
-                </div>
-                <div className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-300 border border-yellow-500/30">Progetto ufficiale</div>
-              </div>
-              <div className="mt-3">
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-1.5 rounded-full bg-gradient-to-r from-yellow-400 via-emerald-300 to-yellow-400" style={{ width: `0%` }} />
-                </div>
-                <div className="flex justify-between text-[10px] text-white/70 mt-1">
-                  <span>€0 di €0</span>
-                  <span>0% • in arrivo</span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <Link href="/costruiamo" className="text-[11px] px-3 py-1.5 rounded-lg bg-yellow-500/90 hover:bg-yellow-400 text-black font-semibold transition-colors">Dona ora</Link>
+            </div>
+            
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map(category => (
                 <button
-                  onClick={() => {
-                    const rect = specialCardRef.current?.getBoundingClientRect();
-                    const top = rect ? Math.max(8, rect.top) : 24;
-                    setModalTop(top);
-                    setShowDonors(true);
-                  }}
-                  className="text-[11px] px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 hover:bg-white/15 transition-colors"
+                  key={category.value}
+                  onClick={() => setSelectedCategory(category.value)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedCategory === category.value
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white/10 text-white/70 hover:bg-white/15'
+                  }`}
                 >
-                  Lista Donatori
+                  {category.label}
                 </button>
-              </div>
+              ))}
             </div>
-            <div className="special-sparkles" aria-hidden="true" />
-          </motion.div>
-
-          {/* Progetti placeholder azzerati */}
-          {[1,2,3,4].map(i => (
-            <div key={i} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden group">
-              <div className="relative h-28 bg-gradient-to-br from-blue-600/30 to-emerald-500/20">
-                <div className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded bg-black/40 border border-white/10">#{100+i}</div>
-                <div className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 border border-white/10">In arrivo</div>
-              </div>
-              <div className="p-3">
-                <div className="text-sm font-semibold">Titolo Progetto {i}</div>
-                <div className="text-[11px] text-white/70">Breve descrizione del progetto civico.</div>
-                <div className="mt-2">
-                  <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-emerald-400" style={{ width: `0%` }} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-white/60 mt-1">
-                    <span>€0 di €0</span>
-                    <span>0% • in arrivo</span>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="text-[10px] text-white/60">👤 Mario Rossi • 📍 Centro</div>
-                  <div className="flex items-center gap-2">
-                    <button className="text-[10px] px-2 py-1 rounded bg-blue-600 opacity-50 cursor-not-allowed">Dona Ora</button>
-                    <button className="text-[10px] px-2 py-1 rounded bg-white/10 border border-white/10 opacity-50 cursor-not-allowed">Dettagli</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sezioni Funzionalità in arrivo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-yellow-300" />
-              <h3 className="text-sm font-semibold">Matchmaking Intelligente</h3>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
-            </div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Progetti per te basati sugli interessi</li>
-              <li>Geolocalizzazione e quartieri</li>
-              <li>Impact scoring e collaborative filtering</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <BadgeCheck className="w-4 h-4 text-emerald-300" />
-              <h3 className="text-sm font-semibold">Trasparenza e Trust</h3>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
-            </div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Notifiche real-time sui progetti supportati</li>
-              <li>Impact tracking personale</li>
-              <li>Verifica creatori e milestone reporting</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="w-4 h-4 text-yellow-300" />
-              <h3 className="text-sm font-semibold">Gamification</h3>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
-            </div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Badge e leaderboard donatori</li>
-              <li>Celebration quando si raggiungono milestone</li>
-              <li>Social proof e community</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Waves className="w-4 h-4 text-blue-300" />
-              <h3 className="text-sm font-semibold">Identità Locale</h3>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
-            </div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Onde e pattern ispirati al mare Adriatico</li>
-              <li>Colori e icone civitanovesi</li>
-              <li>Progetti quartiere per quartiere</li>
-            </ul>
           </div>
         </div>
 
-        {/* Area Creatori e Donatori (in arrivo) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-emerald-300" />
-                <h3 className="text-sm font-semibold">Area Creatori</h3>
-              </div>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
+        {/* Campaigns Grid */}
+        <div id="campaigns">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
             </div>
-            <div className="text-[11px] text-white/80">Dashboard creatore con analytics, messaggi, update, e boost visibilità.</div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-300" />
-                <h3 className="text-sm font-semibold">Area Donatori</h3>
-              </div>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 border border-white/10">In arrivo</span>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 mb-4">{error}</p>
+              <button 
+                onClick={loadCampaigns}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Riprova
+              </button>
             </div>
-            <div className="text-[11px] text-white/80">Profilo donatore, progetti preferiti, metodi di pagamento, impatto totale.</div>
-          </div>
-        </div>
-
-        {/* Tecnologie future */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Cpu className="w-4 h-4 text-purple-300" />
-            <h3 className="text-sm font-semibold">Tecnologie in arrivo</h3>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-white/80">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">AR Visualizzazione Progetti</div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">AI Smart Recommendations</div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">AI Fraud Detection</div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">Blockchain Trasparenza</div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">Smart Contracts</div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">NFT Rewards</div>
-          </div>
-        </div>
-
-        {/* Compliance & Accessibilità */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="text-sm font-semibold mb-1">Performance</div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Core Web Vitals ottimizzati</li>
-              <li>Lazy-loading e caching</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="text-sm font-semibold mb-1">Accessibilità</div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>WCAG 2.1 AA</li>
-              <li>Screen reader & keyboard navigation</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="text-sm font-semibold mb-1">Sicurezza e Privacy</div>
-            <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside">
-              <li>Compliant GDPR</li>
-              <li>Encryption end-to-end</li>
-              <li>2FA per account</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* CTA finali */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button className="px-3 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 transition-colors shadow">Dona in 30 secondi (in arrivo)</button>
-          <button className="px-3 py-3 rounded-xl text-sm font-semibold bg-white/10 border border-white/10 hover:bg-white/15">Lancia il tuo progetto gratis (in arrivo)</button>
-        </div>
-
-        {showDonors && (
-          <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDonors(false)} />
-            <div
-              className="fixed left-1/2 -translate-x-1/2 z-10 w-[92%] max-w-md rounded-2xl border border-white/15 bg-black/90 p-4"
-              style={{ top: modalTop }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold">Donatori – MyCivitanova Costruiamo</div>
-                <button onClick={() => setShowDonors(false)} className="text-white/60 hover:text-white text-sm">Chiudi</button>
-              </div>
-              <ul className="space-y-2">
-                {donors.map((d, idx) => {
-                  const count = getDollarCount(d.amount);
-                  return (
-                    <li key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                      <img src={d.avatar} alt={d.nickname} className="w-8 h-8 rounded-full border border-white/10" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{d.name} {d.surname} <span className="text-white/50">(@{d.nickname})</span></div>
-                                              </div>
-                      <div className="flex items-center gap-1">
-                        {[0,1,2].map(i => (
-                          <DollarSign key={i} className={`w-4 h-4 ${i < count ? 'text-emerald-300 drop-shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'text-white/25'}`} />
-                        ))}
+          ) : filteredCampaigns.length === 0 ? (
+            <div className="text-center py-12">
+              <Heart className="w-12 h-12 text-white/40 mx-auto mb-4" />
+              <p className="text-white/60 mb-4">
+                {searchTerm || selectedCategory !== 'all' 
+                  ? 'Nessuna campagna trovata con i filtri selezionati'
+                  : 'Nessuna campagna attiva al momento'
+                }
+              </p>
+              {user ? (
+                <button 
+                  onClick={() => setShowCreateForm(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  Crea la Prima Campagna
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setShowLoginPrompt(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  Accedi per Creare
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCampaigns.map((campaign) => {
+                const progress = calculateProgress(campaign.current_amount, campaign.goal_amount);
+                const status = campaign.status;
+                const daysLeft = Math.max(0, Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+                
+                return (
+                  <motion.div
+                    key={campaign.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-white/10 bg-white/5 overflow-hidden group hover:border-white/20 transition-all duration-300"
+                  >
+                    {/* Campaign Image */}
+                    <div className="relative h-48 bg-gradient-to-br from-blue-600/30 to-emerald-500/20">
+                      {campaign.image_url ? (
+                        <img 
+                          src={campaign.image_url} 
+                          alt={campaign.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Heart className="w-12 h-12 text-white/30" />
+                        </div>
+                      )}
+                      
+                      {/* Status Badge */}
+                      <div className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full border ${getStatusColor(status)}`}>
+                        {getStatusText(status)}
                       </div>
-                    </li>
-                  );
-                })}
+                      
+                      {/* Category Badge */}
+                      <div className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full bg-black/50 text-white/80 border border-white/20">
+                        {getCategoryLabel(campaign.category)}
+                      </div>
+                      
+                      {campaign.featured && (
+                        <div className="absolute bottom-3 left-3 text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                          ⭐ In Evidenza
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Campaign Content */}
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold mb-2 line-clamp-2">{campaign.title}</h3>
+                      <p className="text-white/70 text-sm mb-4 line-clamp-2">{campaign.short_description}</p>
+                      
+                      {/* Progress */}
+                      <div className="mb-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-white/60">Raccolti</span>
+                          <span className="font-medium">{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div 
+                            className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-500"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-sm mt-2">
+                          <span className="text-emerald-400 font-medium">
+                            {formatCurrency(campaign.current_amount || 0)}
+                          </span>
+                          <span className="text-white/60">
+                            di {formatCurrency(campaign.goal_amount || 0)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Campaign Info */}
+                      <div className="flex items-center justify-between text-xs text-white/60 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>{campaign.donor_count || 0} donatori</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Timer className="w-3 h-3" />
+                          <span>
+                            {status === 'active' ? `${daysLeft} giorni rimasti` : 
+                             status === 'completed' ? 'Completata' : 'Scaduta'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            if (user) {
+                              setSelectedCampaignForDonation(campaign);
+                            } else {
+                              setShowLoginPrompt(true);
+                            }
+                          }}
+                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Heart className="w-4 h-4" />
+                          Dona Ora
+                        </button>
+                        <Link 
+                          href={`/raccolta-fondi/${campaign.id}`}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg text-sm transition-colors flex items-center justify-center"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <button className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg text-sm transition-colors">
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Payment Beta Notice */}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <AlertCircle className="w-6 h-6 text-yellow-400" />
+            <h3 className="text-lg font-semibold text-yellow-300">Sistema di Pagamento in Beta</h3>
+          </div>
+          <p className="text-yellow-200/80 mb-4">
+            Il sistema di donazioni è attualmente in fase di sviluppo. Le campagne sono reali e gestite dagli amministratori, 
+            ma i pagamenti non sono ancora attivi. Stiamo lavorando per integrare un sistema di pagamento sicuro e affidabile.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium text-yellow-300 mb-2">Funzionalità Attive:</h4>
+              <ul className="space-y-1 text-yellow-200/70">
+                <li>✅ Creazione campagne</li>
+                <li>✅ Gestione admin</li>
+                <li>✅ Tracking donazioni</li>
+                <li>✅ Notifiche e aggiornamenti</li>
               </ul>
-              <div className="mt-3 text-[11px] text-white/60">
-                Legenda: €1–€9 = 1 icona • €10–€49 = 2 icone • €50+ = 3 icone
-              </div>
+            </div>
+            <div>
+              <h4 className="font-medium text-yellow-300 mb-2">In Arrivo:</h4>
+              <ul className="space-y-1 text-yellow-200/70">
+                <li>🔄 Pagamenti sicuri</li>
+                <li>🔄 Rimborsi automatici</li>
+                <li>🔄 Ricevute fiscali</li>
+                <li>🔄 Metodi di pagamento multipli</li>
+              </ul>
             </div>
           </div>
-        )}
-        <div className="h-10" />
-        <style jsx>{`
-          .special-card::before {
-            content: "";
-            position: absolute;
-            inset: -2px;
-            background: conic-gradient(from 0deg, rgba(255,215,0,0.0), rgba(255,215,0,0.45), rgba(198,255,0,0.3), rgba(255,215,0,0.0));
-            filter: blur(18px);
-            opacity: .7;
-            animation: spin 8s linear infinite;
-          }
-          .special-card::after { content: ""; position: absolute; inset: 0; border-radius: 0.75rem; box-shadow: inset 0 0 40px rgba(255,215,0,0.08); pointer-events: none; }
-          .special-sparkles { position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 30%, rgba(255,215,0,0.15), transparent 25%), radial-gradient(circle at 80% 40%, rgba(198,255,0,0.15), transparent 25%), radial-gradient(circle at 60% 80%, rgba(255,215,0,0.1), transparent 25%); filter: blur(10px); opacity: .45; animation: float 6s ease-in-out infinite; pointer-events:none; }
-          @keyframes spin { to { transform: rotate(360deg); } }
-          @keyframes float { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} }
-        `}</style>
+        </div>
       </div>
+
+      {/* Create Campaign Form Modal */}
+      <CreateCampaignForm
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        onSuccess={handleCreateSuccess}
+        currentUser={user}
+      />
+
+      {/* Donation Modal */}
+      {selectedCampaignForDonation && (
+        <DonationModal
+          isOpen={!!selectedCampaignForDonation}
+          onClose={() => setSelectedCampaignForDonation(null)}
+          campaign={selectedCampaignForDonation}
+          onDonationSuccess={handleDonationSuccess}
+        />
+      )}
+
+      {/* Login Prompt Modal */}
+       <LoginPromptModal
+         isOpen={showLoginPrompt}
+         onClose={() => setShowLoginPrompt(false)}
+       />
     </div>
   );
 }

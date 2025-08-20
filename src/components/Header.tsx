@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import DonorNotifications from '@/components/fundraising/DonorNotifications';
 
 export function Header({ title }: { title?: string }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -63,13 +64,8 @@ export function Header({ title }: { title?: string }) {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button className="relative p-2 text-[#264653] hover:bg-gray-100 rounded-full transition-colors" onClick={showFeatureComingSoon}>
-            <span className="text-2xl">🔔</span>
-            <span className="absolute top-1 right-1 h-5 w-5 bg-[#E76F51] text-white text-xs font-medium rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
+          {/* Donor Notifications */}
+          <DonorNotifications />
           
           {/* User Avatar */}
           <div className="relative">

@@ -10,6 +10,7 @@ import { BeachWidget } from './BeachWidget';
 import { XPWidget } from './XPWidget';
 import DailyXPClaim from './DailyXPClaim';
 import ReportModal from './CommunityReportModal';
+import CityReportModal from './CityReportModal';
 import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
@@ -149,6 +150,7 @@ function Section({ id, title, collapsible = false, expanded = true, onToggle, ac
 
 export function MobileHomeScreen() {
   const [showReport, setShowReport] = useState(false);
+  const [showCityReport, setShowCityReport] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -301,7 +303,7 @@ export function MobileHomeScreen() {
 
   // Quick actions config (Segnala è nella CTA primaria del hero)
   const quickActions: { id: string; label: string; icon: string; href: string; aria: string }[] = [
-    { id: 'servizi', label: 'Servizi', icon: '⚙️', href: '#servizi-utili', aria: 'Apri servizi utili' },
+    { id: 'servizi', label: 'Servizi', icon: '⚙️', href: '/servizi', aria: 'Apri servizi utili' },
     { id: 'eventi', label: 'Eventi', icon: '📅', href: '/eventi', aria: 'Vedi eventi' },
     { id: 'ar', label: 'Mappa AR', icon: '🗺️', href: '/ar', aria: 'Apri mappa AR' },
     { id: 'scopri', label: 'Scopri', icon: '🧭', href: '#scopri-citta', aria: 'Vai a Scopri la città' },
@@ -393,7 +395,7 @@ export function MobileHomeScreen() {
         {/* Hero Primary CTA row */}
         <div className="px-3 mt-3 flex items-center gap-2">
           <button
-            onClick={() => setShowReport(true)}
+            onClick={() => setShowCityReport(true)}
             className="flex-1 bg-purple-600 text-white px-3 py-3 rounded-xl text-sm font-semibold shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
             aria-label="Segnala un problema"
           >
@@ -438,7 +440,7 @@ export function MobileHomeScreen() {
               <CategoryTags />
             </LazyRender>
             <LazyRender fallback={<div className="h-[160px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
-              <InfoCards onReportClick={() => setShowReport(true)} userId={currentUserId || undefined} />
+              <InfoCards onReportClick={() => setShowCityReport(true)} userId={currentUserId || undefined} />
             </LazyRender>
           </div>
         </Section>
@@ -1676,6 +1678,17 @@ export function MobileHomeScreen() {
       <TutorialDebugOverlay
         isVisible={showDebug}
         onClose={() => setShowDebug(false)}
+      />
+
+      {/* Report Modals */}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+      />
+      
+      <CityReportModal
+        isOpen={showCityReport}
+        onClose={() => setShowCityReport(false)}
       />
     </div>
   );

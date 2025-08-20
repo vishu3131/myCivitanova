@@ -22,7 +22,7 @@ const services = [
     category: 'documents',
     icon: FileText,
     description: 'Richiedi online il certificato di residenza',
-    status: 'available',
+    status: 'coming_soon',
     time: '2-3 giorni',
     cost: '€2.50',
     color: 'from-blue-500 to-blue-600'
@@ -33,7 +33,7 @@ const services = [
     category: 'payments',
     icon: CreditCard,
     description: 'Paga le tasse comunali online',
-    status: 'available',
+    status: 'coming_soon',
     time: 'Immediato',
     cost: 'Variabile',
     color: 'from-green-500 to-green-600'
@@ -44,7 +44,7 @@ const services = [
     category: 'emergency',
     icon: Phone,
     description: 'Assistenza telefonica 24/7',
-    status: 'available',
+    status: 'coming_soon',
     time: 'Immediato',
     cost: 'Gratuito',
     color: 'from-red-500 to-red-600'
@@ -55,7 +55,7 @@ const services = [
     category: 'emergency',
     icon: AlertCircle,
     description: 'Segnala problemi su strade e illuminazione',
-    status: 'available',
+    status: 'coming_soon',
     time: '1-2 giorni',
     cost: 'Gratuito',
     color: 'from-orange-500 to-orange-600'
@@ -66,7 +66,7 @@ const services = [
     category: 'documents',
     icon: Clock,
     description: 'Prenota un appuntamento agli uffici comunali',
-    status: 'maintenance',
+    status: 'coming_soon',
     time: 'Variabile',
     cost: 'Gratuito',
     color: 'from-purple-500 to-purple-600'
@@ -77,7 +77,7 @@ const services = [
     category: 'documents',
     icon: MapPin,
     description: 'Trova gli uffici comunali più vicini',
-    status: 'available',
+    status: 'coming_soon',
     time: 'Immediato',
     cost: 'Gratuito',
     color: 'from-teal-500 to-teal-600'
@@ -88,7 +88,7 @@ const services = [
     category: 'transport',
     icon: Bus,
     description: 'Consulta gli orari e le fermate degli autobus urbani',
-    status: 'available',
+    status: 'coming_soon',
     time: 'Tempo reale',
     cost: 'Gratuito',
     color: 'from-blue-500 to-blue-600'
@@ -99,7 +99,7 @@ const services = [
     category: 'transport',
     icon: MapPin,
     description: 'Trova parcheggi disponibili in città',
-    status: 'available',
+    status: 'coming_soon',
     time: 'Immediato',
     cost: 'Variabile',
     color: 'from-indigo-500 to-indigo-600'
@@ -434,11 +434,11 @@ export function MobileServicesScreen() {
                   onClick={() => handleServiceClick(service)}
                   className="w-full group cursor-pointer transition-all duration-300 hover:scale-[1.02]"
                   style={{ animationDelay: `${index * 0.1}s` }}
-                  disabled={service.status === 'maintenance'}
+                  disabled={service.status === 'maintenance' || service.status === 'coming_soon'}
                 >
                   <div
                     className={`rounded-2xl p-4 border flex items-center gap-4 ${
-                      service.status === 'maintenance' ? 'opacity-60' : ''
+                      service.status === 'maintenance' || service.status === 'coming_soon' ? 'opacity-60' : ''
                     }`}
                     style={{
                       background: 'rgba(255, 255, 255, 0.05)',
@@ -458,6 +458,11 @@ export function MobileServicesScreen() {
                       {service.status === 'maintenance' && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
                           <AlertCircle className="w-2 h-2 text-white" />
+                        </div>
+                      )}
+                      {service.status === 'coming_soon' && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full uppercase">
+                          Soon
                         </div>
                       )}
                     </div>

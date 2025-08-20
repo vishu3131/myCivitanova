@@ -1,7 +1,7 @@
 import { supabase } from '@/utils/supabaseClient';
 import { CommunityPost, CreatePostData, CommunityComment, CreateCommentData } from '@/hooks/useCommunity';
 
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+const USE_MOCK_DATA = false; // Impostato a false per connettersi al database reale
 
 // Interfaccia per i parametri di fetchPosts
 export interface FetchPostsParams {
@@ -84,7 +84,7 @@ const supabaseApi = {
   fetchPosts: async (params: FetchPostsParams) => {
     let query = supabase
       .from('community_posts')
-      .select('*', { count: 'exact' })
+      .select('*, profiles(display_name, avatar, role)', { count: 'exact' })
       .order(params.sortBy === 'recent' ? 'created_at' : 'views_count', { ascending: false })
       .limit(params.limit || 20)
       .range(params.offset || 0, (params.offset || 0) + (params.limit || 20) - 1);

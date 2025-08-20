@@ -46,54 +46,6 @@ import { useCommunity } from '@/hooks/useCommunity';
 import { useSidebar } from '@/context/SidebarContext';
 import { FetchPostsParams } from '@/lib/communityApi';
 
-const fakePosts = [
-  {
-    id: 'fake-1',
-    created_at: new Date().toISOString(),
-    type: 'discussion',
-    title: 'Post di Prova 1 (Test)',
-    content: 'Questo è il contenuto del primo post di prova. Serve per verificare il layout e la responsività dei componenti della community. Immagini e interazioni sono disabilitate.',
-    author_name: 'Utente Test',
-    author_avatar: 'https://i.pravatar.cc/150?u=fake1',
-    likes_count: 15,
-    dislikes_count: 2,
-    comments_count: 5,
-    views_count: 120,
-    tags: ['test', 'layout', 'frontend'],
-    is_pinned: true,
-  },
-  {
-    id: 'fake-2',
-    created_at: new Date(Date.now() - 86400000).toISOString(), // Ieri
-    type: 'report',
-    title: 'Segnalazione di Prova (Test)',
-    content: 'Questa è una segnalazione fittizia per testare la visualizzazione di diversi tipi di post. La categoria è "Ambiente" e lo stato è "In Lavorazione".',
-    author_name: 'Cittadino Modello',
-    author_avatar: 'https://i.pravatar.cc/150?u=fake2',
-    likes_count: 42,
-    dislikes_count: 1,
-    comments_count: 12,
-    views_count: 250,
-    category: 'Ambiente',
-    status: 'in-progress',
-    location: 'Parco Pubblico',
-  },
-  {
-    id: 'fake-3',
-    created_at: new Date(Date.now() - 172800000).toISOString(), // 2 giorni fa
-    type: 'event',
-    title: 'Evento di Test: Concerto in Piazza',
-    content: 'Un evento di prova per mostrare come appaiono gli annunci di eventi. Questo post include un\'immagine di esempio.',
-    author_name: 'Organizzatore Eventi',
-    author_avatar: 'https://i.pravatar.cc/150?u=fake3',
-    likes_count: 120,
-    dislikes_count: 3,
-    comments_count: 35,
-    views_count: 1500,
-    images: ['https://source.unsplash.com/random/800x600/?concert'],
-    tags: ['musica', 'test', 'evento'],
-  },
-];
 
 const CommunityPage = () => {
   const { sidebarWidth } = useSidebar();
@@ -493,29 +445,7 @@ const CommunityPage = () => {
                   </div>
                 ))}
               </div>
-              ) : error ? (
-                <>
-                  <div className="text-center py-6">
-                    <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-                    <h3 className="text-white font-semibold mb-1">Errore nel caricamento</h3>
-                    <p className="text-white/60 text-sm mb-3">{error}</p>
-                    <p className="text-white/50 text-xs mb-4">Dati di test mostrati di seguito.</p>
-                  </div>
-                  {fakePosts.map((post) => (
-                    <CommunityPostCard
-                      key={post.id}
-                      post={post as any}
-                      currentUser={currentUser}
-                      onLike={async () => {}}
-                      onDislike={async () => {}}
-                      onShare={async () => {}}
-                      onComment={async () => {}}
-                      onDelete={async () => {}}
-                      fetchComments={async () => []}
-                    />
-                  ))}
-                </>
-            ) : posts.length === 0 ? (
+              ) : posts.length === 0 ? (
               <div className="text-center py-12">
                 <MessageCircle className="w-12 h-12 text-white/40 mx-auto mb-4" />
                 <h3 className="text-white font-semibold mb-2">Nessun post trovato</h3>
