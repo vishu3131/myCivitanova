@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import ReactDOM from 'react-dom';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/utils/supabaseClient';
+import { isSupabaseConfigured } from '@/utils/supabaseHelpers';
 import WasteReportForm, { WasteReportData } from './WasteReportForm';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export function WasteCollectionWidget() {
   const [showReportForm, setShowReportForm] = useState(false);
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, cannot upload photo');
+        return null;
+      }
+      
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `waste-reports/${fileName}`;
@@ -39,6 +41,12 @@ export function WasteCollectionWidget() {
 
   const handleReportSubmit = async (data: WasteReportData): Promise<void> => {
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, cannot submit report');
+        throw new Error('Database non configurato. Impossibile inviare la segnalazione.');
+      }
+      
       let photoUrl: string | null = null;
       
       // Upload foto se presente

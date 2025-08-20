@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/utils/supabaseClient';
+import { isSupabaseConfigured } from '@/utils/supabaseHelpers';
 import { 
   Trash2, 
   Eye, 
@@ -20,11 +21,6 @@ import {
   Search,
   RefreshCw
 } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface WasteReport {
   id: string;
@@ -69,6 +65,14 @@ export default function WasteReportsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true);
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, skipping reports fetch');
+        setReports([]);
+        return;
+      }
+      
       let query = supabase
         .from('waste_reports')
         .select('*')
@@ -104,6 +108,14 @@ export default function WasteReportsPage() {
   const updateReportStatus = async (reportId: string, newStatus: string, notes?: string) => {
     try {
       setUpdatingStatus(true);
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured, cannot update report status');
+        alert('Database non configurato. Impossibile aggiornare lo stato.');
+        return;
+      }
+      
       const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString()
