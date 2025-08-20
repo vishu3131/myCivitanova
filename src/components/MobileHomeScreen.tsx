@@ -25,6 +25,7 @@ import { NewsCarousel } from './NewsCarousel';
 import { WeatherWidget } from './WeatherWidget';
 import EventsCarousel from './EventsCarousel';
 import LazyRender from './LazyRender';
+import TutorialDebugOverlay from './TutorialDebugOverlay';
 
 // Lazy-loaded components for performance
 const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
@@ -156,12 +157,28 @@ export function MobileHomeScreen() {
   const [heartActiveHome, setHeartActiveHome] = useState(false); // Stato per widget cuore spostato qui
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
-    // Check if tutorial has been hidden before
-    if (!isHomeTutorialHidden()) {
-      setShowHomeTutorial(true);
-    }
+    // Check if tutorial has been hidden before and intro is complete
+    const checkTutorial = () => {
+      try {
+        const introComplete = localStorage.getItem('introUnlockedV1') === '1';
+        const tutorialHidden = isHomeTutorialHidden();
+        
+        // Only show tutorial if intro is complete and tutorial hasn't been hidden
+        if (introComplete && !tutorialHidden) {
+          // Add a delay to ensure smooth transition after intro
+          setTimeout(() => {
+            setShowHomeTutorial(true);
+          }, 500);
+        }
+      } catch (error) {
+        console.error('Error checking tutorial state:', error);
+      }
+    };
+
+    checkTutorial();
   }, []);
 
   // Toggle body class when tutorial is active to prevent background scroll
@@ -333,6 +350,14 @@ export function MobileHomeScreen() {
       <div className="sticky top-0 z-10 bg-black/60 backdrop-blur-md border-b border-white/10">
         <div className="px-3 py-2 flex items-center gap-3">
           <div className="text-white font-semibold tracking-wide">MyCivitanova</div>
+          {/* Debug button - only show in development */}
+          <button
+            onClick={() => setShowDebug(true)}
+            className="text-xs text-white/50 hover:text-white/80 px-2 py-1 rounded"
+            title="Debug Tutorial"
+          >
+            🐛
+          </button>
           <div className="flex-1">
             <input
               type="search"
@@ -1409,16 +1434,18 @@ export function MobileHomeScreen() {
 
           /* Blur and disable interactions on the home screen when tutorial is active */
           .mobile-home-root.tutorial-active > .content-with-navbar {
-            filter: blur(4px);
+            filter: blur(2px);
             pointer-events: none;
             transition: filter 0.3s ease-in-out;
+            opacity: 0.7;
           }
 
           /* Ensure the sticky header is also affected */
           .mobile-home-root.tutorial-active > .sticky {
-            filter: blur(4px);
+            filter: blur(2px);
             pointer-events: none;
             transition: filter 0.3s ease-in-out;
+            opacity: 0.7;
           }
           
           body.tutorial-is-active {
@@ -1643,6 +1670,12 @@ export function MobileHomeScreen() {
             window.location.href = `/explore?query=${encodeURIComponent(q)}`;
           }
         }}
+      />
+
+      {/* Debug Overlay */}
+      <TutorialDebugOverlay
+        isVisible={showDebug}
+        onClose={() => setShowDebug(false)}
       />
     </div>
   );

@@ -34,9 +34,14 @@ export default function IntroOverlay() {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === "1131") {
-      setVisible(false);
       setError("");
-      try { localStorage.setItem(INTRO_KEY, '1'); } catch {}
+      try { 
+        localStorage.setItem(INTRO_KEY, '1'); 
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          setVisible(false);
+        }, 100);
+      } catch {}
     } else {
       setError("Password errata. Riprova.");
     }
