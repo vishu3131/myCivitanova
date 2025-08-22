@@ -24,7 +24,7 @@ Ogni dettaglio è stato curato per offrirti un'esperienza fluida e coinvolgente,
     description: 'Non è solo un\'app, è un\'avventura! Ogni azione che fai ti fa guadagnare punti esperienza.',
     detailedText: `Il nostro sistema XP trasforma l'uso dell'app in un'esperienza coinvolgente e gratificante!
 
-🏆 Sistema Badge: Tanti badge diversi da sbloccare con rarità crescenti
+🏆 : Tanti badge diversi da sbloccare con rarità crescenti
 📊 Leaderboard: Classifica in tempo reale con tutti gli utenti attivi
 ⚡ Attività XP: Molte attività diverse che ti fanno guadagnare punti
 🔄 Login Giornaliero: Bonus quotidiani per chi usa l'app regolarmente

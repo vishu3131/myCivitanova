@@ -45,6 +45,7 @@ import { useToast } from '@/components/Toast';
 import { useCommunity } from '@/hooks/useCommunity';
 import { useSidebar } from '@/context/SidebarContext';
 import { FetchPostsParams } from '@/lib/communityApi';
+import { COMMUNITY_CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 
 const CommunityPage = () => {
@@ -243,26 +244,10 @@ const CommunityPage = () => {
     fetchPosts(params);
   };
 
-  // Configurazione tabs
-  const tabs = [
-    { id: 'all', label: 'Tutto', icon: Home, count: posts.length },
-    { id: 'report', label: 'Segnalazioni', icon: AlertTriangle, count: posts.filter(p => p.type === 'report').length },
-    { id: 'discussion', label: 'Forum', icon: MessageCircle, count: posts.filter(p => p.type === 'discussion').length },
-    { id: 'event', label: 'Eventi', icon: Calendar, count: posts.filter(p => p.type === 'event').length },
-    { id: 'group', label: 'Gruppi', icon: Users, count: posts.filter(p => p.type === 'group').length },
-  ];
 
-  const categories = [
-    'Generale',
-    'Trasporti', 
-    'Ambiente',
-    'Sicurezza',
-    'Eventi',
-    'Servizi',
-    'Turismo',
-    'Sport',
-    'Cultura'
-  ];
+
+  // Categories for filtering - now using centralized configuration
+  const categories = COMMUNITY_CATEGORIES.map(cat => cat.label);
 
   return (
     <div className="min-h-screen bg-black">
@@ -313,35 +298,7 @@ const CommunityPage = () => {
               />
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
-              {tabs.map((tab) => {
-                const IconComponent = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-accent text-dark-400'
-                        : 'text-white/60 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.label}</span>
-                    {tab.count > 0 && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        activeTab === tab.id
-                          ? 'bg-dark-400/20 text-dark-400'
-                          : 'bg-white/10 text-white/60'
-                      }`}>
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+
           </div>
         </div>
 

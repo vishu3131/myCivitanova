@@ -1,5 +1,6 @@
 import { supabase } from '@/utils/supabaseClient';
 import { CommunityPost, CreatePostData, CommunityComment, CreateCommentData } from '@/hooks/useCommunity';
+import { isValidCategory, DEFAULT_CATEGORY, VALID_CATEGORY_IDS } from '@/lib/categories';
 
 const USE_MOCK_DATA = false; // Impostato a false per connettersi al database reale
 
@@ -82,33 +83,60 @@ const mockApi = {
 // Funzioni reali con Supabase
 const supabaseApi = {
   fetchPosts: async (params: FetchPostsParams) => {
-    let query = supabase
-      .from('community_posts')
-      .select('*, profiles(display_name, avatar, role)', { count: 'exact' })
-      .order(params.sortBy === 'recent' ? 'created_at' : 'views_count', { ascending: false })
-      .limit(params.limit || 20)
-      .range(params.offset || 0, (params.offset || 0) + (params.limit || 20) - 1);
+    try {
+      let query = supabase
+        .from('community_posts')
+        .select('*, profiles(full_name, avatar_url, role)', { count: 'exact' })
+        .order(params.sortBy === 'recent' ? 'created_at' : 'views_count', { ascending: false })
+        .limit(params.limit || 20)
+        .range(params.offset || 0, (params.offset || 0) + (params.limit || 20) - 1);
 
-    if (params.type && params.type !== 'all') {
-      query = query.eq('type', params.type);
-    }
-    if (params.category) {
-      query = query.eq('category', params.category);
-    }
-    if (params.search) {
-      query = query.ilike('title', `%${params.search}%`);
-    }
+      if (params.type && params.type !== 'all') {
+        query = query.eq('type', params.type);
+      }
+      if (params.category) {
+        query = query.eq('category', params.category);
+      }
+      if (params.search) {
+        query = query.ilike('title', `%${params.search}%`);
+      }
 
-    const { data, error, count } = await query;
-    if (error) throw error;
+      const { data, error, count } = await query;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
+      }
 
-    return {
-      posts: data as CommunityPost[],
-      total: count || 0,
-      hasMore: (data?.length || 0) + (params.offset || 0) < (count || 0),
-    };
+      return {
+        posts: data as CommunityPost[],
+        total: count || 0,
+        hasMore: (data?.length || 0) + (params.offset || 0) < (count || 0),
+      };
+    } catch (error) {
+      console.error('Error in fetchPosts:', error);
+      // Se c'è un errore di connessione, restituisci dati vuoti invece di fallire
+      if (error instanceof Error && (error.message.includes('dummy') || error.message.includes('fetch'))) {
+        console.warn('Supabase not configured properly, returning empty data');
+        return {
+          posts: [],
+          total: 0,
+          hasMore: false,
+        };
+      }
+      throw error;
+    }
   },
   createPost: async (postData: any): Promise<CommunityPost> => {
+    // Validate category before creating post
+    if (postData.category && !isValidCategory(postData.category)) {
+      throw new Error(`Invalid category: ${postData.category}. Valid categories are: ${VALID_CATEGORY_IDS.join(', ')}`);
+    }
+    
+    // Set default category if none provided
+    if (!postData.category) {
+      postData.category = DEFAULT_CATEGORY;
+    }
+    
     const { data, error } = await supabase
       .from('community_posts')
       .insert([postData])
@@ -120,7 +148,7 @@ const supabaseApi = {
   fetchComments: async (postId: string): Promise<CommunityComment[]> => {
     const { data, error } = await supabase
       .from('community_comments')
-      .select('*')
+      .select('*, profiles(full_name, avatar_url, role)')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
     if (error) throw error;
@@ -205,10 +233,15 @@ const supabaseApi = {
     if (error) throw error;
   },
   updatePost: async (postId: string, updates: Partial<CreatePostData>): Promise<CommunityPost> => {
+    // Validate category if being updated
+    if (updates.category && !isValidCategory(updates.category)) {
+      throw new Error(`Invalid category: ${updates.category}. Valid categories are: ${VALID_CATEGORY_IDS.join(', ')}`);
+    }
+    
     const { data, error } = await supabase
       .from('community_posts')
       .update(updates)
-      .match({ id: postId })
+      .eq('id', postId)
       .select()
       .single();
     if (error) throw error;

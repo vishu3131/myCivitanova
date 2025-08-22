@@ -1,0 +1,68 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="designerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#37ff8b;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00d4aa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#37ff8b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/> 
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#designerGrad)" filter="url(#glow)"/>
+  
+  <!-- Face -->
+  <circle cx="100" cy="85" r="35" fill="#2c1810" opacity="0.8"/>
+  
+  <!-- Artistic hair/beret -->
+  <circle cx="100" cy="65" r="25" fill="#333" opacity="0.8"/>
+  <circle cx="105" cy="60" r="3" fill="#37ff8b" opacity="0.9"/>
+  
+  <!-- Eyes -->
+  <circle cx="90" cy="80" r="3" fill="#fff"/>
+  <circle cx="110" cy="80" r="3" fill="#fff"/>
+  <circle cx="90" cy="80" r="1.5" fill="#333"/>
+  <circle cx="110" cy="80" r="1.5" fill="#333"/>
+  
+  <!-- Creative spark in eyes -->
+  <circle cx="89" cy="79" r="0.5" fill="#37ff8b"/>
+  <circle cx="111" cy="79" r="0.5" fill="#37ff8b"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="88" rx="2" ry="3" fill="#1a0f08" opacity="0.6"/>
+  
+  <!-- Mouth -->
+  <path d="M 92 95 Q 100 102 108 95" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Body/Shoulders -->
+  <ellipse cx="100" cy="150" rx="45" ry="35" fill="#2c1810" opacity="0.8"/>
+  
+  <!-- Design tools -->
+  <!-- Paintbrush -->
+  <rect x="70" y="45" width="2" height="15" fill="#8B4513" transform="rotate(30 71 52)"/>
+  <ellipse cx="69" cy="47" rx="3" ry="2" fill="#37ff8b" transform="rotate(30 69 47)"/>
+  
+  <!-- Pencil -->
+  <rect x="125" y="48" width="2" height="12" fill="#FFD700" transform="rotate(-25 126 54)"/>
+  <polygon points="125,46 127,46 126,44" fill="#333" transform="rotate(-25 126 45)"/>
+  
+  <!-- Color palette -->
+  <ellipse cx="85" cy="130" rx="8" ry="5" fill="#fff" opacity="0.8"/>
+  <circle cx="82" cy="128" r="1.5" fill="#ff6b35"/>
+  <circle cx="85" cy="130" r="1.5" fill="#37ff8b"/>
+  <circle cx="88" cy="132" r="1.5" fill="#c137ff"/>
+  
+  <!-- Design elements floating around -->
+  <rect x="115" y="125" width="6" height="6" fill="#00d4aa" opacity="0.6" transform="rotate(45 118 128)"/>
+  <circle cx="75" cy="115" r="3" fill="none" stroke="#37ff8b" stroke-width="1" opacity="0.7"/>
+  <polygon points="120,115 125,110 130,115 125,120" fill="#37ff8b" opacity="0.6"/>
+  
+  <!-- Initials -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#fff" opacity="0.9">AD</text>
+</svg>

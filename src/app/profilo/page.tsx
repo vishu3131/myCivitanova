@@ -1,22 +1,12 @@
 "use client";
 
 import React from 'react';
-import { MobileProfileScreen } from '@/components/MobileProfileScreen';
+import { FuturisticProfileScreen } from '@/components/FuturisticProfileScreen';
 
 export default function ProfiloPage() {
   return (
-    <>
-      {/* Mobile View */}
-      <div className="block md:hidden">
-        <MobileProfileScreen />
-      </div>
-      
-      {/* Desktop View - Placeholder for now */}
-      <div className="hidden md:block">
-        <div className="min-h-screen bg-dark-400 flex items-center justify-center">
-          <h1 className="text-white text-2xl">Pagina Profilo - Desktop Version Coming Soon</h1>
-        </div>
-      </div>
-    </>
+    <div className="min-h-screen">
+      <FuturisticProfileScreen />
+    </div>
   );
 }

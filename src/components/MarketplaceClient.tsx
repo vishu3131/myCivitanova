@@ -3,8 +3,17 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchListingsWithImages, searchListings, AdvancedSearchFilters } from "@/services/marketplace";
+import { ListingExpanded } from "@/types/marketplace";
+import FavoriteButton from "@/components/marketplace/FavoriteButton";
+import ListingForm from "@/components/marketplace/ListingForm";
+import MyListings from "@/components/marketplace/MyListings";
+import FavoritesList from "@/components/marketplace/FavoritesList";
+import AdvancedFilters, { AdvancedFiltersState } from "@/components/marketplace/AdvancedFilters";
 
-// Categories (mock) — sostituibili con dati reali
+// Categories
 const BENI_CATEGORIES = [
   "Elettronica",
   "Arredo",
@@ -27,30 +36,8 @@ const SERVIZI_CATEGORIES = [
   "Altro",
 ];
 
-type Listing = {
-  id: string;
-  type: "beni" | "servizi";
-  title: string;
-  price?: string;
-  image: string;
-  location: string;
-  badge?: string;
-  category?: string;
-  rating?: number;
-  available?: boolean;
-  verified?: boolean;
-};
-
-const MOCK_LISTINGS: Listing[] = [
-  { id: "1", type: "beni", title: "Bici da Città", price: "120€", image: "https://images.unsplash.com/photo-1520975922217-7f61d4dc18c5?w=800&h=600&fit=crop", location: "Civitanova Centro", badge: "Top", category: "Sport", rating: 4.8, available: true, verified: false },
-  { id: "2", type: "beni", title: "iPhone 12 128GB", price: "380€", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&h=600&fit=crop", location: "Civitanova Alta", badge: "Verificato", category: "Elettronica", rating: 4.9, available: true, verified: true },
-  { id: "3", type: "servizi", title: "Lezioni di Chitarra", price: "20€/h", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&h=600&fit=crop", location: "Porto", badge: "Popolare", category: "Lezioni", rating: 4.7, available: true, verified: false },
-  { id: "4", type: "servizi", title: "Idraulico d'Urgenza", price: "Sopralluogo", image: "https://images.unsplash.com/photo-1581091014534-1a04b18b5b08?w=800&h=600&fit=crop", location: "Risorgimento", badge: "24/7", category: "Riparazioni", rating: 4.6, available: true, verified: true },
-  { id: "5", type: "beni", title: "Divano 3 Posti", price: "220€", image: "https://images.unsplash.com/photo-1505691723518-36a5ac3b2d95?w=800&h=600&fit=crop", location: "San Marone", badge: "Come nuovo", category: "Arredo", rating: 4.5, available: false, verified: false },
-  { id: "6", type: "servizi", title: "Personal Trainer", price: "Su richiesta", image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=600&fit=crop", location: "Centro", badge: "Pro", category: "Benessere", rating: 4.9, available: true, verified: true },
-];
-
 type ViewMode = "grid" | "list";
+type ActiveView = "marketplace" | "add-listing" | "my-listings" | "favorites";
 
 function SafeImage({ src, alt, className = "" }: { src?: string; alt: string; className?: string }) {
   const [error, setError] = React.useState(false);
@@ -68,15 +55,31 @@ function SafeImage({ src, alt, className = "" }: { src?: string; alt: string; cl
 export default function MarketplaceClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
 
-  // Initialize state only after searchParams is available
+  // State
   const [activeTab, setActiveTab] = useState<"beni" | "servizi">("beni");
+  const [activeView, setActiveView] = useState<ActiveView>("marketplace");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState("recenti");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [listings, setListings] = useState<ListingExpanded[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingListing, setEditingListing] = useState<ListingExpanded | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFiltersState>({
+    priceRange: { min: null, max: null },
+    location: '',
+    locationRadius: 10,
+    dateRange: { from: null, to: null },
+    condition: null,
+    tags: [],
+    hasImages: false,
+    hasReviews: false
+  });
 
   useEffect(() => {
     if (searchParams) {
@@ -94,33 +97,106 @@ export default function MarketplaceClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, searchParams]); // Add searchParams to dependency array
 
+  // Load listings
+  const loadListings = async () => {
+    try {
+      setLoading(true);
+      
+      // Prepare advanced search filters
+      const searchFilters: AdvancedSearchFilters = {
+        type: activeTab,
+        category: category || undefined,
+        onlyAvailable,
+        onlyVerified,
+        minPrice: advancedFilters.priceRange.min || undefined,
+        maxPrice: advancedFilters.priceRange.max || undefined,
+        location: advancedFilters.location || undefined,
+        locationRadius: advancedFilters.locationRadius,
+        condition: advancedFilters.condition || undefined,
+        tags: advancedFilters.tags.length > 0 ? advancedFilters.tags : undefined,
+        hasImages: advancedFilters.hasImages,
+        hasReviews: advancedFilters.hasReviews,
+        dateFrom: advancedFilters.dateRange.from?.toISOString(),
+        dateTo: advancedFilters.dateRange.to?.toISOString()
+      };
+      
+      const params = {
+        type: activeTab,
+        query: query.trim() || undefined,
+        category: category || undefined,
+        onlyAvailable,
+        onlyVerified,
+        sort,
+        limit: 50
+      };
+      
+      const data = await searchListings(query.trim() || "", searchFilters);
+      setListings(data);
+    } catch (error) {
+      console.error('Error loading listings:', error);
+      toast.error('Errore nel caricamento degli annunci');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadListings();
+  }, [activeTab, query, category, onlyAvailable, onlyVerified, sort, advancedFilters]);
+
   const categories = activeTab === "beni" ? BENI_CATEGORIES : SERVIZI_CATEGORIES;
 
-  const filtered = useMemo(() => {
-    let list = MOCK_LISTINGS.filter((l) => l.type === activeTab);
-    if (category) list = list.filter((l) => l.category === category);
-    if (query.trim()) list = list.filter((l) => l.title.toLowerCase().includes(query.toLowerCase()));
-    if (onlyAvailable) list = list.filter((l) => l.available !== false);
-    if (onlyVerified) list = list.filter((l) => l.verified || l.badge === "Verificato");
-
-    if (sort === "prezzo") {
-      list = [...list].sort((a, b) => (a.price || "").localeCompare(b.price || ""));
-    } else if (sort === "rating") {
-      list = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }
-    return list;
-  }, [activeTab, category, query, onlyAvailable, onlyVerified, sort]);
-
   const featured = useMemo(() => {
-    return [...MOCK_LISTINGS.filter((l) => l.type === activeTab)]
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    return [...listings]
+      .sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0))
       .slice(0, 5);
-  }, [activeTab]);
+  }, [listings]);
 
-  // Stats (mock): conteggi base per arricchire header
-  const activeCount = filtered.length;
-  const verifiedCount = filtered.filter((l) => l.verified).length;
-  const nearYouCount = filtered.filter((l) => /civitanova|centro/i.test(l.location)).length;
+  // Stats
+  const activeCount = listings.length;
+  const verifiedCount = listings.filter((l) => l.verified).length;
+  const nearYouCount = listings.filter((l) => l.location?.toLowerCase().includes('civitanova')).length;
+
+  const formatPrice = (listing: ListingExpanded) => {
+    if (!listing.price_amount) return listing.price_type === 'free' ? 'Gratis' : 'Su richiesta';
+    const currency = listing.price_currency === 'EUR' ? '€' : listing.price_currency || '€';
+    const suffix = listing.price_type === 'hourly' ? '/h' : '';
+    return `${listing.price_amount}${currency}${suffix}`;
+  };
+
+  const getListingImage = (listing: ListingExpanded) => {
+    return listing.listing_images?.[0]?.url || '/marketplace/placeholder.svg';
+  };
+
+  const handleListingAction = (action: 'add' | 'edit' | 'view-my' | 'view-favorites', listing?: ListingExpanded) => {
+    if (!user && action !== 'add') {
+      toast.error('Devi effettuare il login per accedere a questa funzione');
+      return;
+    }
+    
+    switch (action) {
+      case 'add':
+        setActiveView('add-listing');
+        setEditingListing(null);
+        break;
+      case 'edit':
+        setActiveView('add-listing');
+        setEditingListing(listing || null);
+        break;
+      case 'view-my':
+        setActiveView('my-listings');
+        break;
+      case 'view-favorites':
+        setActiveView('favorites');
+        break;
+    }
+  };
+
+  const handleListingSuccess = () => {
+    setActiveView('marketplace');
+    setEditingListing(null);
+    loadListings();
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -134,7 +210,26 @@ export default function MarketplaceClient() {
               <span>Marketplace Civitanova</span>
             </div>
             <div className="ml-auto flex gap-2">
-              <button className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs hover:bg-white/20" aria-label="Crea annuncio">
+              {user && (
+                <>
+                  <button 
+                    onClick={() => handleListingAction('view-favorites')}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs hover:bg-white/20"
+                  >
+                    ❤️ Preferiti
+                  </button>
+                  <button 
+                    onClick={() => handleListingAction('view-my')}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs hover:bg-white/20"
+                  >
+                    📋 I miei annunci
+                  </button>
+                </>
+              )}
+              <button 
+                onClick={() => handleListingAction('add')}
+                className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs hover:bg-white/20"
+              >
                 + Nuovo annuncio
               </button>
             </div>
@@ -164,27 +259,73 @@ export default function MarketplaceClient() {
             </div>
           </div>
         </div>
-        {/* Tabs */}
+        {/* Navigation */}
         <div className="max-w-5xl mx-auto px-4 pb-3">
-          <div className="inline-flex rounded-xl bg-white/5 border border-white/10 p-1">
-            <button
-              onClick={() => setActiveTab("beni")}
-              className={`px-4 py-1.5 text-sm rounded-lg flex items-center gap-1 ${activeTab === "beni" ? "bg-accent/20 text-white border border-accent/30" : "text-white/70 hover:text-white"}`}
-            >
-              <span>🛒</span> Beni
-            </button>
-            <button
-              onClick={() => setActiveTab("servizi")}
-              className={`px-4 py-1.5 text-sm rounded-lg flex items-center gap-1 ${activeTab === "servizi" ? "bg-accent/20 text-white border border-accent/30" : "text-white/70 hover:text-white"}`}
-            >
-              <span>🧰</span> Servizi
-            </button>
+          <div className="flex gap-2 items-center">
+            <div className="inline-flex rounded-xl bg-white/5 border border-white/10 p-1">
+              <button
+                onClick={() => { setActiveView('marketplace'); setActiveTab("beni"); }}
+                className={`px-4 py-1.5 text-sm rounded-lg flex items-center gap-1 ${activeView === 'marketplace' && activeTab === "beni" ? "bg-accent/20 text-white border border-accent/30" : "text-white/70 hover:text-white"}`}
+              >
+                <span>🛒</span> Beni
+              </button>
+              <button
+                onClick={() => { setActiveView('marketplace'); setActiveTab("servizi"); }}
+                className={`px-4 py-1.5 text-sm rounded-lg flex items-center gap-1 ${activeView === 'marketplace' && activeTab === "servizi" ? "bg-accent/20 text-white border border-accent/30" : "text-white/70 hover:text-white"}`}
+              >
+                <span>🧰</span> Servizi
+              </button>
+            </div>
+            
+            {activeView !== 'marketplace' && (
+              <button
+                onClick={() => setActiveView('marketplace')}
+                className="px-3 py-1.5 text-sm rounded-lg bg-white/10 border border-white/10 hover:bg-white/20"
+              >
+                ← Torna al marketplace
+              </button>
+            )}
           </div>
         </div>
+        
+        {/* Advanced Filters Component */}
+         <AdvancedFilters
+           filters={advancedFilters}
+           onFiltersChange={setAdvancedFilters}
+           isOpen={showAdvancedFilters}
+           onToggle={() => setShowAdvancedFilters(!showAdvancedFilters)}
+           activeTab={activeTab}
+         />
       </div>
 
-      {/* Controls */}
-      <div className="max-w-5xl mx-auto px-4 py-3 grid grid-cols-1 gap-3">
+      {/* Render different views */}
+      {activeView === 'add-listing' && (
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <ListingForm 
+            listing={editingListing}
+            onSuccess={handleListingSuccess}
+            onCancel={() => setActiveView('marketplace')}
+          />
+        </div>
+      )}
+      
+      {activeView === 'my-listings' && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <MyListings onEdit={(listing) => handleListingAction('edit', listing)} />
+        </div>
+      )}
+      
+      {activeView === 'favorites' && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <FavoritesList />
+        </div>
+      )}
+
+      {/* Marketplace view */}
+      {activeView === 'marketplace' && (
+        <>
+          {/* Controls */}
+          <div className="max-w-5xl mx-auto px-4 py-3 grid grid-cols-1 gap-3">
         {/* search + sort + view toggle */}
         <div className="flex gap-2 items-center">
           <div className="relative flex-1">
@@ -231,7 +372,24 @@ export default function MarketplaceClient() {
             <span>🛡️</span> Solo verificati
           </button>
           <button
-            onClick={() => { setCategory(null); setQuery(""); setOnlyAvailable(false); setOnlyVerified(false); setSort("recenti"); }}
+            onClick={() => {
+              setCategory(null);
+              setQuery("");
+              setOnlyAvailable(false);
+              setOnlyVerified(false);
+              setSort("recenti");
+              setAdvancedFilters({
+                priceRange: { min: null, max: null },
+                location: '',
+                locationRadius: 10,
+                dateRange: { from: null, to: null },
+                condition: null,
+                tags: [],
+                hasImages: false,
+                hasReviews: false
+              });
+              setShowAdvancedFilters(false);
+            }}
             className="ml-auto px-3 py-1.5 rounded-full text-[12px] border bg-white/5 border-white/10 hover:bg-white/10"
           >
             Reset filtri
@@ -260,137 +418,151 @@ export default function MarketplaceClient() {
         </div>
       </div>
 
-      {/* Featured horizontal carousel */}
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="mb-2 text-sm text-white/80">Vetrina</div>
-        <div className="relative -mx-1 flex gap-2 overflow-x-auto snap-x snap-mandatory pb-2">
-          {featured.map((f) => (
-            <div key={f.id} className="snap-start shrink-0 w-64 rounded-xl overflow-hidden border border-white/10 bg-white/5">
-              <div className="relative h-36">
-                <SafeImage src={f.image} alt={f.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
-                {f.badge && (
-                  <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">{f.badge}</span>
-                )}
-                <button className="absolute top-2 right-2 text-sm px-2 py-1 rounded-full bg-black/60 border border-white/10">❤️</button>
-              </div>
-              <div className="p-3">
-                <div className="text-sm font-medium line-clamp-1">{f.title}</div>
-                <div className="text-[12px] text-white/70 line-clamp-1">📍 {f.location}</div>
-                <div className="mt-1 flex items-center justify-between">
-                  <div className="text-[12px] text-white/90 font-semibold">{f.price}</div>
-                  {typeof f.rating === "number" && (
-                    <div className="text-[11px] text-white/70">★ {f.rating.toFixed(1)}</div>
-                  )}
+          {/* Featured horizontal carousel */}
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="mb-2 text-sm text-white/80">Vetrina</div>
+            <div className="relative -mx-1 flex gap-2 overflow-x-auto snap-x snap-mandatory pb-2">
+              {featured.map((f) => (
+                <div key={f.id} className="snap-start shrink-0 w-64 rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                  <div className="relative h-36">
+                    <SafeImage src={getListingImage(f)} alt={f.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+                    {f.verified && (
+                      <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">🛡️ Verificato</span>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <FavoriteButton listingId={f.id} size="sm" />
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="text-sm font-medium line-clamp-1">{f.title}</div>
+                    <div className="text-[12px] text-white/70 line-clamp-1">📍 {f.location || 'Civitanova'}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <div className="text-[12px] text-white/90 font-semibold">{formatPrice(f)}</div>
+                      {f.average_rating && (
+                        <div className="text-[11px] text-white/70">★ {f.average_rating.toFixed(1)}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Results */}
+          {loading ? (
+            <div className="max-w-5xl mx-auto px-4 py-16 text-center">
+              <div className="text-4xl mb-2">⏳</div>
+              <div className="text-lg font-semibold">Caricamento annunci...</div>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="max-w-5xl mx-auto px-4 py-16">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+                <div className="text-4xl mb-2">🗂️</div>
+                <div className="text-lg font-semibold">Nessun risultato trovato</div>
+                <div className="text-white/70 text-sm mt-1">Prova a rimuovere qualche filtro o modifica la ricerca.</div>
+                <div className="mt-4 flex justify-center gap-2">
+                  <button
+                    onClick={() => { setCategory(null); setQuery(""); setOnlyAvailable(false); setOnlyVerified(false); setSort("recenti"); }}
+                    className="px-4 py-2 rounded-xl bg-white/10 border border-white/10 hover:bg-white/20 text-sm"
+                  >
+                    Reset filtri
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(activeTab === "beni" ? "servizi" : "beni")}
+                    className="px-4 py-2 rounded-xl bg-accent/30 border border-accent/30 hover:bg-accent/40 text-sm"
+                  >
+                    Vai a {activeTab === "beni" ? "Servizi" : "Beni"}
+                  </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Results */}
-      {filtered.length === 0 ? (
-        <div className="max-w-5xl mx-auto px-4 py-16">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-            <div className="text-4xl mb-2">🗂️</div>
-            <div className="text-lg font-semibold">Nessun risultato trovato</div>
-            <div className="text-white/70 text-sm mt-1">Prova a rimuovere qualche filtro o modifica la ricerca.</div>
-            <div className="mt-4 flex justify-center gap-2">
-              <button
-                onClick={() => { setCategory(null); setQuery(""); setOnlyAvailable(false); setOnlyVerified(false); setSort("recenti"); }}
-                className="px-4 py-2 rounded-xl bg-white/10 border border-white/10 hover:bg-white/20 text-sm"
-              >
-                Reset filtri
-              </button>
-              <button
-                onClick={() => setActiveTab(activeTab === "beni" ? "servizi" : "beni")}
-                className="px-4 py-2 rounded-xl bg-accent/30 border border-accent/30 hover:bg-accent/40 text-sm"
-              >
-                Vai a {activeTab === "beni" ? "Servizi" : "Beni"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {filtered.map((l) => (
-                <article key={l.id} className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                  <div className="relative h-28 sm:h-32 md:h-36">
-                    <SafeImage src={l.image} alt={l.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
-                    {l.badge && (
-                      <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">{l.badge}</span>
-                    )}
-                    <button className="absolute top-2 right-2 text-sm px-2 py-1 rounded-full bg-black/60 border border-white/10">❤️</button>
-                    {l.price && (
-                      <span className="absolute bottom-2 left-2 text-[11px] px-2 py-1 rounded-full bg-black/60 border border-white/10">{l.price}</span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <div className="text-sm font-medium line-clamp-1">{l.title}</div>
-                    <div className="text-[12px] text-white/70 line-clamp-1">📍 {l.location}</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <div className={`text-[11px] ${l.available === false ? "text-red-400" : "text-green-400"}`}>
-                        {l.available === false ? "Non disponibile" : "Disponibile"}
-                      </div>
-                      {typeof l.rating === "number" && (
-                        <div className="text-[11px] text-white/70">★ {l.rating.toFixed(1)}</div>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
           ) : (
-            <div className="space-y-2">
-              {filtered.map((l) => (
-                <article key={l.id} className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden flex">
-                  <div className="relative w-32 sm:w-40 h-28 sm:h-32 flex-shrink-0">
-                    <SafeImage src={l.image} alt={l.title} className="w-full h-full object-cover" />
-                    {l.badge && (
-                      <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">{l.badge}</span>
-                    )}
-                    <button className="absolute top-2 right-2 text-sm px-2 py-1 rounded-full bg-black/60 border border-white/10">❤️</button>
-                  </div>
-                  <div className="p-3 flex-1 min-w-0">
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1 min-w-0">
+            <div className="max-w-5xl mx-auto px-4 py-4">
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {listings.map((l) => (
+                    <Link key={l.id} href={`/marketplace/${l.id}`} className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-colors">
+                      <div className="relative h-28 sm:h-32 md:h-36">
+                        <SafeImage src={getListingImage(l)} alt={l.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+                        {l.verified && (
+                          <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">🛡️ Verificato</span>
+                        )}
+                        <div className="absolute top-2 right-2" onClick={(e) => e.preventDefault()}>
+                          <FavoriteButton listingId={l.id} size="sm" />
+                        </div>
+                        <span className="absolute bottom-2 left-2 text-[11px] px-2 py-1 rounded-full bg-black/60 border border-white/10">{formatPrice(l)}</span>
+                      </div>
+                      <div className="p-3">
                         <div className="text-sm font-medium line-clamp-1">{l.title}</div>
-                        <div className="text-[12px] text-white/70 line-clamp-1">📍 {l.location}</div>
+                        <div className="text-[12px] text-white/70 line-clamp-1">📍 {l.location || 'Civitanova'}</div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <div className={`text-[11px] ${!l.is_available ? "text-red-400" : "text-green-400"}`}>
+                            {!l.is_available ? "Non disponibile" : "Disponibile"}
+                          </div>
+                          {l.average_rating && (
+                            <div className="text-[11px] text-white/70">★ {l.average_rating.toFixed(1)}</div>
+                          )}
+                        </div>
                       </div>
-                      {l.price && (
-                        <div className="text-[12px] text-white/90 font-semibold whitespace-nowrap">{l.price}</div>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-center gap-3 text-[11px] text-white/70">
-                      <div className={`${l.available === false ? "text-red-400" : "text-green-400"}`}>
-                        {l.available === false ? "Non disponibile" : "Disponibile"}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {listings.map((l) => (
+                    <Link key={l.id} href={`/marketplace/${l.id}`} className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden flex hover:bg-white/10 transition-colors">
+                      <div className="relative w-32 sm:w-40 h-28 sm:h-32 flex-shrink-0">
+                        <SafeImage src={getListingImage(l)} alt={l.title} className="w-full h-full object-cover" />
+                        {l.verified && (
+                          <span className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded-full bg-black/60 border border-white/10">🛡️ Verificato</span>
+                        )}
+                        <div className="absolute top-2 right-2" onClick={(e) => e.preventDefault()}>
+                          <FavoriteButton listingId={l.id} size="sm" />
+                        </div>
                       </div>
-                      {typeof l.rating === "number" && (
-                        <div>★ {l.rating.toFixed(1)}</div>
-                      )}
-                      {l.verified && <div className="text-blue-300">🛡️ Verificato</div>}
-                    </div>
-                  </div>
-                </article>
-              ))}
+                      <div className="p-3 flex-1 min-w-0">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium line-clamp-1">{l.title}</div>
+                            <div className="text-[12px] text-white/70 line-clamp-1">📍 {l.location || 'Civitanova'}</div>
+                          </div>
+                          <div className="text-[12px] text-white/90 font-semibold whitespace-nowrap">{formatPrice(l)}</div>
+                        </div>
+                        <div className="mt-1 flex items-center gap-3 text-[11px] text-white/70">
+                          <div className={`${!l.is_available ? "text-red-400" : "text-green-400"}`}>
+                            {!l.is_available ? "Non disponibile" : "Disponibile"}
+                          </div>
+                          {l.average_rating && (
+                            <div>★ {l.average_rating.toFixed(1)}</div>
+                          )}
+                          {l.verified && <div className="text-blue-300">🛡️ Verificato</div>}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* CTA fixed bottom on mobile */}
-      <div className="sticky bottom-0 z-20 bg-black/70 backdrop-blur-md border-t border-white/10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2">
-          <div className="text-white/70 text-sm">Hai qualcosa da proporre?</div>
-          <button className="ml-auto px-4 py-2 rounded-xl bg-accent/30 hover:bg-accent/40 border border-accent/30 text-sm">
-            Pubblica annuncio
-          </button>
+      {activeView === 'marketplace' && (
+        <div className="sticky bottom-0 z-20 bg-black/70 backdrop-blur-md border-t border-white/10">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2">
+            <div className="text-white/70 text-sm">Hai qualcosa da proporre?</div>
+            <button 
+              onClick={() => handleListingAction('add')}
+              className="ml-auto px-4 py-2 rounded-xl bg-accent/30 hover:bg-accent/40 border border-accent/30 text-sm"
+            >
+              Pubblica annuncio
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

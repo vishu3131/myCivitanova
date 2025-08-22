@@ -30,8 +30,8 @@ export interface CommunityPost {
   user_reaction?: string;
   time_ago?: string;
   profiles?: {
-    display_name: string;
-    avatar: string;
+    full_name: string;
+    avatar_url: string;
     role: string;
   };
 }
@@ -128,8 +128,8 @@ export const useCommunity = () => {
       
       const processedPosts = result.posts.map(post => ({
         ...post,
-        author_name: post.profiles?.display_name || 'Utente Sconosciuto',
-        author_avatar: post.profiles?.avatar || undefined,
+        author_name: post.profiles?.full_name || 'Utente Sconosciuto',
+        author_avatar: post.profiles?.avatar_url || undefined,
         author_role: post.profiles?.role || undefined,
       }));
 
@@ -153,7 +153,25 @@ export const useCommunity = () => {
       
     } catch (err) {
       console.error('Errore nel recupero dei post:', err);
-      setError(err instanceof Error ? err.message : 'Errore nel caricamento dei post');
+      
+      // Gestione migliorata degli errori
+      let errorMessage = 'Errore nel caricamento dei post';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === 'object') {
+        // Gestione errori Supabase
+        const supabaseError = err as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        } else if (supabaseError.error_description) {
+          errorMessage = supabaseError.error_description;
+        } else {
+          errorMessage = 'Errore di connessione al database. Verificare la configurazione Supabase.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -176,8 +194,8 @@ export const useCommunity = () => {
 
       const processedNewPosts = result.posts.map(post => ({
         ...post,
-        author_name: post.profiles?.display_name || 'Utente Sconosciuto',
-        author_avatar: post.profiles?.avatar || undefined,
+        author_name: post.profiles?.full_name || 'Utente Sconosciuto',
+        author_avatar: post.profiles?.avatar_url || undefined,
         author_role: post.profiles?.role || undefined,
       }));
 
@@ -199,7 +217,25 @@ export const useCommunity = () => {
       }
     } catch (err) {
       console.error('Errore nel caricamento incrementale dei post:', err);
-      setError(err instanceof Error ? err.message : 'Errore nel caricamento dei post');
+      
+      // Gestione migliorata degli errori
+      let errorMessage = 'Errore nel caricamento dei post';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === 'object') {
+        // Gestione errori Supabase
+        const supabaseError = err as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        } else if (supabaseError.error_description) {
+          errorMessage = supabaseError.error_description;
+        } else {
+          errorMessage = 'Errore di connessione al database. Verificare la configurazione Supabase.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -298,19 +334,38 @@ export const useCommunity = () => {
     // Logica reale con API
     try {
       const result = await CommunityAPI.toggleReaction(postId, currentUser.id, reactionType);
-      // L'aggiornamento dei conteggi viene gestito dai trigger del DB, 
-      // ma aggiorniamo la reazione dell'utente per un feedback immediato.
+      // Aggiorniamo sia la reazione dell'utente che i conteggi localmente per un feedback immediato
       setPosts(prevPosts =>
         prevPosts.map(post => {
           if (post.id === postId) {
             const updatedPost = { ...post };
+            const currentReaction = updatedPost.user_reaction;
+            
+            // Aggiorna la reazione dell'utente
             if (result.action === 'removed') {
               updatedPost.user_reaction = undefined;
             } else {
               updatedPost.user_reaction = result.newReaction;
             }
-            // Potremmo anche aggiornare i conteggi localmente per evitare un refetch
-            // Ma per ora ci affidiamo alla denormalizzazione del DB
+            
+            // Aggiorna i conteggi localmente
+            if (result.action === 'removed') {
+              // Rimuove la reazione esistente
+              if (currentReaction === 'like') updatedPost.likes_count--;
+              else if (currentReaction === 'dislike') updatedPost.dislikes_count--;
+            } else if (result.action === 'added') {
+              // Aggiunge una nuova reazione
+              if (result.newReaction === 'like') updatedPost.likes_count++;
+              else if (result.newReaction === 'dislike') updatedPost.dislikes_count++;
+            } else if (result.action === 'changed') {
+              // Cambia da una reazione all'altra
+              if (currentReaction === 'like') updatedPost.likes_count--;
+              else if (currentReaction === 'dislike') updatedPost.dislikes_count--;
+              
+              if (result.newReaction === 'like') updatedPost.likes_count++;
+              else if (result.newReaction === 'dislike') updatedPost.dislikes_count++;
+            }
+            
             return updatedPost;
           }
           return post;

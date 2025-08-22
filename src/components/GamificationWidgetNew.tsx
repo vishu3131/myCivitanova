@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
-import { useBadgeSystem } from './BadgeSystem';
 
 interface UserStats {
   total_xp: number;
@@ -10,6 +9,21 @@ interface UserStats {
   level_progress: number;
   level_title: string;
   badges_count: number;
+  xp_to_next_level: number;
+  weekly_xp: number;
+  monthly_xp: number;
+}
+
+interface LeaderboardUser {
+  id: string;
+  display_name: string;
+  username: string;
+  total_xp: number;
+  current_level: number;
+  badges_count: number;
+  rank: number;
+  email?: string;
+  avatar_url?: string;
 }
 
 interface RecentBadge {
@@ -31,29 +45,40 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
   const [loading, setLoading] = useState(true);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   
-  const badgeSystem = useBadgeSystem(userId || '');
-
   const loadUserStats = useCallback(async () => {
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('user_stats_complete')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await supabase.rpc('get_user_stats', {
+        user_uuid: userId
+      });
 
       if (error) throw error;
-      setUserStats(data);
+      
+      if (data) {
+        setUserStats({
+          total_xp: data.total_xp || 0,
+          current_level: data.current_level || 1,
+          level_progress: ((data.total_xp || 0) % 100),
+          level_title: `Livello ${data.current_level || 1}`,
+          badges_count: data.badges_count || 0,
+          xp_to_next_level: data.xp_to_next_level || 100,
+          weekly_xp: data.weekly_xp || 0,
+          monthly_xp: data.monthly_xp || 0
+        });
+      }
     } catch (error) {
       console.error('Errore caricamento statistiche:', error);
       // Fallback ai dati demo
       setUserStats({
-        total_xp: 750,
-        current_level: 3,
-        level_progress: 75.0,
-        level_title: 'Cittadino Impegnato',
-        badges_count: 5
+        total_xp: 0,
+        current_level: 1,
+        level_progress: 0,
+        level_title: 'Nuovo Cittadino',
+        badges_count: 0,
+        xp_to_next_level: 100,
+        weekly_xp: 0,
+        monthly_xp: 0
       });
     } finally {
       setLoading(false);
@@ -64,32 +89,23 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('user_badges')
-        .select(`
-          badge_types (
-            id,
-            name,
-            icon,
-            rarity
-          ),
-          earned_at
-        `)
-        .eq('user_id', userId)
-        .order('earned_at', { ascending: false })
-        .limit(3);
+      const { data, error } = await supabase.rpc('get_user_badges', {
+        user_uuid: userId
+      });
 
       if (error) throw error;
 
-      const badges = data?.map((item: any) => ({
-        id: item.badge_types?.id,
-        name: item.badge_types?.name,
-        icon: item.badge_types?.icon,
-        rarity: item.badge_types?.rarity,
-        earned_at: item.earned_at
-      })) || [];
+      if (data?.earned_badges) {
+        const recentBadges = data.earned_badges.slice(0, 3).map((badge: any) => ({
+          id: badge.id,
+          name: badge.name,
+          icon: badge.icon,
+          rarity: badge.rarity,
+          earned_at: badge.earned_at
+        })) || [];
 
-      setRecentBadges(badges);
+        setRecentBadges(recentBadges);
+      }
     } catch (error) {
       console.error('Errore caricamento badge recenti:', error);
     }

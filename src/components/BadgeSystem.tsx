@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 
 interface Badge {
@@ -9,10 +9,11 @@ interface Badge {
   description: string;
   icon: string;
   category: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: 'comune' | 'raro' | 'epico' | 'leggendario';
   xp_reward: number;
   earned_at?: string;
   newly_earned?: boolean;
+  color?: string;
 }
 
 interface UserStats {
@@ -38,96 +39,95 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
   const [newBadgeNotification, setNewBadgeNotification] = useState<Badge | null>(null);
 
   const rarityColors = {
-    common: 'border-gray-500',
-    rare: 'border-blue-500',
-    epic: 'border-purple-500',
-    legendary: 'border-yellow-500'
+    comune: 'border-gray-500',
+    raro: 'border-blue-500',
+    epico: 'border-purple-500',
+    leggendario: 'border-yellow-500'
   };
 
   const rarityGlow = {
-    common: 'shadow-gray-500/50',
-    rare: 'shadow-blue-500/50',
-    epic: 'shadow-purple-500/50',
-    legendary: 'shadow-yellow-500/50'
+    comune: 'shadow-gray-500/50',
+    raro: 'shadow-blue-500/50',
+    epico: 'shadow-purple-500/50',
+    leggendario: 'shadow-yellow-500/50'
   };
 
   const loadUserBadges = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_badges')
-        .select(`
-          *,
-          badge_types (
-            id,
-            name,
-            description,
-            icon,
-            category,
-            rarity,
-            xp_reward
-          )
-        `)
-        .eq('user_id', userId)
-        .order('earned_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_user_badges', {
+        user_uuid: userId
+      });
 
       if (error) throw error;
 
-      const badges = data?.map(item => ({
-        id: item.badge_types.id,
-        name: item.badge_types.name,
-        description: item.badge_types.description,
-        icon: item.badge_types.icon,
-        category: item.badge_types.category,
-        rarity: item.badge_types.rarity,
-        xp_reward: item.badge_types.xp_reward,
-        earned_at: item.earned_at
-      })) || [];
-
-      setUserBadges(badges);
+      if (data) {
+        setUserBadges(data.earned_badges || []);
+        setAvailableBadges(data.available_badges || []);
+      }
     } catch (error) {
-      console.error('Errore caricamento badge utente:', error);
+      console.error('Errore nel caricamento dei badge:', error);
+      // Fallback con dati demo
+      setUserBadges([]);
+      setAvailableBadges([]);
     }
   }, [userId]);
-
-  const loadAvailableBadges = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('badge_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('rarity', { ascending: true });
-
-      if (error) throw error;
-      setAvailableBadges(data || []);
-    } catch (error) {
-      console.error('Errore caricamento badge disponibili:', error);
-    }
-  }, []);
 
   const loadUserStats = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_stats_complete')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await supabase.rpc('get_user_stats', {
+        user_uuid: userId
+      });
 
       if (error) throw error;
-      setUserStats(data);
+
+      if (data) {
+        setUserStats({
+          total_xp: data.total_xp || 0,
+          current_level: data.current_level || 1,
+          level_progress: ((data.total_xp || 0) % 100),
+          level_title: `Livello ${data.current_level || 1}`,
+          badges_count: data.badges_count || 0,
+          xp_rank: 1,
+          badge_rank: 1
+        });
+      }
     } catch (error) {
-      console.error('Errore caricamento statistiche utente:', error);
-    } finally {
-      setLoading(false);
+      console.error('Errore nel caricamento delle statistiche:', error);
     }
   }, [userId]);
 
-  useEffect(() => {
-    if (userId) {
-      loadUserBadges();
-      loadUserStats();
-      loadAvailableBadges();
+  const checkAndAwardBadges = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('check_and_award_badges', {
+        user_uuid: userId
+      });
+
+      if (error) throw error;
+
+      if (data?.awarded_badges && data.awarded_badges.length > 0) {
+        // Ricarica i badge se ne sono stati assegnati di nuovi
+        loadUserBadges();
+        loadUserStats();
+      }
+    } catch (error) {
+      console.error('Errore nel controllo badge:', error);
     }
-  }, [userId, loadUserBadges, loadUserStats, loadAvailableBadges]);
+  }, [userId, loadUserBadges, loadUserStats]);
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        loadUserBadges(),
+        loadUserStats(),
+        checkAndAwardBadges()
+      ]);
+      setLoading(false);
+    };
+
+    if (userId) {
+      loadData();
+    }
+  }, [userId, loadUserBadges, loadUserStats, checkAndAwardBadges]);
 
   const addXP = async (activityName: string, metadata: any = {}) => {
     try {
@@ -356,39 +356,68 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
 
 // Hook personalizzato per gestire XP e badge
 export function useBadgeSystem(userId: string) {
-  const [badgeSystem, setBadgeSystem] = useState<any>(null);
-
-  useEffect(() => {
-    if (userId) {
-      // Inizializza il sistema badge
-      setBadgeSystem({
-        addXP: async (activityName: string, metadata: any = {}) => {
-          try {
-            const { data, error } = await supabase.rpc('add_user_xp', {
-              p_user_id: userId,
-              p_activity_name: activityName,
-              p_metadata: metadata
-            });
-            return data?.[0] || null;
-          } catch (error) {
-            console.error('Errore aggiunta XP:', error);
-            return null;
-          }
-        },
-        
-        checkBadges: async () => {
-          try {
-            const { data, error } = await supabase.rpc('check_and_award_badges', {
-              p_user_id: userId
-            });
-            return data || [];
-          } catch (error) {
-            console.error('Errore controllo badge:', error);
-            return [];
-          }
-        }
-      });
+  const badgeSystem = useMemo(() => {
+    if (!userId) {
+      return {
+        addXP: async () => null,
+        checkBadges: async () => [],
+        getUserBadges: async () => []
+      };
     }
+
+    return {
+      addXP: async (activityName: string, metadata: any = {}) => {
+        try {
+          const { data, error } = await supabase.rpc('add_user_xp', {
+            p_user_id: userId,
+            p_activity_name: activityName,
+            p_metadata: metadata
+          });
+          return data?.[0] || null;
+        } catch (error) {
+          console.error('Errore aggiunta XP:', error);
+          return null;
+        }
+      },
+      
+      checkBadges: async () => {
+        try {
+          const { data, error } = await supabase.rpc('check_and_award_badges', {
+            p_user_id: userId
+          });
+          return data || [];
+        } catch (error) {
+          console.error('Errore controllo badge:', error);
+          return [];
+        }
+      },
+      
+      getUserBadges: async () => {
+        try {
+          const { data, error } = await supabase
+            .from('user_badges')
+            .select(`
+              *,
+              badges (
+                id,
+                name,
+                description,
+                icon,
+                category,
+                rarity,
+                xp_reward
+              )
+            `)
+            .eq('user_id', userId);
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Errore recupero badge utente:', error);
+          return [];
+        }
+      }
+    };
   }, [userId]);
 
   return badgeSystem;

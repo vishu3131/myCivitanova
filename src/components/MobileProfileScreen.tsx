@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
-import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User, Newspaper } from 'lucide-react';
+import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User, Newspaper, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabaseClient';
 import { PublicProfile } from './PublicProfile';
@@ -15,6 +15,8 @@ import { SettingsModal } from './SettingsModal';
 import { NotificationBadge } from './NotificationBadge';
 import { LogoutModal } from './LogoutModal';
 import { NewsManagement } from './NewsManagement';
+import Switch from './Switch';
+import LoginModal from './LoginModal';
 
 const userStats = [
   { id: 'visits', label: 'Luoghi visitati', value: 23, icon: MapPin, color: 'from-blue-500 to-blue-600' },
@@ -23,11 +25,12 @@ const userStats = [
 ];
 
 // Funzione per generare le sezioni del menu in base al ruolo dell'utente
-const getMenuSections = (userRole?: string) => {
+const getMenuSections = (userRole?: string, isLoggedIn?: boolean) => {
   const sections = [
     {
       title: 'Account',
       items: [
+        { id: 'login-status', label: 'Stato Login', icon: Power, color: 'text-green-400', isToggle: true, isLoggedIn },
         { id: 'edit-profile', label: 'Modifica Profilo', icon: Edit3, color: 'text-blue-400' },
         { id: 'public-profile', label: 'Profilo pubblico', icon: User, color: 'text-green-400' },
         { id: 'notifications', label: 'Notifiche', icon: Bell, color: 'text-green-400', badge: '3' },
@@ -84,6 +87,7 @@ export function MobileProfileScreen() {
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiList = ['😀','😎','🦄','🐱','🌸','🚀','👽','🐶','🍕','🎨'];
 
@@ -162,6 +166,11 @@ export function MobileProfileScreen() {
         break;
       case 'news-management':
         setShowNewsManagement(true);
+        break;
+      case 'login-status':
+        if (!user) {
+          setShowLoginModal(true);
+        }
         break;
       case 'logout':
         setShowLogout(true);
@@ -256,7 +265,7 @@ export function MobileProfileScreen() {
         </div>
         {/* Menu Sections */}
         <div className="px-6 space-y-6">
-          {getMenuSections(user?.role).map((section) => (
+          {getMenuSections(user?.role, !!user).map((section) => (
             <div key={section.title}>
               <h2 className="text-white text-lg font-bold mb-4">{section.title}</h2>
               <div
@@ -270,6 +279,37 @@ export function MobileProfileScreen() {
               >
                 {section.items.map((item, index) => {
                   const IconComponent = item.icon;
+                  
+                  // Render speciale per il toggle di login status
+                  if (item.isToggle) {
+                    return (
+                      <div
+                        key={item.id}
+                        className={`w-full flex items-center gap-4 p-4 ${
+                          index !== section.items.length - 1 ? 'border-b border-white/10' : ''
+                        }`}
+                      >
+                        <div className="relative">
+                          <IconComponent className={`w-5 h-5 ${item.color}`} />
+                        </div>
+                        <span className="flex-1 text-left text-white text-sm font-medium">
+                          {item.label}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-medium ${
+                            item.isLoggedIn ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {item.isLoggedIn ? 'Connesso' : 'Disconnesso'}
+                          </span>
+                          <Switch 
+                            isOn={!!item.isLoggedIn} 
+                            onToggle={() => handleMenuClick(item.id)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+                  
                   return (
                     <button
                       key={item.id}
@@ -316,6 +356,27 @@ export function MobileProfileScreen() {
         onClose={() => setShowNewsManagement(false)}
         currentUser={user}
       />
+
+      {showLoginModal && (
+        <LoginModal 
+          onClose={() => {
+            setShowLoginModal(false);
+            // Ricarica il profilo dopo il login
+            const fetchProfile = async () => {
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              if (authUser) {
+                const { data } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', authUser.id)
+                  .maybeSingle();
+                if (data) setUser(data);
+              }
+            };
+            fetchProfile();
+          }}
+        />
+      )}
 
       <NotificationsModal
         user={user}

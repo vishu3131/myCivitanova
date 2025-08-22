@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Filter } from 'lucide-react';
+import { COMMUNITY_CATEGORIES, getCategoryById, getCategoryLabel } from '@/lib/categories';
 
 interface CategoryFilterProps {
   categories: string[];
@@ -21,7 +22,10 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   const handleToggle = () => setIsOpen(!isOpen);
 
   const handleSelect = (category: string) => {
-    onSelectCategory(category);
+    // Convert display label back to category ID for backend
+    const categoryObj = COMMUNITY_CATEGORIES.find(cat => cat.label === category);
+    const categoryId = categoryObj ? categoryObj.id : category.toLowerCase();
+    onSelectCategory(categoryId);
     setIsOpen(false);
   };
 
@@ -42,9 +46,14 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         className="flex items-center space-x-2 px-3 py-1 bg-dark-300/50 border border-white/10 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
       >
         <Filter className="w-4 h-4" />
-        <span className="text-sm">
-          {selectedCategory || 'Tutte le categorie'}
-        </span>
+        {selectedCategory ? (
+          <>
+            <span className="text-sm">{getCategoryById(selectedCategory)?.icon}</span>
+            <span className="text-sm">{getCategoryLabel(selectedCategory)}</span>
+          </>
+        ) : (
+          <span className="text-sm">Tutte le categorie</span>
+        )}
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -66,14 +75,15 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             </button>
             {categories.map((category) => (
               <button
-                key={category}
-                onClick={() => handleSelect(category)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 ${
-                  selectedCategory === category ? 'text-accent' : 'text-white'
-                }`}
-              >
-                {category}
-              </button>
+              key={category}
+              onClick={() => handleSelect(category)}
+              className={`w-full px-4 py-2 text-left hover:bg-white/10 text-sm flex items-center space-x-2 ${
+                selectedCategory === COMMUNITY_CATEGORIES.find(cat => cat.label === category)?.id ? 'text-accent' : 'text-white'
+              }`}
+            >
+              <span>{COMMUNITY_CATEGORIES.find(cat => cat.label === category)?.icon || '📝'}</span>
+              <span>{category}</span>
+            </button>
             ))}
           </motion.div>
         )}

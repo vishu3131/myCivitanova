@@ -61,3 +61,56 @@ export type FetchListingsParams = {
   limit?: number;
   offset?: number;
 };
+
+export type MarketplaceConversation = {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  status: 'active' | 'closed';
+  last_message?: string | null;
+  last_message_at?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+  listing?: Listing;
+  buyer?: {
+    id: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+  seller?: {
+    id: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+};
+
+export type MarketplaceMessage = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  read_at?: string | null;
+  created_at: string;
+  sender?: {
+    id: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
+};
+
+export type ImageUploadResult = {
+  success: boolean;
+  image?: ListingImage;
+  error?: string;
+};
+
+export type ImageMetadata = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  position: number;
+  created_at: string;
+};

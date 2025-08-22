@@ -71,8 +71,36 @@ export default function LoginModal(props: LoginModalProps) {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    if (error) setError(error.message);
+    setSignupError('');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/profilo`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+      
+      if (error) {
+        const errorMsg = error.message;
+        setError(errorMsg);
+        setSignupError(errorMsg);
+        console.error('Errore OAuth Google:', error);
+      } else {
+        // Il redirect avverrà automaticamente dopo l'autenticazione
+        console.log('Reindirizzamento a Google OAuth in corso...');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Errore durante l\'autenticazione con Google';
+      setError(errorMsg);
+      setSignupError(errorMsg);
+      console.error('Errore imprevisto:', err);
+    }
+    
     setLoading(false);
   };
 
@@ -161,31 +189,83 @@ export default function LoginModal(props: LoginModalProps) {
     setLoading(true);
     setDebugInfo('🚀 Avvio registrazione Supabase Auth...');
 
-    const { data, error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password: signupPassword,
-      options: {
-        data: {
-          full_name: `${signupName} ${signupSurname}`,
-          username: signupUsername,
-          phone: signupPhone,
-          date_of_birth: signupBirth,
-          role: signupRole,
+    try {
+      setDebugInfo(prev => prev + '\n🔐 Creazione utente Auth...');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          data: {
+            full_name: `${signupName} ${signupSurname}`,
+            username: signupUsername,
+            phone: signupPhone,
+            date_of_birth: signupBirth,
+            role: signupRole,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      setDebugInfo(prev => prev + '\n❌ Errore registrazione Supabase Auth: ' + JSON.stringify(error, null, 2));
-      setSignupError(error.message);
-      setEmailConfirmationSent(false);
-    } else {
-      // If no error, but user is null, it means email confirmation is pending
-      setDebugInfo(prev => prev + '\n✅ Registrazione avviata, attesa conferma email.');
+      if (error) {
+        setDebugInfo(prev => prev + '\n❌ Errore registrazione Supabase Auth: ' + JSON.stringify(error, null, 2));
+        setSignupError(error.message);
+        setEmailConfirmationSent(false);
+        return;
+      }
+
+      setDebugInfo(prev => prev + '\n✅ Utente Auth creato: ' + (data.user?.id || 'ID non disponibile'));
+
+      // Se l'utente è stato creato, verifica se il profilo è stato creato automaticamente
+      if (data.user) {
+        setDebugInfo(prev => prev + '\n🔍 Verifica creazione profilo...');
+        
+        // Attendi un momento per permettere al trigger di eseguire
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError || !profileData) {
+          setDebugInfo(prev => prev + '\n⚠️ Profilo non creato automaticamente, creazione manuale...');
+          
+          // Crea il profilo manualmente
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              email: signupEmail,
+              full_name: `${signupName} ${signupSurname}`,
+              phone: signupPhone,
+              date_of_birth: signupBirth,
+              role: signupRole
+            });
+
+          if (insertError) {
+            setDebugInfo(prev => prev + '\n❌ Errore creazione profilo: ' + JSON.stringify(insertError, null, 2));
+            setSignupError('Errore nella creazione del profilo: ' + insertError.message);
+            return;
+          }
+          
+          setDebugInfo(prev => prev + '\n✅ Profilo creato manualmente');
+        } else {
+          setDebugInfo(prev => prev + '\n✅ Profilo creato automaticamente');
+        }
+      }
+
+      setDebugInfo(prev => prev + '\n🎉 Registrazione completata con successo!');
       setSignupSuccess('Registrazione completata! Controlla la tua email per la conferma.');
       setEmailConfirmationSent(true);
       setResendAttempts(0);
       startResendTimer(0);
+      
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setDebugInfo(prev => prev + '\n💥 Errore imprevisto: ' + errorMsg);
+      setSignupError('Errore imprevisto: ' + errorMsg);
+      setEmailConfirmationSent(false);
     }
     setLoading(false);
   };
@@ -373,6 +453,20 @@ export default function LoginModal(props: LoginModalProps) {
               className="neon-btn"
               disabled={loading || emailConfirmationSent}
             >{loading ? 'Registrazione...' : 'Sign up'}</button>
+            
+            <div className="text-center my-4">
+              <span className="text-white/60">oppure</span>
+            </div>
+            
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="neon-btn"
+              disabled={loading}
+            >
+              {loading ? 'Registrazione con Google...' : 'Registrati con Google'}
+            </button>
+            
             <span className="neon-link" onClick={() => setShowSignup(false)}>Torna al login</span>
           </form>
           </div>

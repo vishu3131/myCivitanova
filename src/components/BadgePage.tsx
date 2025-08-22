@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BadgeSystem } from './BadgeSystem';
+import { supabase } from '@/utils/supabaseClient';
 
 interface BadgePageProps {
   userId?: string;
@@ -110,13 +111,41 @@ export function BadgePage({ userId, onClose }: BadgePageProps) {
 
 // Componente Classifica
 function LeaderboardComponent({ userId }: { userId?: string }) {
-  const [leaderboardData] = useState([
-    { id: '1', username: 'CittadinoEsemplare', display_name: 'Marco Rossi', total_xp: 2450, current_level: 8, badges_count: 15, rank: 1 },
-    { id: '2', username: 'EsploratoreUrbano', display_name: 'Laura Bianchi', total_xp: 2100, current_level: 7, badges_count: 12, rank: 2 },
-    { id: '3', username: 'ReporterCivico', display_name: 'Giuseppe Verdi', total_xp: 1850, current_level: 6, badges_count: 10, rank: 3 },
-    { id: '4', username: 'VolontarioAttivo', display_name: 'Anna Neri', total_xp: 1600, current_level: 5, badges_count: 8, rank: 4 },
-    { id: '5', username: 'GuardianoCitta', display_name: 'Francesco Blu', total_xp: 1400, current_level: 5, badges_count: 7, rank: 5 },
-  ]);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_leaderboard', {
+          limit_count: 20
+        });
+
+        if (error) throw error;
+
+        setLeaderboardData(data || []);
+      } catch (error) {
+        console.error('Errore nel caricamento della classifica:', error);
+        // Fallback con dati demo se il database non è disponibile
+        setLeaderboardData([
+          { id: '1', username: 'demo_user', display_name: 'Utente Demo', total_xp: 100, current_level: 1, badges_count: 1, rank: 1 }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLeaderboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+        <span className="ml-2 text-white">Caricamento classifica...</span>
+      </div>
+    );
+  }
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

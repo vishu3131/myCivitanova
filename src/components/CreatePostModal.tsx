@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CreatePostData } from '@/hooks/useCommunity';
 import PostCreateLoginRequiredModal from './PostCreateLoginRequiredModal';
+import { COMMUNITY_CATEGORIES, getCategoryById } from '@/lib/categories';
 import Image from 'next/image';
 
 interface CreatePostModalProps {
@@ -44,18 +45,7 @@ const visibilityOptions = [
   { id: 'private', label: 'Privato', icon: Lock, description: 'Solo tu' }
 ];
 
-const categories = [
-  'Generale',
-  'Trasporti',
-  'Ambiente',
-  'Sicurezza',
-  'Eventi',
-  'Servizi',
-  'Turismo',
-  'Sport',
-  'Cultura',
-  'Altro'
-];
+
 
 export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: CreatePostModalProps) {
   const [formData, setFormData] = useState<CreatePostData>({
@@ -281,16 +271,28 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
                 {/* Categoria */}
                 <div>
                   <label className="block text-white font-medium mb-2">Categoria</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full bg-dark-300/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-accent focus:border-transparent"
-                  >
-                    <option value="">Seleziona una categoria</option>
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {COMMUNITY_CATEGORIES.map((category) => {
+                      const IconComponent = category.icon;
+                      return (
+                        <button
+                          key={category.id}
+                          onClick={() => handleInputChange('category', category.id)}
+                          className={`p-3 rounded-lg border-2 transition-all text-left ${
+                            formData.category === category.id
+                              ? 'border-accent bg-accent/10'
+                              : 'border-white/10 hover:border-white/20 bg-dark-300/50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 mb-1">
+                            <IconComponent className={`w-4 h-4 ${category.color}`} />
+                            <span className="text-white font-medium text-sm">{category.label}</span>
+                          </div>
+                          <p className="text-white/60 text-xs">{category.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -303,7 +305,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, currentUser }: Crea
                     {formData.category && (
                       <>
                         <span className="text-white/40">•</span>
-                        <span className="text-white/60">{formData.category}</span>
+                        <span className="text-white/60">{getCategoryById(formData.category)?.label || formData.category}</span>
                       </>
                     )}
                   </div>

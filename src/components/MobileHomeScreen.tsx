@@ -15,6 +15,7 @@ import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
 import { supabase } from '@/utils/supabaseClient';
+import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import Link from 'next/link';
 import TreasureHuntWidget from './TreasureHuntWidget';
 import FundraisingWidget from './FundraisingWidget';
@@ -27,14 +28,16 @@ import { WeatherWidget } from './WeatherWidget';
 import EventsCarousel from './EventsCarousel';
 import LazyRender from './LazyRender';
 import TutorialDebugOverlay from './TutorialDebugOverlay';
+import LeaderboardWidget from './LeaderboardWidget';
 
 // Lazy-loaded components for performance
-const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[160px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
-});
+// Temporaneamente commentato per errore di sintassi
+// const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
+//   ssr: false,
+//   loading: () => (
+//     <div className="h-[160px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
+//   ),
+// });
 const DynamicMarketplaceWidget = dynamic(() => import('./MarketplaceWidget'), {
   ssr: false,
   loading: () => (
@@ -149,12 +152,15 @@ function Section({ id, title, collapsible = false, expanded = true, onToggle, ac
 }
 
 export function MobileHomeScreen() {
+  const { user, loading: authLoading } = useAuthWithRole();
   const [showReport, setShowReport] = useState(false);
   const [showCityReport, setShowCityReport] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Get current user ID from auth hook
+  const currentUserId = user?.id || null;
   const [showHomeTutorial, setShowHomeTutorial] = useState(false); // State for HomeTutorial
   const [heartActiveHome, setHeartActiveHome] = useState(false); // Stato per widget cuore spostato qui
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -211,17 +217,8 @@ export function MobileHomeScreen() {
           .select('*', { count: 'exact', head: true });
         if (!error) setUserCount(count ?? 0);
 
-        // Get current user from localStorage
+        // Get preferences from localStorage
         if (typeof window !== 'undefined') {
-          const storedUser = localStorage.getItem('currentUser');
-          if (storedUser) {
-            try {
-              const user = JSON.parse(storedUser);
-              setCurrentUserId(user.id);
-            } catch (error) {
-              console.error('Error parsing stored user:', error);
-            }
-          }
 
           // Restore collapsible preferences
           const prefProgress = localStorage.getItem('home__showProgress');
@@ -244,9 +241,14 @@ export function MobileHomeScreen() {
       }
     };
 
-    initializeData();
+    // Only initialize data when auth is not loading
+    if (!authLoading) {
+      initializeData();
+    }
+  }, [authLoading]);
 
-    // Realtime update (optional) - deferred to idle to not block initial load
+  // Show loading while auth is loading or data is loading
+  const isAppLoading = authLoading || isLoading; // Realtime update (optional) - deferred to idle to not block initial load
     let channel: any = null;
     const subscribe = () => {
       channel = supabase
@@ -297,7 +299,7 @@ export function MobileHomeScreen() {
   }, [showAdvanced]);
 
   // Loading screen
-  if (isLoading) {
+  if (isAppLoading) {
     return <FullScreenLoader />;
   }
 
@@ -529,7 +531,12 @@ export function MobileHomeScreen() {
                 <Link href="/classifica" className="text-xs text-white/70 hover:text-white underline">Vedi tutto</Link>
               </div>
               <LazyRender fallback={<div className="h-[180px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
-                <DynamicLeaderboardWidget className="h-[180px] md:h-[200px]" />
+                <LeaderboardWidget 
+                  userId={currentUserId || undefined}
+                  limit={5}
+                  showTitle={false}
+                  compact={true}
+                />
               </LazyRender>
             </div>
           </div>

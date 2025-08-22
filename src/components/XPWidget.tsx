@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { DemoXPSystem } from '@/data/demoData';
+import LoginModal from '@/components/LoginModal';
 
 interface XPWidgetProps {
   userId?: string;
@@ -14,6 +15,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
   const [demoNotification, setDemoNotification] = useState<any>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -21,8 +23,59 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
       const demoSystem = DemoXPSystem.getInstance();
       const stats = demoSystem.getUserStats();
       setDemoStats(stats);
+    } else {
+      setDemoMode(false);
     }
   }, [userId]);
+
+  // Se l'utente non è loggato, mostra il messaggio di login
+  if (!userId) {
+    return (
+      <>
+        <div className="bg-gradient-to-br from-accent/20 via-dark-300/50 to-blue-500/20 backdrop-blur-sm rounded-xl p-5 border border-accent/20 relative overflow-hidden">
+          {/* Effetto luminoso di sfondo */}
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/5 to-blue-500/5 rounded-xl"></div>
+          
+          {/* Contenuto del messaggio di login */}
+          <div className="relative z-10 text-center">
+            {/* Icona */}
+            <div className="w-16 h-16 bg-gradient-to-br from-accent to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-white text-2xl">🔒</span>
+            </div>
+            
+            {/* Titolo */}
+            <h3 className="text-white font-semibold text-lg mb-2">Accedi per vedere i tuoi XP</h3>
+            
+            {/* Descrizione */}
+            <p className="text-white/70 text-sm mb-4 leading-relaxed">
+              Effettua il login per visualizzare i tuoi punti esperienza,<br/>
+              livello e progressi nella community.
+            </p>
+            
+            {/* Pulsante Login */}
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="bg-gradient-to-r from-accent to-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:from-accent/90 hover:to-blue-500/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Accedi ora
+            </button>
+          </div>
+        </div>
+        
+        {/* Modal di Login */}
+        {showLoginModal && (
+          <LoginModal 
+            onClose={() => setShowLoginModal(false)}
+            onLogin={() => {
+              setShowLoginModal(false);
+              // Ricarica la pagina per aggiornare lo stato dell'utente
+              window.location.reload();
+            }}
+          />
+        )}
+      </>
+    );
+  }
 
   // Usa dati demo o reali
   const currentStats = demoMode ? demoStats : userStats;
@@ -182,6 +235,7 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
   const { userStats, loading, xpNotification } = useXPSystem(userId);
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -191,6 +245,39 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
       setDemoStats(stats);
     }
   }, [userId]);
+
+  // Se l'utente non è loggato, mostra il messaggio di login compatto
+  if (!userId) {
+    return (
+      <>
+        <div className="bg-gradient-to-br from-accent/20 to-blue-500/20 backdrop-blur-sm rounded-xl p-3 border border-accent/20 relative">
+          <div className="text-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-accent to-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+              <span className="text-white text-sm">🔒</span>
+            </div>
+            <h4 className="text-white font-semibold text-sm mb-1">Login richiesto</h4>
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="bg-gradient-to-r from-accent to-blue-500 text-white text-xs font-medium px-3 py-1.5 rounded-md hover:from-accent/90 hover:to-blue-500/90 transition-all duration-300"
+            >
+              Accedi
+            </button>
+          </div>
+        </div>
+        
+        {/* Modal di Login */}
+        {showLoginModal && (
+          <LoginModal 
+            onClose={() => setShowLoginModal(false)}
+            onLogin={() => {
+              setShowLoginModal(false);
+              window.location.reload();
+            }}
+          />
+        )}
+      </>
+    );
+  }
 
   const currentStats = demoMode ? demoStats : userStats;
   const currentNotification = demoMode ? null : xpNotification;

@@ -1,0 +1,320 @@
+.ringraziamenti-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.ringraziamenti-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(119, 198, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ringraziamenti-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  z-index: 1;
+  position: relative;
+}
+
+.ringraziamenti-header h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, #c7d2fe 50%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 1rem 0;
+  text-shadow: 0 0 30px rgba(167, 139, 250, 0.3);
+}
+
+.ringraziamenti-header p {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1400px;
+  width: 100%;
+  z-index: 1;
+  position: relative;
+  margin-bottom: 3rem;
+  touch-action: pan-y;
+  scroll-behavior: smooth;
+}
+
+/* Touch optimizations for cards container */
+@media (hover: none) and (pointer: coarse) {
+  .cards-container {
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+}
+
+/* Orientation-specific layouts */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+  .cards-container {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+}
+
+@media screen and (orientation: portrait) {
+  .cards-container {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+.card-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.card-wrapper:hover {
+  transform: translateY(-10px);
+}
+
+.founder-card {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-bottom: 1rem;
+}
+
+.founder-card .pc-card {
+  transform: scale(1.1);
+  box-shadow: 
+    0 0 50px rgba(255, 107, 53, 0.3),
+    0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.ringraziamenti-footer {
+  text-align: center;
+  z-index: 1;
+  position: relative;
+  margin-top: 2rem;
+}
+
+.ringraziamenti-footer p {
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.join-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.join-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.join-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+}
+
+.join-btn:hover::before {
+  left: 100%;
+}
+
+.join-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .cards-container {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .founder-card {
+    grid-column: auto;
+    margin-bottom: 0;
+  }
+  
+  .founder-card .pc-card {
+    transform: scale(1.05);
+  }
+}
+
+/* Touch device specific optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .card-wrapper:hover {
+    transform: none;
+  }
+  
+  .card-wrapper:active {
+    transform: translateY(-5px) scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
+  .join-btn {
+    padding: 1.2rem 2.5rem;
+    min-height: 52px;
+    font-size: 1.2rem;
+  }
+  
+  .join-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+}
+
+@media (max-width: 768px) {
+  .ringraziamenti-page {
+    padding: 1.5rem 1rem;
+  }
+  
+  .cards-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 400px;
+  }
+  
+  .founder-card .pc-card {
+    transform: scale(1);
+  }
+  
+  .ringraziamenti-header {
+    margin-bottom: 2rem;
+  }
+  
+  /* Touch improvements for tablets */
+  .join-btn {
+    padding: 1.1rem 2.2rem;
+    min-height: 50px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ringraziamenti-page {
+    padding: 1rem 0.5rem;
+  }
+  
+  .cards-container {
+    max-width: 350px;
+    gap: 1rem;
+  }
+  
+  .ringraziamenti-header {
+    margin-bottom: 1.5rem;
+  }
+  
+  .join-btn {
+    padding: 1rem 1.8rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 320px) {
+  .cards-container {
+    max-width: 300px;
+  }
+  
+  .ringraziamenti-header h1 {
+    font-size: 2rem;
+  }
+  
+  .ringraziamenti-header p {
+    font-size: 0.9rem;
+  }
+  
+  .join-btn {
+    padding: 0.9rem 1.6rem;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .card-wrapper,
+  .join-btn,
+  .join-btn::before {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .card-wrapper:hover {
+    transform: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .join-btn {
+    border: 2px solid currentColor;
+  }
+  
+  .cards-container {
+    outline: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Focus management for keyboard navigation */
+.join-btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.card-wrapper:focus-within {
+  outline: 2px solid rgba(102, 126, 234, 0.5);
+  outline-offset: 4px;
+  border-radius: 20px;
+}

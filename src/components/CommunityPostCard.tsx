@@ -433,44 +433,39 @@ export function CommunityPostCard({
       </div>
 
       {/* Statistiche Reazioni */}
-      {(post.likes_count > 0 || post.dislikes_count > 0 || post.comments_count > 0) && (
-        <div className="px-4 py-2 border-t border-white/10">
-          <div className="flex items-center justify-between text-sm text-white/60">
-            <div className="flex items-center space-x-4">
-              {post.likes_count > 0 && (
-                <div className="flex items-center space-x-1">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <ThumbsUp className="w-3 h-3 text-white" />
-                  </div>
-                  <span>{post.likes_count}</span>
-                </div>
-              )}
-              {post.dislikes_count > 0 && (
-                <div className="flex items-center space-x-1">
-                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <ThumbsDown className="w-3 h-3 text-white" />
-                  </div>
-                  <span>{post.dislikes_count}</span>
-                </div>
-              )}
+      <div className="px-4 py-2 border-t border-white/10">
+        <div className="flex items-center justify-between text-sm text-white/60">
+          <div className="flex items-center space-x-4">
+            {/* Mostra sempre i like, anche se sono 0 */}
+            <div className="flex items-center space-x-1">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                <ThumbsUp className="w-3 h-3 text-white" />
+              </div>
+              <span>{post.likes_count || 0}</span>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              {post.comments_count > 0 && (
-                <button
-                  onClick={handleToggleComments}
-                  className="hover:text-white transition-colors"
-                >
-                  {post.comments_count} {post.comments_count === 1 ? 'commento' : 'commenti'}
-                </button>
-              )}
-              {post.shares_count > 0 && (
-                <span>{post.shares_count} condivisioni</span>
-              )}
+            {/* Mostra sempre i dislike, anche se sono 0 */}
+            <div className="flex items-center space-x-1">
+              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                <ThumbsDown className="w-3 h-3 text-white" />
+              </div>
+              <span>{post.dislikes_count || 0}</span>
             </div>
           </div>
+          
+          <div className="flex items-center space-x-4">
+            {/* Mostra sempre i commenti, anche se sono 0 */}
+            <button
+              onClick={handleToggleComments}
+              className="hover:text-white transition-colors"
+            >
+              {post.comments_count || 0} {(post.comments_count || 0) === 1 ? 'commento' : 'commenti'}
+            </button>
+            {post.shares_count > 0 && (
+              <span>{post.shares_count} condivisioni</span>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Pulsanti Azione */}
       <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-white/10">
