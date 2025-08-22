@@ -39,6 +39,14 @@ export default function LoginModal(props: LoginModalProps) {
   const [resendAttempts, setResendAttempts] = useState(0);
   const resendTimers = [60, 180]; // secondi: 1° tentativo dopo 60s, 2° dopo 180s
 
+  // Effetto per bloccare lo scroll del body quando il modale è aperto
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset'; // O 'auto' a seconda del comportamento desiderato
+    };
+  }, []);
+
   // Funzioni
   const startResendTimer = (attempt: number) => {
     setResendCooldown(resendTimers[attempt] || 0);

@@ -169,7 +169,7 @@ export default function MarketplaceClient() {
   };
 
   const handleListingAction = (action: 'add' | 'edit' | 'view-my' | 'view-favorites', listing?: ListingExpanded) => {
-    if (!user && action !== 'add') {
+    if (!user) {
       toast.error('Devi effettuare il login per accedere a questa funzione');
       return;
     }

@@ -77,6 +77,26 @@ export interface CampaignFollow {
   created_at: string;
 }
 
+export interface FundraisingMessage {
+  id: string;
+  campaign_id: string;
+  sender_id: string;
+  sender_name?: string;
+  sender_email?: string;
+  message: string;
+  is_anonymous: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'reported';
+  created_at: string;
+  updated_at: string;
+  campaign?: FundraisingCampaign;
+  sender?: {
+    id: string;
+    full_name?: string;
+    avatar_url?: string;
+    email: string;
+  };
+}
+
 // API functions for fundraising campaigns
 export class FundraisingAPI {
   // Campaign CRUD operations
@@ -596,6 +616,149 @@ export class FundraisingAPI {
         .eq('read', false);
 
       if (error) throw error;
+    });
+  }
+
+  // Fundraising Messages functions
+  static async getFundraisingMessages(filters?: {
+    campaign_id?: string;
+    sender_id?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    return safeSupabaseOperation(async () => {
+      let query = supabase
+        .from('fundraising_messages')
+        .select(`
+          *,
+          campaign:fundraising_campaigns(
+            id,
+            title,
+            featured_image
+          ),
+          sender:profiles!fundraising_messages_sender_id_fkey(
+            id,
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filters?.campaign_id) {
+        query = query.eq('campaign_id', filters.campaign_id);
+      }
+      if (filters?.sender_id) {
+        query = query.eq('sender_id', filters.sender_id);
+      }
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+      if (filters?.offset) {
+        query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as FundraisingMessage[];
+    }, []);
+  }
+
+  static async createFundraisingMessage(messageData: {
+    campaign_id: string;
+    message: string;
+    is_anonymous?: boolean;
+    sender_name?: string;
+    sender_email?: string;
+  }) {
+    return safeSupabaseOperation(async () => {
+      const { data, error } = await supabase
+        .from('fundraising_messages')
+        .insert({
+          ...messageData,
+          sender_id: (await supabase.auth.getUser()).data.user?.id,
+          status: 'pending' // Messages start as pending for moderation
+        })
+        .select(`
+          *,
+          campaign:fundraising_campaigns(
+            id,
+            title,
+            featured_image
+          ),
+          sender:profiles!fundraising_messages_sender_id_fkey(
+            id,
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+      return data as FundraisingMessage;
+    });
+  }
+
+  static async updateFundraisingMessage(messageId: string, updates: {
+    message?: string;
+    status?: 'pending' | 'approved' | 'rejected' | 'reported';
+    is_anonymous?: boolean;
+  }) {
+    return safeSupabaseOperation(async () => {
+      const { data, error } = await supabase
+        .from('fundraising_messages')
+        .update(updates)
+        .eq('id', messageId)
+        .select(`
+          *,
+          campaign:fundraising_campaigns(
+            id,
+            title,
+            featured_image
+          ),
+          sender:profiles!fundraising_messages_sender_id_fkey(
+            id,
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+      return data as FundraisingMessage;
+    });
+  }
+
+  static async deleteFundraisingMessage(messageId: string) {
+    return safeSupabaseOperation(async () => {
+      const { error } = await supabase
+        .from('fundraising_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+      return true;
+    });
+  }
+
+  static async getCampaignMessages(campaignId: string, status: string = 'approved') {
+    return this.getFundraisingMessages({
+      campaign_id: campaignId,
+      status: status,
+      limit: 50
+    });
+  }
+
+  static async getUserMessages(userId: string) {
+    return this.getFundraisingMessages({
+      sender_id: userId,
+      limit: 50
     });
   }
 

@@ -22,6 +22,7 @@ import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import DonationForm from '@/components/fundraising/DonationForm';
 import DonationsList from '@/components/fundraising/DonationsList';
 import CampaignUpdates from '@/components/fundraising/CampaignUpdates';
+import FundraisingMessages from '@/components/fundraising/FundraisingMessages';
 
 const CATEGORIES = [
   { value: 'community', label: 'Comunità', color: 'bg-blue-100 text-blue-800' },
@@ -362,6 +363,19 @@ export default function CampaignDetailPage() {
               <CampaignUpdates 
                 campaignId={campaign.id} 
                 isOwner={user?.id === campaign.creator_id}
+              />
+            </motion.div>
+
+            {/* Messaggi della campagna */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl shadow-sm p-6"
+            >
+              <FundraisingMessages 
+                campaignId={campaign.id}
+                isCreator={user?.id === campaign.creator_id}
               />
             </motion.div>
           </div>
