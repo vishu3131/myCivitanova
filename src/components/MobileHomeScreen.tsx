@@ -248,7 +248,10 @@ export function MobileHomeScreen() {
   }, [authLoading]);
 
   // Show loading while auth is loading or data is loading
-  const isAppLoading = authLoading || isLoading; // Realtime update (optional) - deferred to idle to not block initial load
+  const isAppLoading = authLoading || isLoading;
+
+  // Realtime update (optional) - deferred to idle to not block initial load
+  useEffect(() => {
     let channel: any = null;
     const subscribe = () => {
       channel = supabase
