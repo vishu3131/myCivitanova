@@ -59,6 +59,7 @@ import { FuturisticEditProfileModal } from './FuturisticEditProfileModal';
 import { FuturisticUserStats } from './FuturisticUserStats';
 import FuturisticBadgeCollection from './FuturisticBadgeCollection';
 import FuturisticAdvancedSettings from './FuturisticAdvancedSettings';
+import LoginModal from './LoginModal';
 
 // Interfaces
 interface UserProfile {
@@ -131,6 +132,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Hooks
   const { addXP, dailyLogin } = useXPSystem(user?.id);
@@ -370,6 +372,21 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     }
   };
 
+  // Handle login/logout button click
+  const handleLoginLogoutClick = () => {
+    if (user) {
+      handleLogout();
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+
+  // Handle successful login
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    loadUserData(); // Reload user data after login
+  };
+
   // Get role color
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -462,6 +479,21 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                 </button>
               </motion.div>
 
+              {/* Login/Logout Button */}
+              <motion.button
+                onClick={handleLoginLogoutClick}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`p-2 rounded-full transition-all ${
+                  user 
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' 
+                    : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
+                }`}
+                title={user ? 'Disconnetti' : 'Accedi'}
+              >
+                {user ? <LogOut className="w-5 h-5" /> : <User className="w-5 h-5" />}
+              </motion.button>
+
               {onClose && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -469,7 +501,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   onClick={onClose}
                   className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <X className="w-5 h-5" />
                 </motion.button>
               )}
             </div>
@@ -1012,6 +1044,14 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleLoginSuccess}
+        />
+      )}
     </div>
   );
 }

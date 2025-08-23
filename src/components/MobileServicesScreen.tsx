@@ -8,8 +8,8 @@ import { useRouter } from 'next/navigation';
 import BusWidget from './BusWidget';
 
 const serviceCategories = [
-  { id: 'all', label: 'Tutti', count: 12 },
-  { id: 'documents', label: 'Documenti', count: 4 },
+  { id: 'all', label: 'Tutti', count: 13 },
+  { id: 'documents', label: 'Documenti', count: 5 },
   { id: 'payments', label: 'Pagamenti', count: 2 },
   { id: 'transport', label: 'Trasporti', count: 2 },
   { id: 'other', label: 'Altri', count: 4 },
@@ -119,7 +119,18 @@ const services = [
     color: 'from-purple-500 to-purple-600',
     badge: 'In arrivo'
   },
-
+  {
+    id: 9,
+    title: 'Ufficio Anagrafe',
+    category: 'documents',
+    icon: FileText,
+    description: 'Servizi ANPR e certificati anagrafici',
+    status: 'active',
+    time: 'Immediato',
+    cost: 'Gratuito',
+    color: 'from-yellow-500 to-yellow-600',
+    badge: 'Disponibile'
+  },
   {
     id: 10,
     title: 'Parcheggi Pubblici',
@@ -172,8 +183,7 @@ export function MobileServicesScreen() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showOtherNumbers, setShowOtherNumbers] = useState(false);
-
-
+  const [showAnagrafePopup, setShowAnagrafePopup] = useState(false);
 
 
   const otherNumbers = [
@@ -233,6 +243,11 @@ export function MobileServicesScreen() {
       return;
     }
     
+    if (service.id === 9) { // ID for Ufficio Anagrafe
+      setShowAnagrafePopup(true);
+      return;
+    }
+
     // Handle other service navigation
     console.log('Opening service:', service.title);
   };
@@ -466,6 +481,57 @@ export function MobileServicesScreen() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup Ufficio Anagrafe */}
+      {showAnagrafePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg p-6 shadow-2xl w-full max-w-md mx-auto relative flex flex-col max-h-[90vh] overflow-y-auto text-white">
+            <button
+              className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold z-10 hover:bg-red-700 transition-colors"
+              onClick={() => setShowAnagrafePopup(false)}
+            >
+              Chiudi
+            </button>
+            <h3 className="text-2xl font-extrabold text-center mb-4 text-yellow-400">UFFICIO ANAGRAFE 🌟</h3>
+            <p className="text-lg font-semibold mb-3 text-blue-300">ANPR: L’Anagrafe Nazionale Unica per Tutti! 🌟</p>
+            <p className="mb-4 text-sm leading-relaxed">
+              L’Anagrafe Nazionale della Popolazione Residente (ANPR) è una piattaforma digitale centralizzata che semplifica i servizi demografici per i residenti in Italia e iscritti all’AIRE. Accedi online da casa, senza code agli sportelli, per gestire i tuoi dati in modo sicuro e autonomo.
+            </p>
+            <p className="mb-4 text-sm leading-relaxed">
+              📅 <span className="font-bold text-green-400">Novità a Civitanova Marche:</span> Dal 15 novembre, tutti i cittadini possono usare ANPR per scaricare documenti anagrafici direttamente da PC o smartphone, evitando visite in Comune!
+            </p>
+            <p className="font-bold text-blue-300 mb-2">🔑 Come Accedere:</p>
+            <ul className="list-disc list-inside mb-4 text-sm ml-4">
+              <li>Entra su: <a href="https://www.anagrafenazionale.interno.it" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300">www.anagrafenazionale.interno.it</a> o <a href="https://www.anagrafenazionale.gov.it" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300">www.anagrafenazionale.gov.it</a></li>
+              <li>Usa:
+                <ul className="list-circle list-inside ml-4 mt-1">
+                  <li>🇮🇹 SPID (Sistema Pubblico di Identità Digitale)</li>
+                  <li>🆔 CIE (Carta d’Identità Elettronica)</li>
+                  <li>💳 CNS (Carta Nazionale dei Servizi, come la tessera sanitaria abilitata)</li>
+                </ul>
+              </li>
+            </ul>
+            <p className="font-bold text-blue-300 mb-2">📄 Servizi Principali Disponibili:</p>
+            <ul className="list-disc list-inside mb-4 text-sm ml-4">
+              <li><span className="font-semibold">Autocertificazione 📝:</span> Genera subito sostitutivi di certificati anagrafici.</li>
+              <li><span className="font-semibold">Certificati 🏅:</span> Scarica 14 tipi (per te o familiari), gratuiti e senza bollo! (Non tutti i documenti sono ancora online).</li>
+              <li><span className="font-semibold">Rettifica Dati 🔧:</span> Correggi errori nella tua scheda anagrafica.</li>
+              <li><span className="font-semibold">Cambio Residenza 🏠:</span> Invia dichiarazioni per trasferimenti o rimpatri.</li>
+              <li><span className="font-semibold">Domicilio Digitale 📧:</span> Consulta la tua PEC per comunicazioni ufficiali.</li>
+              <li><span className="font-semibold">Per Cittadini Europei 🇪🇺:</span> Trasferisci residenza, richiedi certificati di nascita o iscriviti alle liste elettorali.</li>
+            </ul>
+            <p className="font-bold text-blue-300 mb-2">💡 Vantaggi:</p>
+            <ul className="list-disc list-inside mb-4 text-sm ml-4">
+              <li>Banca dati unica e aggiornata per servizi rapidi e multilinguistici.</li>
+              <li>Accesso 24/7, ovunque tu sia.</li>
+              <li>Ultimo aggiornamento: 22 agosto 2025.</li>
+            </ul>
+            <p className="text-sm text-center text-gray-400">
+              Scopri di più sull’area cittadino o tecnica sul sito ufficiale! 🚀
+            </p>
           </div>
         </div>
       )}
