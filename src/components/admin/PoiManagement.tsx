@@ -15,6 +15,8 @@ interface Poi {
   phone?: string;
   website?: string;
   imageUrl?: string;
+  audio_url?: string;
+  icon_3d_url?: string;
 }
 
 const PoiManagement = () => {
@@ -119,6 +121,7 @@ const PoiManagement = () => {
               <th className="py-2 px-4 border-b">Nome</th>
               <th className="py-2 px-4 border-b">Categoria</th>
               <th className="py-2 px-4 border-b">Indirizzo</th>
+              <th className="py-2 px-4 border-b">AR</th>
               <th className="py-2 px-4 border-b">Azioni</th>
             </tr>
           </thead>
@@ -128,6 +131,19 @@ const PoiManagement = () => {
                 <td className="py-2 px-4 border-b">{poi.name}</td>
                 <td className="py-2 px-4 border-b">{poi.category}</td>
                 <td className="py-2 px-4 border-b">{poi.address}</td>
+                <td className="py-2 px-4 border-b">
+                  <div className="flex space-x-1">
+                    {poi.audio_url && (
+                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded" title="Audio disponibile">🎵</span>
+                    )}
+                    {poi.icon_3d_url && (
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded" title="Icona 3D disponibile">🎯</span>
+                    )}
+                    {!poi.audio_url && !poi.icon_3d_url && (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </div>
+                </td>
                 <td className="py-2 px-4 border-b">
                   <div className="flex space-x-2 items-center">
                     <button onClick={() => handleEdit(poi)} className="text-blue-500 hover:text-blue-700" title="Modifica">
@@ -185,6 +201,8 @@ const PoiFormModal: React.FC<PoiFormModalProps> = ({ poi, onClose, onSave }) => 
         phone: poi?.phone || '',
         website: poi?.website || '',
         imageUrl: poi?.imageUrl || '',
+        audio_url: poi?.audio_url || '',
+        icon_3d_url: poi?.icon_3d_url || '',
         latitude: poi?.latitude || 0,
         longitude: poi?.longitude || 0,
     });
@@ -216,6 +234,15 @@ const PoiFormModal: React.FC<PoiFormModalProps> = ({ poi, onClose, onSave }) => 
           <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Telefono" className="w-full p-2 border rounded" />
           <input name="website" value={formData.website} onChange={handleChange} placeholder="Sito Web" className="w-full p-2 border rounded" />
           <input name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="URL Immagine" className="w-full p-2 border rounded" />
+          
+          {/* Campi AR */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-semibold mb-3 text-gray-700">Configurazione AR</h3>
+            <input name="audio_url" value={formData.audio_url} onChange={handleChange} placeholder="URL Audio per AR (opzionale)" className="w-full p-2 border rounded mb-2" />
+            <input name="icon_3d_url" value={formData.icon_3d_url} onChange={handleChange} placeholder="URL Icona 3D per AR (opzionale)" className="w-full p-2 border rounded" />
+            <p className="text-sm text-gray-500 mt-2">Questi campi sono utilizzati per l'esperienza AR. L'audio verrà riprodotto quando l'utente interagisce con il POI in AR.</p>
+          </div>
+          
           <div className="flex space-x-4">
             <input type="number" step="any" name="latitude" value={formData.latitude} onChange={handleNumberChange} placeholder="Latitudine" className="w-full p-2 border rounded" required />
             <input type="number" step="any" name="longitude" value={formData.longitude} onChange={handleNumberChange} placeholder="Longitudine" className="w-full p-2 border rounded" required />

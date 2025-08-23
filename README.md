@@ -72,6 +72,35 @@ L'applicazione è ottimizzata per il deploy su:
 - **Railway**
 - **Heroku**
 
+### 🚀 Configurazione per Produzione
+
+1. **Configurazione Ambiente**:
+   ```bash
+   # Copia il file di configurazione di produzione
+   cp .env.production.example .env.production
+   # Modifica .env.production con le credenziali Supabase di produzione
+   ```
+
+2. **Build di Produzione**:
+   ```bash
+   # Crea la build ottimizzata per produzione
+   npm run build
+   # Avvia il server di produzione
+   npm run start
+   ```
+
+3. **Creazione Utente Admin**:
+   ```bash
+   # Esegui lo script per creare l'utente amministratore
+   node create-production-admin.js
+   ```
+   Lo script è interattivo e ti guiderà nella creazione di un utente admin sicuro.
+
+4. **Verifica Configurazione**:
+   - Assicurati che `NODE_ENV` sia impostato su `production`
+   - Verifica che tutte le variabili Supabase siano configurate correttamente
+   - Controlla che i dati mock siano disabilitati in produzione
+
 ## 📄 Licenza
 
 Questo progetto è sotto licenza MIT - vedi il file [LICENSE](LICENSE) per i dettagli.
@@ -87,7 +116,25 @@ I contributi sono benvenuti! Per favore:
 
 ## 📞 Contatti
 
-Per domande o supporto, contatta: [tua-email@example.com]
+Per domande o supporto, contatta: [info@civitanova.it]
+
+## 🔒 Sicurezza in Produzione
+
+1. **Credenziali Admin**:
+   - Dopo aver creato l'utente admin con `create-production-admin.js`, conserva le credenziali in un luogo sicuro
+   - Rimuovi il file `admin-credentials.txt` generato dallo script dal server di produzione
+
+2. **Variabili d'Ambiente**:
+   - Non committare mai i file `.env.production` nel repository
+   - Utilizza i secret manager del tuo provider di hosting quando possibile
+
+3. **Database**:
+   - Configura correttamente le Row Level Security (RLS) in Supabase
+   - Esegui regolarmente backup del database
+
+4. **Monitoraggio**:
+   - Implementa un sistema di logging per tracciare errori e attività sospette
+   - Configura alert per attività anomale
 
 ---
 

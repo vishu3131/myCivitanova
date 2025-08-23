@@ -174,7 +174,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }: ReportModalProps) => {
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Es. Buca pericolosa in Via Roma"
+                      placeholder="Es. Buca pericolosa in Corso Umberto I"
                       className="w-full px-3 py-2 bg-dark-400/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-white placeholder-white/40"
                     />
                   </div>
@@ -245,7 +245,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }: ReportModalProps) => {
                         type="text"
                         value={formData.location}
                         onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="Via Roma, 45, Civitanova Marche"
+                        placeholder="Es. Corso Umberto I, 45 - Civitanova Marche"
                         className="w-full pl-10 pr-3 py-2 bg-dark-400/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-white placeholder-white/40"
                       />
                     </div>
@@ -384,4 +384,4 @@ const ReportModal = ({ isOpen, onClose, onSubmit }: ReportModalProps) => {
   );
 };
 
-export default ReportModal; 
+export default ReportModal;

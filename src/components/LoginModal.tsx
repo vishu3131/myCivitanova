@@ -320,10 +320,10 @@ export default function LoginModal(props: LoginModalProps) {
                   onClick={handleLogin}
                   className="neon-btn"
                   disabled={loading}
-                >{loading ? 'Accesso...' : 'Sign in'}</button>
+                >{loading ? 'Accesso...' : 'Accedi a Civitanova Marche'}</button>
                 <div className="flex justify-between mb-2">
-                  <span className="neon-link" onClick={() => setShowReset(true)}>Forgot Password</span>
-                  <span className="neon-link signup" onClick={() => setShowSignup(true)}>Registrazione</span>
+                  <span className="neon-link" onClick={() => setShowReset(true)}>Password dimenticata?</span>
+                  <span className="neon-link signup" onClick={() => setShowSignup(true)}>Registrati</span>
                 </div>
                 <button
                   type="button"
@@ -338,7 +338,7 @@ export default function LoginModal(props: LoginModalProps) {
               <form>
                 <input
                   type="email"
-                  placeholder="Email per reset"
+                  placeholder="Inserisci la tua email"
                   value={resetEmail}
                   onChange={e => setResetEmail(e.target.value)}
                   className="neon-input"
@@ -349,7 +349,7 @@ export default function LoginModal(props: LoginModalProps) {
                   onClick={handleResetPassword}
                   className="neon-btn"
                   disabled={loading}
-                >{loading ? 'Invio...' : 'Reset Password'}</button>
+                >{loading ? 'Invio...' : 'Reimposta Password'}</button>
                 <span className="neon-link" onClick={() => setShowReset(false)}>Torna al login</span>
               </form>
             )}
@@ -460,7 +460,7 @@ export default function LoginModal(props: LoginModalProps) {
               onClick={handleSignup}
               className="neon-btn"
               disabled={loading || emailConfirmationSent}
-            >{loading ? 'Registrazione...' : 'Sign up'}</button>
+            >{loading ? 'Registrazione...' : 'Unisciti a Civitanova Marche'}</button>
             
             <div className="text-center my-4">
               <span className="text-white/60">oppure</span>

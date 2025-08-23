@@ -47,7 +47,11 @@ const pages = [
   { name: 'Risparmio', path: '#risparmio', icon: Zap, color: '#FBBF24', type: 'quick' }
 ];
 
-export function CircularDevNavigation() {
+interface CircularDevNavigationProps {
+  paused?: boolean;
+}
+
+export function CircularDevNavigation({ paused = false }: CircularDevNavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showRipple, setShowRipple] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
@@ -170,6 +174,10 @@ export function CircularDevNavigation() {
       return { x, y };
     }
   }, []);
+
+  if (paused) {
+    return null;
+  }
 
   // Mostra sempre il componente, sia in sviluppo che in produzione
 

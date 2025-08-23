@@ -292,7 +292,7 @@ export function CreateCampaignForm({ isOpen, onClose, onSuccess, currentUser }: 
                           type="text"
                           value={formData.title}
                           onChange={(e) => handleInputChange('title', e.target.value)}
-                          placeholder="Es: Nuovo Parco Giochi per Bambini"
+                          placeholder="Es: Nuovo Parco Giochi per il Centro di Civitanova Marche"
                           className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 ${
                             errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                           }`}

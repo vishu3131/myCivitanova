@@ -63,8 +63,12 @@ export default function ARExperience() {
     "environment"
   );
   const [resetNonce, setResetNonce] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sceneContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Detect if DeviceOrientation permission is required (iOS >= 13)
   useEffect(() => {
@@ -76,32 +80,99 @@ export default function ARExperience() {
     if (needsPermission) setShowOrientationPrompt(true);
   }, []);
 
-  // Load POIs from Supabase with fallback
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setStatus("Carico i punti di interesse...");
-        const { data, error } = await supabase.from("pois").select("*");
-        if (error) throw error;
-        const mapped = (data || [])
-          .map(mapDbPoi)
-          .filter(Boolean) as ARPoi[];
-        if (!cancelled) {
-          setPois(mapped.length ? mapped : testPoi);
-          setStatus("GPS attivo: cerca i punti vicini...");
-        }
-      } catch (_e) {
-        if (!cancelled) {
-          setPois(testPoi);
-          setStatus("Modo demo: usando POI di test");
+  // Cache for POIs to avoid unnecessary re-fetching
+  const poisCacheRef = useRef<{ data: ARPoi[]; timestamp: number } | null>(null);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // Load POIs from Supabase with improved error handling, retry logic, and caching
+  const loadPois = useCallback(async (forceRefresh = false) => {
+    try {
+      // Check cache first
+      if (!forceRefresh && poisCacheRef.current) {
+        const { data: cachedData, timestamp } = poisCacheRef.current;
+        const isExpired = Date.now() - timestamp > CACHE_DURATION;
+        
+        if (!isExpired && cachedData.length > 0) {
+          setPois(cachedData);
+          setStatus(`${cachedData.length} POI (cache) - GPS attivo`);
+          setIsLoading(false);
+          return;
         }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      
+      setIsLoading(true);
+      setError(null);
+      setStatus("Carico i punti di interesse...");
+      
+      // Set a timeout for loading
+      loadingTimeoutRef.current = setTimeout(() => {
+        setStatus("Caricamento in corso... Verifica la connessione");
+      }, 5000);
+      
+      const { data, error } = await supabase
+        .from("pois")
+        .select("*")
+        .order('created_at', { ascending: false });
+      
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      
+      if (error) {
+        console.error('Errore caricamento POI:', error);
+        throw new Error(`Errore database: ${error.message}`);
+      }
+      
+      const mapped = (data || [])
+        .map(mapDbPoi)
+        .filter(Boolean) as ARPoi[];
+      
+      if (mapped.length === 0) {
+        console.warn('Nessun POI trovato nel database, uso POI di test');
+        setPois(testPoi);
+        setStatus("Modo demo: usando POI di test");
+        // Don't cache test data
+      } else {
+        setPois(mapped);
+        setStatus(`${mapped.length} POI caricati - GPS attivo`);
+        // Cache the data
+        poisCacheRef.current = {
+          data: mapped,
+          timestamp: Date.now()
+        };
+      }
+      
+      setRetryCount(0);
+    } catch (err: any) {
+      console.error('Errore caricamento POI:', err);
+      setError(err.message || 'Errore sconosciuto');
+      
+      // Try to use cached data as fallback
+      if (poisCacheRef.current?.data.length) {
+        setPois(poisCacheRef.current.data);
+        setStatus("Errore rete - Usando cache locale");
+      } else {
+        setPois(testPoi);
+        setStatus("Errore caricamento - Modo demo attivo");
+      }
+    } finally {
+      setIsLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    }
   }, []);
+  
+  useEffect(() => {
+    loadPois();
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [loadPois]);
 
   // Attach click listeners to A-Frame entities once they exist in the DOM
   useEffect(() => {
@@ -114,7 +185,13 @@ export default function ARExperience() {
       const handler = (e: any) => {
         const id = (el as HTMLElement).dataset["poiId"];
         const poi = pois.find((p) => String(p.id) === String(id));
-        if (poi) setSelectedPoi(poi);
+        if (poi) {
+          setSelectedPoi(poi);
+          // Provide haptic feedback if available
+          if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+          }
+        }
       };
       el.addEventListener("click", handler);
       handlers.push({ el, handler });
@@ -124,6 +201,19 @@ export default function ARExperience() {
       handlers.forEach(({ el, handler }) => el.removeEventListener("click", handler));
     };
   }, [pois]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const requestOrientationPermission = useCallback(async () => {
     try {
@@ -140,36 +230,164 @@ export default function ARExperience() {
   }, []);
 
   const onPlayAudio = useCallback(
-    (url?: string | null) => {
-      if (!url) return;
+    async (url?: string | null) => {
+      if (!url) {
+        console.warn('URL audio non fornito');
+        return;
+      }
+      
       try {
-        if (!audioRef.current) {
-          audioRef.current = new Audio(url);
-        } else {
+        // Stop current audio if playing
+        if (audioRef.current) {
           audioRef.current.pause();
-          audioRef.current.src = url;
+          audioRef.current.currentTime = 0;
         }
-        audioRef.current.onended = () => setIsAudioPlaying(false);
-        audioRef.current.play().then(() => setIsAudioPlaying(true));
+        
+        // Create new audio instance
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        
+        // Set up event listeners
+        audio.onended = () => {
+          setIsAudioPlaying(false);
+          setAudioUrl(null);
+        };
+        
+        audio.onerror = (e) => {
+          console.error('Errore riproduzione audio:', e);
+          setIsAudioPlaying(false);
+          setAudioUrl(null);
+          setStatus('Errore riproduzione audio');
+          setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
+        };
+        
+        audio.onloadstart = () => {
+          setStatus('Caricamento audio...');
+        };
+        
+        audio.oncanplay = () => {
+          setStatus('Audio pronto');
+        };
+        
+        // Attempt to play
+        await audio.play();
+        setIsAudioPlaying(true);
         setAudioUrl(url);
-      } catch (_e) {
-        // ignore
+        setStatus('Riproduzione audio in corso...');
+        
+      } catch (error: any) {
+        console.error('Errore riproduzione audio:', error);
+        setIsAudioPlaying(false);
+        setAudioUrl(null);
+        
+        // Provide user-friendly error messages
+        if (error.name === 'NotAllowedError') {
+          setStatus('Riproduzione bloccata - Tocca per riprovare');
+        } else if (error.name === 'NotSupportedError') {
+          setStatus('Formato audio non supportato');
+        } else {
+          setStatus('Errore riproduzione audio');
+        }
+        
+        setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
       }
     },
     []
   );
 
-  const onToggleAudio = useCallback(() => {
+  const onToggleAudio = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) {
-      audio.play();
-      setIsAudioPlaying(true);
-    } else {
-      audio.pause();
+    
+    try {
+      if (audio.paused) {
+        await audio.play();
+        setIsAudioPlaying(true);
+        setStatus('Riproduzione audio in corso...');
+      } else {
+        audio.pause();
+        setIsAudioPlaying(false);
+        setStatus('Audio in pausa');
+      }
+    } catch (error: any) {
+      console.error('Errore toggle audio:', error);
       setIsAudioPlaying(false);
+      setStatus('Errore controllo audio');
+      setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
     }
   }, []);
+
+  // Memoize POI rendering to avoid unnecessary re-renders
+  const renderedPois = useMemo(() => {
+    if (pois.length === 0) return null;
+    
+    return pois.map((poi, index) => {
+      const title = poi.name || "POI";
+      const icon = poi.icon_3d_url || "";
+      const isSelected = selectedPoi?.id === poi.id;
+      
+      return (
+        // @ts-expect-error A-Frame JSX
+        <a-entity
+          key={`${poi.id}-${resetNonce}`}
+          className="poi-entity clickable"
+          data-poi-id={String(poi.id)}
+          gps-entity-place={`latitude: ${poi.lat}; longitude: ${poi.lng};`}
+          animation__mouseenter="property: scale; to: 1.2 1.2 1.2; startEvents: mouseenter; dur: 200"
+          animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 200"
+          animation__selected={isSelected ? "property: rotation; to: 0 360 0; dur: 2000; loop: true" : ""}
+        >
+          {/* Billboard (icon) */}
+          {/* @ts-expect-error */}
+          <a-plane
+            position="0 2 0"
+            width="2.2"
+            height="2.2"
+            material={`color: ${isSelected ? '#ffff00' : '#111'}; src: ${icon}; transparent: true; opacity: ${isSelected ? '1.0' : '0.95'}; side:double; alphaTest: 0.1`}
+            className="poi-entity clickable"
+          ></a-plane>
+          {/* Text label */}
+          {/* @ts-expect-error */}
+          <a-text
+            value={title}
+            position="0 3.4 0"
+            align="center"
+            width="6"
+            color={isSelected ? "#ffff00" : "#FFFFFF"}
+            className="poi-entity clickable"
+            material="transparent: true"
+            shader="msdf"
+          ></a-text>
+          {/* Distance indicator */}
+          {/* @ts-expect-error */}
+          <a-text
+            value={`📍 ${index + 1}`}
+            position="0 1 0"
+            align="center"
+            width="4"
+            color={isSelected ? "#ffff00" : "#00ff00"}
+            className="poi-entity clickable"
+            material="transparent: true"
+            shader="msdf"
+          ></a-text>
+          {/* Audio indicator */}
+          {poi.audio_url && (
+            /* @ts-expect-error */
+            <a-text
+              value="🔊"
+              position="1.5 0.5 0"
+              align="center"
+              width="2"
+              color={isAudioPlaying && audioUrl === poi.audio_url ? "#ff0000" : "#ffffff"}
+              className="poi-entity clickable"
+              material="transparent: true"
+              shader="msdf"
+            ></a-text>
+          )}
+        </a-entity>
+      );
+    });
+  }, [pois, resetNonce, selectedPoi, isAudioPlaying, audioUrl]);
 
   // Ensure 100dvh on mobile (accounting for dynamic toolbar)
   const containerStyle = useMemo<React.CSSProperties>(
@@ -186,10 +404,17 @@ export default function ARExperience() {
             setCameraFacing((prev) => (prev === "environment" ? "user" : "environment"));
             setStatus("Cambio fotocamera...");
             setResetNonce((n) => n + 1);
+            // Reset audio when switching camera
+            if (audioRef.current) {
+              audioRef.current.pause();
+              setIsAudioPlaying(false);
+            }
+            setSelectedPoi(null);
           }}
           className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-white/90 backdrop-blur-md hover:bg-white/15 active:scale-[0.99]"
+          disabled={isLoading}
         >
-          {cameraFacing === "environment" ? "Usa camera frontale" : "Usa camera posteriore"}
+          {cameraFacing === "environment" ? "📷 Frontale" : "📷 Posteriore"}
         </button>
         <button
           onClick={() => {
@@ -201,17 +426,64 @@ export default function ARExperience() {
               }
             } catch {}
             setSelectedPoi(null);
+            setError(null);
             setStatus("Reinizializzo AR...");
             setResetNonce((n) => n + 1);
+            if (audioRef.current) {
+              setIsAudioPlaying(false);
+              setAudioUrl(null);
+            }
+            // Reload POIs after reset
+            setTimeout(() => loadPois(true), 1000);
           }}
           className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-white/90 backdrop-blur-md hover:bg-white/15 active:scale-[0.99]"
+          disabled={isLoading}
         >
           Reset AR
         </button>
+        
+        {error && (
+          <button
+            onClick={() => {
+              setRetryCount(prev => prev + 1);
+              loadPois(true); // Force refresh
+            }}
+            className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-400/30 text-red-100 backdrop-blur-md hover:bg-red-500/30 active:scale-[0.99]"
+            disabled={isLoading}
+          >
+            🔄 Riprova ({retryCount + 1})
+          </button>
+        )}
+        
+        <button
+          onClick={() => loadPois(true)}
+          className="px-3 py-2 rounded-xl bg-green-500/20 border border-green-400/30 text-green-100 backdrop-blur-md hover:bg-green-500/30 active:scale-[0.99]"
+          disabled={isLoading}
+          title="Aggiorna POI dal database"
+        >
+          🔄 Aggiorna
+        </button>
       </div>
       {/* Status / Toast */}
-      <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-40 text-xs px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white">
-        {status}
+      <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-40 text-xs px-3 py-1.5 rounded-full backdrop-blur-md border border-white/15">
+        <div className={`flex items-center gap-2 ${
+          error 
+            ? 'bg-red-500/50 text-red-100 border-red-400/30'
+            : isLoading
+            ? 'bg-blue-500/50 text-blue-100 border-blue-400/30'
+            : 'bg-white/10 text-white'
+        }`}>
+          {isLoading && (
+            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+          )}
+          {error && <span>⚠️</span>}
+          <span>{status}</span>
+        </div>
+        {error && (
+          <div className="text-xs mt-1 opacity-80 text-red-200">
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Orientation permission prompt (iOS) */}
@@ -240,9 +512,11 @@ export default function ARExperience() {
           key={`scene-${cameraFacing}-${resetNonce}`}
           vr-mode-ui="enabled: false"
           embedded
-          renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
-          arjs={`sourceType: webcam; facingMode: ${cameraFacing}; videoTexture: true; debugUIEnabled: false; trackingMethod: best;`}
+          renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; logarithmicDepthBuffer: true; alpha: true"
+          arjs={`sourceType: webcam; facingMode: ${cameraFacing}; videoTexture: true; debugUIEnabled: false; trackingMethod: best; maxDetectionRate: 60; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960;`}
           className="block h-full w-full"
+          loading-screen="enabled: false"
+          device-orientation-permission-ui="enabled: false"
         >
           {/* Camera with gps and cursor for tap interactions */}
           {/* @ts-expect-error */}
@@ -261,39 +535,7 @@ export default function ARExperience() {
           <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="1 1 0"></a-entity>
 
           {/* POIs */}
-          {pois.map((poi) => {
-            const title = poi.name || "POI";
-            const icon = poi.icon_3d_url || "";
-            return (
-              // @ts-expect-error A-Frame JSX
-              <a-entity
-                key={poi.id}
-                className="poi-entity clickable"
-                data-poi-id={String(poi.id)}
-                gps-entity-place={`latitude: ${poi.lat}; longitude: ${poi.lng};`}
-              >
-                {/* Billboard (icon) */}
-                {/* @ts-expect-error */}
-                <a-plane
-                  position="0 2 0"
-                  width="2.2"
-                  height="2.2"
-                  material={`color: #111; src: ${icon}; transparent: true; opacity: 0.95; side:double`}
-                  className="poi-entity clickable"
-                ></a-plane>
-                {/* Label */}
-                {/* @ts-expect-error */}
-                <a-text
-                  value={title}
-                  position="0 3.4 0"
-                  align="center"
-                  width="6"
-                  color="#FFFFFF"
-                  className="poi-entity clickable"
-                ></a-text>
-              </a-entity>
-            );
-          })}
+          {renderedPois}
         </a-scene>
       </div>
 

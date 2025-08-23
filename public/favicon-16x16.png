@@ -1,0 +1,10 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="8" cy="8" r="8" fill="#2D3748"/>
+  
+  <!-- MY text -->
+  <text x="8" y="10" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white" text-anchor="middle">MY</text>
+  
+  <!-- CIVITANOVA.IT text -->
+  <text x="8" y="14" font-family="Arial, sans-serif" font-size="2" fill="white" text-anchor="middle">CIVITANOVA.IT</text>
+</svg>

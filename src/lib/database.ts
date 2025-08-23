@@ -237,6 +237,8 @@ export interface Poi {
   phone?: string;
   website?: string;
   imageUrl?: string;
+  audio_url?: string;
+  icon_3d_url?: string;
   opening_hours?: any;
   created_at: string;
 }

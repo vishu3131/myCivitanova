@@ -15,8 +15,8 @@ async function createAdminUser() {
     // Step 1: Registra l'utente admin usando Supabase Auth
     console.log('\n1. Registrazione utente admin...');
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: 'admin@admin.it',
-      password: 'AdminPass123!',
+      email: 'admin@civitanova.it',
+      password: 'CivitanovaAdmin2024!',
       options: {
         data: {
           full_name: 'Amministratore Sistema',
@@ -55,7 +55,7 @@ async function createAdminUser() {
         .from('profiles')
         .insert({
           id: authData.user?.id,
-          email: 'admin@admin.it',
+          email: 'admin@civitanova.it',
           full_name: 'Amministratore Sistema',
           role: 'admin',
           is_active: true,
@@ -93,8 +93,8 @@ async function createAdminUser() {
     // Step 4: Test login
     console.log('\n6. Test login admin...');
     const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-      email: 'admin@admin.it',
-      password: 'AdminPass123!'
+      email: 'admin@civitanova.it',
+      password: 'CivitanovaAdmin2024!'
     });
     
     if (loginError) {
@@ -116,8 +116,8 @@ async function createAdminUser() {
 createAdminUser().then(() => {
   console.log('\n🏁 Creazione admin completata');
   console.log('📋 Credenziali admin:');
-  console.log('Email: admin@admin.it');
-  console.log('Password: AdminPass123!');
+  console.log('Email: admin@civitanova.it');
+  console.log('Password: CivitanovaAdmin2024!');
   process.exit(0);
 }).catch((error) => {
   console.error('💥 Errore durante la creazione:', error);

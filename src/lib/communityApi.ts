@@ -1,8 +1,9 @@
 import { supabase } from '@/utils/supabaseClient';
 import { CommunityPost, CreatePostData, CommunityComment, CreateCommentData } from '@/hooks/useCommunity';
 import { isValidCategory, DEFAULT_CATEGORY, VALID_CATEGORY_IDS } from '@/lib/categories';
+import { getConfig } from '@/config/production';
 
-const USE_MOCK_DATA = false; // Impostato a false per connettersi al database reale
+const USE_MOCK_DATA = getConfig().MOCK_SERVICES.community;
 
 // Interfaccia per i parametri di fetchPosts
 export interface FetchPostsParams {

@@ -25,25 +25,25 @@ export default function ProblemReportSection() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href="/admin/problem-reports" passHref>
-          <motion.a
+        <Link href="/admin/problem-reports">
+          <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-colors cursor-pointer"
           >
             <AlertCircle className="w-5 h-5" />
             Segnala un Problema
-          </motion.a>
+          </motion.div>
         </Link>
-        <Link href="/community" passHref>
-          <motion.a
+        <Link href="/community">
+          <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors cursor-pointer"
           >
             <MessageSquare className="w-5 h-5" />
             Vai al Forum
-          </motion.a>
+          </motion.div>
         </Link>
       </div>
     </motion.div>

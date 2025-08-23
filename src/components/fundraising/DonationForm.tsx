@@ -201,7 +201,7 @@ export default function DonationForm({
               type="email"
               value={donorEmail}
               onChange={(e) => setDonorEmail(e.target.value)}
-              placeholder="la-tua-email@esempio.com"
+              placeholder="la-tua-email@civitanova.it"
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-emerald-400"
             />
           </div>

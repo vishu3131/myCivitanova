@@ -104,33 +104,6 @@ const HeliotropeCard: React.FC = () => {
               <span className="px-2 py-1 bg-white/5 text-white/70 text-xs rounded-full border border-white/10">
                 Wi-Fi gratuito
               </span>
-              <span className="px-2 py-1 bg-white/5 text-white/70 text-xs rounded-full border border-white/10">
-                Musica dal vivo
-              </span>
-              <span className="px-2 py-1 bg-white/5 text-white/70 text-xs rounded-full border border-white/10">
-                Terrazza
-              </span>
-              <span className="px-2 py-1 bg-white/5 text-white/70 text-xs rounded-full border border-white/10">
-                Accesso disabili
-              </span>
-            </div>
-          </div>
-
-          {/* Stats - Adding placeholders for distance/time/reviews */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <MapPin className="w-4 h-4 text-white/60" />
-                <span className="text-white/80 text-sm">0.5 km</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4 text-white/60" />
-                <span className="text-white/80 text-sm">2-5 min</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-white/60" />
-                <span className="text-white/80 text-sm">150</span>
-              </div>
             </div>
           </div>
 

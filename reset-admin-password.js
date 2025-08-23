@@ -27,7 +27,7 @@ async function resetAdminPassword() {
     
     // Invia email di reset password
     const { data, error } = await supabase.auth.resetPasswordForEmail(
-      'admin@admin.it',
+      'admin@civitanova.it',
       {
         redirectTo: 'http://localhost:3000/reset-password'
       }
@@ -42,14 +42,14 @@ async function resetAdminPassword() {
       console.log('⚠️  Per resettare la password, devi:');
       console.log('   1. Andare nel dashboard Supabase');
       console.log('   2. Sezione Authentication > Users');
-      console.log('   3. Trovare admin@admin.it');
+      console.log('   3. Trovare admin@civitanova.it');
       console.log('   4. Cliccare "Reset Password" o modificare direttamente');
       
       return;
     }
     
     console.log('✅ Email di reset inviata con successo!');
-    console.log('📧 Controlla la casella email di admin@admin.it');
+    console.log('📧 Controlla la casella email di admin@civitanova.it');
     
     console.log('\n2. Test login con password corrente...');
     
@@ -60,7 +60,7 @@ async function resetAdminPassword() {
       console.log(`Provo password: ${password}`);
       
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: 'admin@admin.it',
+        email: 'admin@civitanova.it',
         password: password
       });
       
@@ -76,7 +76,7 @@ async function resetAdminPassword() {
         
         console.log('\n🎉 Password trovata!');
         console.log('📝 Credenziali admin:');
-        console.log('   Email: admin@admin.it');
+        console.log('   Email: admin@civitanova.it');
         console.log('   Password:', password);
         return;
       } else {

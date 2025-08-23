@@ -41,12 +41,22 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
       
       if (data && data.length > 0) {
         const stats = data[0];
+        
+        // Ottieni la lista dei badge separatamente
+        const { data: badgesData } = await supabase
+          .from('user_badges')
+          .select('badge_name')
+          .eq('user_id', userId)
+          .not('earned_at', 'is', null);
+        
+        const badgesList = badgesData ? badgesData.map(b => b.badge_name) : [];
+        
         setUserStats({
           total_xp: stats.total_xp || 0,
           current_level: stats.current_level || 1,
           level_progress: stats.level_progress || 0,
           badges_count: stats.badges_count || 0,
-          badges_list: stats.badges_list ? Object.values(stats.badges_list) : [],
+          badges_list: badgesList,
           rank_position: stats.rank_position || 999
         });
       } else {
@@ -61,7 +71,17 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         });
       }
     } catch (error) {
-      console.error('Errore caricamento statistiche XP:', error);
+      // Log solo se l'errore ha contenuto significativo
+      if (error && (error.message || error.code || error.details)) {
+        console.error('Errore caricamento statistiche XP:', {
+          error: error,
+          message: error?.message || 'Errore sconosciuto',
+          code: error?.code || 'Nessun codice',
+          details: error?.details || 'Nessun dettaglio',
+          userId: userId,
+          function: 'get_user_stats'
+        });
+      }
       // Fallback ai dati demo
       setUserStats({
         total_xp: 0,
@@ -113,7 +133,25 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         return result;
       }
     } catch (error) {
-      console.error('Errore aggiunta XP:', error);
+      const errorInfo = {
+        errorType: typeof error,
+        errorString: String(error),
+        errorMessage: error?.message || 'Nessun messaggio di errore',
+        errorCode: error?.code || 'Nessun codice errore',
+        errorDetails: error?.details || 'Nessun dettaglio',
+        userId: userId,
+        activityType: activityType,
+        amount: amount,
+        rpcFunction: 'add_xp_simple',
+        timestamp: new Date().toISOString(),
+        hasUserId: !!userId,
+        supabaseConnected: !!supabase
+      };
+      // Log solo se l'errore ha contenuto significativo
+      if (error && (error.message || error.code || error.details)) {
+        console.error('Errore aggiunta XP:', errorInfo);
+        console.error('Errore originale:', error);
+      }
       
       // Fallback: mostra comunque la notifica XP
       setXpNotification({ xp: amount });
@@ -150,7 +188,32 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         return result;
       }
     } catch (error) {
-      console.error('Errore login giornaliero:', error);
+      // Verifica se l'errore è effettivamente vuoto
+      const isEmptyError = !error || (typeof error === 'object' && Object.keys(error).length === 0);
+      
+      const errorInfo = {
+        errorType: typeof error,
+        errorString: error ? String(error) : 'Error is null/undefined',
+        errorMessage: error?.message || 'Nessun messaggio di errore',
+        errorCode: error?.code || 'Nessun codice errore',
+        errorDetails: error?.details || 'Nessun dettaglio',
+        isEmptyError: isEmptyError,
+        errorKeys: error && typeof error === 'object' ? Object.keys(error) : [],
+        userId: userId,
+        rpcFunction: 'daily_login_xp',
+        timestamp: new Date().toISOString(),
+        hasUserId: !!userId,
+        supabaseConnected: !!supabase,
+        supabaseUrl: supabase?.supabaseUrl || 'Non disponibile',
+        supabaseKey: supabase?.supabaseKey ? 'Presente' : 'Non presente'
+      };
+      
+      // Log solo se l'errore non è vuoto
+      if (!isEmptyError) {
+        console.error('Errore login giornaliero - Info dettagliate:', errorInfo);
+        console.error('Errore login giornaliero - Oggetto originale:', error);
+        console.error('Errore login giornaliero - JSON stringify:', JSON.stringify(error, null, 2));
+      }
     }
     
     return null;

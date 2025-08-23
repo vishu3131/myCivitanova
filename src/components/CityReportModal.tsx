@@ -276,7 +276,7 @@ const CityReportModal = ({ isOpen, onClose, onSubmit }: CityReportModalProps) =>
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Es. Buca pericolosa in Via Roma"
+                  placeholder="Es. Buca pericolosa in Corso Umberto I"
                   className="w-full px-3 py-2 bg-dark-400/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-white placeholder-white/40"
                   maxLength={100}
                 />
@@ -381,7 +381,7 @@ const CityReportModal = ({ isOpen, onClose, onSubmit }: CityReportModalProps) =>
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="Es. Via Roma, 123 - Civitanova Marche"
+                  placeholder="Es. Corso Umberto I, 123 - Civitanova Marche"
                   className="w-full px-3 py-2 bg-dark-400/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-white placeholder-white/40"
                 />
                 {formData.latitude && formData.longitude && (

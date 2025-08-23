@@ -1,10 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import NeonTitle from './NeonTitle';
 
 export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
+  const [shouldTriggerIntro, setShouldTriggerIntro] = useState(false);
   // Ottieni l'ora corrente per personalizzare il saluto
   const currentTime = new Date();
   const hours = currentTime.getHours();
@@ -24,6 +25,28 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
     day: 'numeric' 
   };
   const formattedDate = currentTime.toLocaleDateString('it-IT', options);
+
+  // Callback chiamato quando l'animazione del NeonTitle è completata
+  const handleAnimationComplete = useCallback(() => {
+    // Always trigger intro when animation completes
+    setShouldTriggerIntro(true);
+  }, []);
+
+  // Effetto per gestire l'autoplay dell'intro
+  useEffect(() => {
+    if (shouldTriggerIntro) {
+      // Simula l'autoplay dell'intro rimuovendo la chiave dal localStorage
+      // Questo farà sì che IntroOverlay mostri automaticamente il video
+      try {
+        localStorage.removeItem('introUnlockedV1');
+        // Dispatch dell'evento personalizzato per triggerare l'intro
+        window.dispatchEvent(new CustomEvent('triggerIntro'));
+      } catch (error) {
+        console.error('Errore durante l\'attivazione dell\'intro:', error);
+      }
+      setShouldTriggerIntro(false);
+    }
+  }, [shouldTriggerIntro]);}]}}}
   
   // Capitalizza la prima lettera della data
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
@@ -57,6 +80,7 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
               text="MyCivitanova"
               fontSize="clamp(1.5rem, 5vw, 3rem)"
               onClick={() => console.log('MyCivitanova neon title clicked!')}
+              onAnimationComplete={handleAnimationComplete}
             />
           </div>
           

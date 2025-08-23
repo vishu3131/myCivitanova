@@ -1,6 +1,7 @@
 import { NewsItem, CreateNewsData, UpdateNewsData } from '@/types/news';
+import { getConfig } from '@/config/production';
 
-// Dati mock per le news - simulano un database
+// Dati mock per le news - simulano un database (solo per sviluppo)
 export const mockNewsData: NewsItem[] = [
   {
     id: 'news-1',
@@ -100,7 +101,7 @@ const userReactions = new Map<string, 'like' | 'dislike'>();
 // Servizio per la gestione delle news
 export class NewsService {
   private static instance: NewsService;
-  private newsData: NewsItem[] = [...mockNewsData];
+  private newsData: NewsItem[] = getConfig().MOCK_SERVICES.news ? [...mockNewsData] : [];
 
   private constructor() {}
 

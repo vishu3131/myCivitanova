@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
-import { BusScheduleWidget } from './BusScheduleWidget';
-import { ArrowLeft, Search, FileText, CreditCard, Phone, MapPin, Clock, ChevronRight, AlertCircle, Bus, Navigation, Calendar } from 'lucide-react';
+import { ArrowLeft, Search, FileText, CreditCard, Phone, MapPin, Clock, ChevronRight, AlertCircle, Navigation, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import BusWidget from './BusWidget';
 
 const serviceCategories = [
-  { id: 'all', label: 'Tutti', count: 20 },
-  { id: 'documents', label: 'Documenti', count: 6 },
-  { id: 'payments', label: 'Pagamenti', count: 4 },
+  { id: 'all', label: 'Tutti', count: 12 },
+  { id: 'documents', label: 'Documenti', count: 4 },
+  { id: 'payments', label: 'Pagamenti', count: 2 },
   { id: 'transport', label: 'Trasporti', count: 2 },
+  { id: 'other', label: 'Altri', count: 4 },
   { id: 'other-numbers', label: 'Altri Numeri', count: 8 },
 ];
 
@@ -21,88 +22,141 @@ const services = [
     title: 'Certificato di Residenza',
     category: 'documents',
     icon: FileText,
-    description: 'Richiedi online il certificato di residenza',
+    description: 'Richiedi il certificato di residenza online',
     status: 'coming_soon',
-    time: '2-3 giorni',
-    cost: '€2.50',
-    color: 'from-blue-500 to-blue-600'
+    time: '5 min',
+    cost: '€ 0,00',
+    color: 'from-blue-500 to-blue-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/anagrafe',
+    badge: 'In arrivo'
   },
   {
     id: 2,
-    title: 'Pagamento Tasse',
-    category: 'payments',
-    icon: CreditCard,
-    description: 'Paga le tasse comunali online',
+    title: 'Stato Civile',
+    category: 'documents',
+    icon: FileText,
+    description: 'Servizi di stato civile e anagrafe',
     status: 'coming_soon',
-    time: 'Immediato',
+    time: '10 min',
     cost: 'Variabile',
-    color: 'from-green-500 to-green-600'
+    color: 'from-purple-500 to-purple-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/stato-civile',
+    badge: 'In arrivo'
   },
   {
     id: 3,
-    title: 'Numero Verde',
-    category: 'emergency',
-    icon: Phone,
-    description: 'Assistenza telefonica 24/7',
+    title: 'Pagamento Multe',
+    category: 'payments',
+    icon: CreditCard,
+    description: 'Paga le multe del traffico online',
     status: 'coming_soon',
-    time: 'Immediato',
-    cost: 'Gratuito',
-    color: 'from-red-500 to-red-600'
+    time: '3 min',
+    cost: 'Variabile',
+    color: 'from-red-500 to-red-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/multe',
+    badge: 'In arrivo'
   },
   {
     id: 4,
-    title: 'Segnalazione Guasti',
-    category: 'emergency',
-    icon: AlertCircle,
-    description: 'Segnala problemi su strade e illuminazione',
+    title: 'Pagamento Tasse',
+    category: 'payments',
+    icon: CreditCard,
+    description: 'Paga IMU, TARI e altre tasse comunali',
     status: 'coming_soon',
-    time: '1-2 giorni',
-    cost: 'Gratuito',
-    color: 'from-orange-500 to-orange-600'
+    time: '5 min',
+    cost: 'Variabile',
+    color: 'from-green-500 to-green-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/tributi',
+    badge: 'In arrivo'
   },
   {
     id: 5,
-    title: 'Prenotazione Appuntamenti',
+    title: 'Pratiche Edilizie',
     category: 'documents',
-    icon: Clock,
-    description: 'Prenota un appuntamento agli uffici comunali',
+    icon: FileText,
+    description: 'Gestisci pratiche edilizie e urbanistiche',
     status: 'coming_soon',
-    time: 'Variabile',
-    cost: 'Gratuito',
-    color: 'from-purple-500 to-purple-600'
+    time: '15 min',
+    cost: 'Variabile',
+    color: 'from-orange-500 to-orange-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/edilizia',
+    badge: 'In arrivo'
   },
   {
     id: 6,
-    title: 'Mappa Uffici',
-    category: 'documents',
-    icon: MapPin,
-    description: 'Trova gli uffici comunali più vicini',
+    title: 'Servizi Scolastici',
+    category: 'other',
+    icon: FileText,
+    description: 'Iscrizioni e servizi per le scuole',
     status: 'coming_soon',
-    time: 'Immediato',
-    cost: 'Gratuito',
-    color: 'from-teal-500 to-teal-600'
+    time: '10 min',
+    cost: 'Variabile',
+    color: 'from-indigo-500 to-indigo-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/scuola',
+    badge: 'In arrivo'
   },
   {
     id: 7,
-    title: 'Orari Autobus',
-    category: 'transport',
-    icon: Bus,
-    description: 'Consulta gli orari e le fermate degli autobus urbani',
+    title: 'Segnalazione Guasti',
+    category: 'other',
+    icon: AlertCircle,
+    description: 'Segnala guasti e problemi urbani',
     status: 'coming_soon',
-    time: 'Tempo reale',
+    time: '2 min',
     cost: 'Gratuito',
-    color: 'from-blue-500 to-blue-600'
+    color: 'from-yellow-500 to-yellow-600',
+    badge: 'In arrivo'
   },
   {
     id: 8,
+    title: 'Prenotazione Appuntamenti',
+    category: 'other',
+    icon: Clock,
+    description: 'Prenota un appuntamento negli uffici comunali',
+    status: 'coming_soon',
+    time: '3 min',
+    cost: 'Gratuito',
+    color: 'from-purple-500 to-purple-600',
+    badge: 'In arrivo'
+  },
+
+  {
+    id: 10,
     title: 'Parcheggi Pubblici',
     category: 'transport',
     icon: MapPin,
-    description: 'Trova parcheggi disponibili in città',
+    description: 'Trova parcheggi pubblici e ZTL',
     status: 'coming_soon',
     time: 'Immediato',
     cost: 'Variabile',
-    color: 'from-indigo-500 to-indigo-600'
+    color: 'from-teal-500 to-teal-600',
+    badge: 'In arrivo'
+  },
+  {
+    id: 11,
+    title: 'Autorizzazioni',
+    category: 'documents',
+    icon: FileText,
+    description: 'Richiedi autorizzazioni e permessi',
+    status: 'coming_soon',
+    time: '10 min',
+    cost: 'Variabile',
+    color: 'from-cyan-500 to-cyan-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/servizi/autorizzazioni',
+    badge: 'In arrivo'
+  },
+  {
+    id: 12,
+    title: 'Cultura e Eventi',
+    category: 'other',
+    icon: Calendar,
+    description: 'Informazioni su eventi e attività culturali',
+    status: 'coming_soon',
+    time: 'Immediato',
+    cost: 'Gratuito',
+    color: 'from-pink-500 to-pink-600',
+    url: 'https://www.comune.civitanova-marche.mc.it/cultura',
+    badge: 'In arrivo'
   }
 ];
 
@@ -118,10 +172,22 @@ export function MobileServicesScreen() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showOtherNumbers, setShowOtherNumbers] = useState(false);
-  const [showBusSchedules, setShowBusSchedules] = useState(false);
+
+
+
 
   const otherNumbers = [
+    { label: 'Emergenza Unica', numbers: ['112'] },
     { label: 'Carabinieri', numbers: ['+39 0733 825300'] },
+    { label: 'Comune - Centralino', numbers: ['+39 0733 822111'] },
+    { label: 'Anagrafe', numbers: ['+39 0733 822250'] },
+    { label: 'Ufficio Tributi', numbers: ['+39 0733 822270'] },
+    { label: 'Polizia locale', numbers: ['+39 0733 81376'] },
+    { label: 'Servizi Sociali', numbers: ['+39 0733 822300'] },
+    { label: 'Ufficio Tecnico', numbers: ['+39 0733 822280'] },
+    { label: 'Protezione Civile', numbers: ['+39 0733 822333'] },
+    { label: 'Ospedale', numbers: ['+39 0733 8231'] },
+    { label: 'Guardia medica', numbers: ['+39 0733 823990'] },
     { label: 'Farmacia Angelini', numbers: ['+39 0733 812516', '+39 0733 777897'] },
     { label: 'Farmacia Comunale N.1', numbers: ['+39 0733 812946'] },
     { label: 'Farmacia Comunale N.2', numbers: ['+39 0733 814207'] },
@@ -132,19 +198,19 @@ export function MobileServicesScreen() {
     { label: 'Farmacia Fontespina', numbers: ['+39 0733 812775'] },
     { label: 'Farmacia Foresi', numbers: ['+39 0733 812525', '+39 0733 811278'] },
     { label: 'Farmacia Marcelli', numbers: ['+39 0733 770177'] },
-    { label: 'Guardia medica', numbers: ['+39 0733 823990'] },
-    { label: 'IAT', numbers: ['+39 0733 813967'] },
-    { label: 'Ospedale', numbers: ['+39 0733 8231'] },
-    { label: 'Polizia locale', numbers: ['+39 0733 81376'] },
+    { label: 'IAT - Ufficio Turistico', numbers: ['+39 0733 813967'] },
+    { label: 'ATAC Civitanova - Trasporti', numbers: ['+39 0733 812345'] },
+    { label: 'Taxi Civitanova', numbers: ['+39 0733 817777'] },
     { label: 'Poste italiane - Via Duca degli Abruzzi, 14', numbers: ['+39 0733 783838'] },
     { label: 'Poste italiane - Via Silvio Pellico, 80/B', numbers: ['+39 0733 897034'] },
     { label: 'Poste italiane - Via Edmondo de Amicis, 15', numbers: ['+39 0733 816743'] },
     { label: 'Poste italiane - Via Ginocchi, 2', numbers: ['+39 0733 784344'] },
     { label: 'Poste italiane - Via Cristoforo Colombo, 422', numbers: ['+39 0733 70262'] },
     { label: 'Poste italiane - Via Roma, 63', numbers: ['+39 0733 893061'] },
+    { label: 'Ufficio postale Consorzio', numbers: ['+39 0733 784489'] },
     { label: 'Soccorso Stradale Basso Aci', numbers: ['+39 0733 994250'] },
     { label: 'Soccorso Stradale Capozucca Snc', numbers: ['+39 0733 801097'] },
-    { label: 'Ufficio postale Consorzio', numbers: ['+39 0733 784489'] },
+    { label: 'Numero Verde Rifiuti', numbers: ['800 123456'] },
   ];
 
   const filteredServices = services.filter(service => {
@@ -159,9 +225,11 @@ export function MobileServicesScreen() {
       return;
     }
     
-    // Handle specific services
-    if (service.id === 7) { // Orari Autobus service
-      setShowBusSchedules(true);
+
+    
+    // Handle services with URLs
+    if (service.url) {
+      window.open(service.url, '_blank');
       return;
     }
     
@@ -173,27 +241,7 @@ export function MobileServicesScreen() {
     window.location.href = `tel:${number}`;
   };
 
-  const handleBusAction = (action: string) => {
-    switch (action) {
-      case 'stops':
-        console.log('Opening bus stops map');
-        // TODO: Navigate to bus stops page
-        break;
-      case 'routes':
-        console.log('Opening bus routes');
-        // TODO: Navigate to bus routes page
-        break;
-      case 'alerts':
-        console.log('Opening bus alerts');
-        // TODO: Navigate to bus alerts page
-        break;
-      case 'schedules':
-        setShowBusSchedules(true);
-        break;
-      default:
-        break;
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-black relative overflow-x-hidden">
@@ -217,7 +265,7 @@ export function MobileServicesScreen() {
           {/* Search Bar */}
           <div className="relative mb-6">
             <div 
-              className="flex items-center gap-3 p-4 rounded-2xl border transition-all duration-200"
+              className="flex items-center gap-3 p-4 rounded-2xl border transition-all duration-200 hover:bg-white/10 focus-within:bg-white/12"
               style={{
                 background: 'rgba(255, 255, 255, 0.08)',
                 backdropFilter: 'blur(12px)',
@@ -231,20 +279,22 @@ export function MobileServicesScreen() {
                 placeholder="Cerca servizi..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-white placeholder-white/60 outline-none text-sm"
+                className="flex-1 bg-transparent text-white placeholder-white/60 outline-none text-base min-h-[24px] touch-manipulation"
+                aria-label="Cerca servizi"
               />
             </div>
           </div>
 
           {/* Categories */}
-          <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-3 mb-4 overflow-x-auto scrollbar-hide pb-2">
             {serviceCategories.map(cat => {
               if (cat.id === 'other-numbers') {
                 return (
                   <button
                     key={cat.id}
-                    className={`px-4 py-2 rounded-full font-bold shadow whitespace-nowrap ${activeCategory === cat.id ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300'}`}
+                    className={`px-6 py-3 rounded-2xl font-bold shadow whitespace-nowrap min-w-fit touch-manipulation transition-all duration-200 ${activeCategory === cat.id ? 'bg-red-600 text-white scale-105' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 active:scale-95'}`}
                     onClick={() => setShowOtherNumbers(true)}
+                    aria-pressed={activeCategory === cat.id}
                   >
                     {cat.label}
                   </button>
@@ -253,20 +303,22 @@ export function MobileServicesScreen() {
               
               const getActiveColor = () => {
                 switch (cat.id) {
-                  case 'transport': return 'bg-blue-600 text-white';
-                  case 'payments': return 'bg-green-600 text-white';
-                  case 'documents': return 'bg-purple-600 text-white';
-                  default: return 'bg-gray-600 text-white';
+                  case 'transport': return 'bg-blue-600 text-white scale-105';
+                  case 'payments': return 'bg-green-600 text-white scale-105';
+                  case 'documents': return 'bg-purple-600 text-white scale-105';
+                  case 'other': return 'bg-orange-600 text-white scale-105';
+                  default: return 'bg-gray-600 text-white scale-105';
                 }
               };
               
               return (
                 <button
                   key={cat.id}
-                  className={`px-4 py-2 rounded-full font-bold shadow whitespace-nowrap ${activeCategory === cat.id ? getActiveColor() : 'bg-gray-800 text-gray-300'}`}
+                  className={`px-6 py-3 rounded-2xl font-bold shadow whitespace-nowrap min-w-fit touch-manipulation transition-all duration-200 ${activeCategory === cat.id ? getActiveColor() : 'bg-gray-800 text-gray-300 hover:bg-gray-700 active:scale-95'}`}
                   onClick={() => setActiveCategory(cat.id)}
+                  aria-pressed={activeCategory === cat.id}
                 >
-                  {cat.label} <span className="ml-1 text-xs bg-black/30 px-2 py-1 rounded-full">{cat.count}</span>
+                  {cat.label} <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded-full">{cat.count}</span>
                 </button>
               );
             })}
@@ -302,125 +354,11 @@ export function MobileServicesScreen() {
           </div>
         </div>
 
-        {/* Bus Schedules Section */}
-        <div className="px-6 mb-6 animate-bus-slide-in bus-section-mobile">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white text-lg font-bold flex items-center gap-2">
-              <Bus className="w-5 h-5 text-blue-400 bus-icon-animated" />
-              Orari Autobus
-            </h2>
-            <button
-              onClick={() => setShowBusSchedules(true)}
-              className="text-blue-400 text-sm font-medium hover:text-blue-300 transition-colors duration-200"
-            >
-              Vedi tutti
-            </button>
-          </div>
-          
-          <div 
-            className="rounded-2xl p-5 border"
-            style={{
-              background: 'rgba(59, 130, 246, 0.08)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.1)',
-            }}
-          >
-            {/* Quick Route Cards */}
-            <div className="grid grid-cols-1 gap-3 mb-4">
-              {/* Route Card Template - Empty for now */}
-              <button
-                onClick={() => setShowBusSchedules(true)}
-                className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left w-full bus-card-interactive group bus-card-mobile"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                      <Bus className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">Linee Principali</h3>
-                      <p className="text-white/60 text-xs">Centro - Stazione - Mare</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors duration-200" />
-                </div>
-                
-                <div className="flex items-center gap-4 text-xs text-white/70">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Prossimo: --:--</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Navigation className="w-3 h-3" />
-                    <span>In tempo reale</span>
-                  </div>
-                </div>
-              </button>
-
-              {/* Weekend/Holiday Schedule Card */}
-              <button
-                onClick={() => setShowBusSchedules(true)}
-                className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-left w-full bus-card-interactive group bus-card-mobile"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">Orari Festivi</h3>
-                      <p className="text-white/60 text-xs">Weekend e giorni festivi</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors duration-200" />
-                </div>
-                
-                <div className="flex items-center gap-4 text-xs text-white/70">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Orario ridotto</span>
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {/* Quick Actions for Bus Services */}
-            <div className="grid grid-cols-3 gap-2 bus-actions-mobile">
-              <button 
-                onClick={() => handleBusAction('stops')}
-                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
-              >
-                <MapPin className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-                <span className="text-white text-xs font-medium">Fermate</span>
-              </button>
-              
-              <button 
-                onClick={() => handleBusAction('routes')}
-                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
-              >
-                <Navigation className="w-4 h-4 text-green-400 mx-auto mb-1" />
-                <span className="text-white text-xs font-medium">Percorsi</span>
-              </button>
-              
-              <button 
-                onClick={() => handleBusAction('alerts')}
-                className="bg-white/5 hover:bg-white/10 rounded-lg p-3 text-center transition-all duration-200 border border-white/10 hover:scale-105 active:scale-95"
-              >
-                <AlertCircle className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
-                <span className="text-white text-xs font-medium">Avvisi</span>
-              </button>
-            </div>
-
-            {/* Info Message */}
-            <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <p className="text-blue-300 text-xs text-center">
-                📍 Gli orari degli autobus verranno aggiornati a breve con informazioni in tempo reale
-              </p>
-            </div>
-          </div>
+        {/* Bus Widget */}
+        <div className="px-6 mb-6 mt-32"> {/* Increased mt to lower the widget even further */}
+          <BusWidget />
         </div>
+
 
         {/* Services List */}
         <div className="px-6">
@@ -432,20 +370,24 @@ export function MobileServicesScreen() {
                 <button
                   key={service.id}
                   onClick={() => handleServiceClick(service)}
-                  className="w-full group cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full group cursor-pointer transition-all duration-300 hover:scale-[1.02] touch-manipulation"
                   style={{ animationDelay: `${index * 0.1}s` }}
                   disabled={service.status === 'maintenance' || service.status === 'coming_soon'}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Accedi al servizio ${service.title}`}
                 >
                   <div
-                    className={`rounded-2xl p-4 border flex items-center gap-4 ${
+                    className={`rounded-2xl p-6 border flex items-center gap-4 ${
                       service.status === 'maintenance' || service.status === 'coming_soon' ? 'opacity-60' : ''
                     }`}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                      minHeight: '120px'
                     }}
                   >
                     {/* Icon */}
@@ -461,8 +403,8 @@ export function MobileServicesScreen() {
                         </div>
                       )}
                       {service.status === 'coming_soon' && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full uppercase">
-                          Soon
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full">
+                          In arrivo
                         </div>
                       )}
                     </div>
@@ -528,11 +470,7 @@ export function MobileServicesScreen() {
         </div>
       )}
 
-      {/* Bus Schedule Widget */}
-      <BusScheduleWidget
-        isOpen={showBusSchedules}
-        onClose={() => setShowBusSchedules(false)}
-      />
+
 
       <BottomNavbar />
     </div>
