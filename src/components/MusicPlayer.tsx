@@ -100,30 +100,18 @@ const MusicPlayer = () => {
       width="24"
       height="24"
       viewBox="0 0 24 24"
-      className="block animate-[spin_10s_linear_infinite]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="block"
       aria-hidden="true"
       focusable="false"
-      style={{ transform: 'translate(0px, -1px)' }}
     >
-      <defs>
-        <linearGradient id="noteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#C6FF00" />
-          <stop offset="50%" stopColor="#8B5CF6" />
-          <stop offset="100%" stopColor="#22D3EE" />
-        </linearGradient>
-        <filter id="noteGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <g fill="none" stroke="url(#noteGrad)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" filter="url(#noteGlow)">
-        <path d="M9 18V5l12-2v13"></path>
-        <circle cx="6" cy="18" r="3" fill="url(#noteGrad)"></circle>
-        <circle cx="18" cy="16" r="3" fill="url(#noteGrad)"></circle>
-      </g>
+      <path d="M9 18V5l12-2v13"></path>
+      <circle cx="6" cy="18" r="3"></circle>
+      <circle cx="18" cy="16" r="3"></circle>
     </svg>
   );
 

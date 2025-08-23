@@ -31,13 +31,6 @@ import TutorialDebugOverlay from './TutorialDebugOverlay';
 import LeaderboardWidget from './LeaderboardWidget';
 
 // Lazy-loaded components for performance
-// Temporaneamente commentato per errore di sintassi
-// const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
-//   ssr: false,
-//   loading: () => (
-//     <div className="h-[160px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-//   ),
-// });
 const DynamicMarketplaceWidget = dynamic(() => import('./MarketplaceWidget'), {
   ssr: false,
   loading: () => (
