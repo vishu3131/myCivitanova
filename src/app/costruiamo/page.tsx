@@ -131,9 +131,9 @@ export default function CostruiamoPage() {
         </div>
         <div className="absolute inset-0 flex items-center justify-center px-4">
           <div className="text-center" data-animate>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold futuristic-title">Costruiamo insieme MyCivitanova</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold futuristic-title">Costruiamo il Futuro di Civitanova, Insieme.</h1>
             <p className="mt-3 text-white/80 max-w-2xl mx-auto">
-              Una pagina dedicata alla visione, alla trasparenza e a come puoi supportare il progetto.
+              Scopri la visione dietro MyCivitanova, la nostra missione di trasparenza e come il tuo contributo può fare la differenza.
             </p>
           </div>
         </div>
@@ -144,13 +144,11 @@ export default function CostruiamoPage() {
         {/* Blocco 1 – La storia */}
         <section className="grid md:grid-cols-2 gap-4 glass-card border border-white/10 rounded-2xl p-5 card-glow" data-animate>
           <div>
-            <h2 className="h2 mb-3">📖 La storia</h2>
+            <h2 className="h2 mb-3">📖 La Nostra Storia: Passione e Innovazione</h2>
             <p className="text-white/80 leading-relaxed">
-              Ciao! Sono [Il tuo nome], ho [la tua età] anni e non ho un percorso di studi informatici alle spalle.
-              Ho imparato da solo, passo dopo passo, costruendo MyCivitanova con tanta curiosità e sperimentazione.
-              Questo progetto nasce dall&apos;amore per la città e dalla voglia di renderla più accessibile e digitale.
+              Dietro MyCivitanova c'è una storia di passione e autodidattismo. Ho imparato a programmare da zero, spinto dall'amore per la mia città e dal desiderio di renderla più connessa e accessibile a tutti. Ogni linea di codice, ogni funzionalità, è frutto di curiosità, sperimentazione e un impegno costante per migliorare la vita a Civitanova.
             </p>
-            <p className="mt-3 text-white/70">– [Il tuo nome], founder di MyCivitanova</p>
+            <p className="mt-3 text-white/70">– Il team di MyCivitanova</p>
           </div>
           <div className="rounded-xl overflow-hidden border border-white/10" data-animate>
             <img
@@ -163,33 +161,34 @@ export default function CostruiamoPage() {
 
         {/* Blocco 2 – La missione */}
         <section className="glass-card border border-white/10 rounded-2xl p-5 card-glow" data-animate>
-          <h2 className="h2 mb-4">🛠 La missione</h2>
+          <h2 className="h2 mb-4">🎯 La Nostra Missione: Connettere e Valorizzare</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="neo-card p-4" data-animate>
               <div className="text-2xl">🗺</div>
-              <div className="font-semibold mt-2">Vivere la città</div>
-              <p className="text-white/70 text-sm mt-1">Mappe, parcheggi, eventi, news locali.</p>
+              <div className="font-semibold mt-2">Esplorare la Città</div>
+              <p className="text-white/70 text-sm mt-1">Offrire strumenti intuitivi per scoprire Civitanova: mappe interattive, informazioni su parcheggi, eventi imperdibili e notizie locali aggiornate.</p>
             </div>
             <div className="neo-card p-4" data-animate>
               <div className="text-2xl">🏪</div>
-              <div className="font-semibold mt-2">Dare visibilità</div>
-              <p className="text-white/70 text-sm mt-1">Commercianti e attività civitanovesi in evidenza.</p>
+              <div className="font-semibold mt-2">Promuovere le Attività</div>
+              <p className="text-white/70 text-sm mt-1">Dare risalto ai commercianti e alle attività locali, creando un ponte digitale tra loro e la comunità di Civitanova.</p>
             </div>
             <div className="neo-card p-4" data-animate>
               <div className="text-2xl">🤝</div>
-              <div className="font-semibold mt-2">Creare community</div>
-              <p className="text-white/70 text-sm mt-1">Cittadini e turisti connessi attraverso strumenti utili.</p>
+              <div className="font-semibold mt-2">Costruire una Comunità</div>
+              <p className="text-white/70 text-sm mt-1">Fornire una piattaforma dove cittadini e turisti possano connettersi, condividere esperienze e contribuire attivamente alla vita della città.</p>
             </div>
           </div>
         </section>
 
         {/* Blocco 3 – Perché serve il tuo aiuto */}
         <section className="glass-card border border-white/10 rounded-2xl p-5 card-glow" data-animate>
-          <h2 className="h2 mb-3">📈 Perché serve il tuo aiuto</h2>
+          <h2 className="h2 mb-3">🚀 Il Tuo Ruolo è Fondamentale: Perché Abbiamo Bisogno di Te</h2>
+          <p className="text-white/80 leading-relaxed mb-4">MyCivitanova è un progetto ambizioso che cresce grazie al supporto della sua comunità. Il tuo aiuto è cruciale per:</p>
           <ul className="list-disc list-inside space-y-2 text-white/80">
-            <li>Supporto economico per server, manutenzione e nuove funzionalità.</li>
-            <li>Aiuto professionale: programmatori, designer, marketer.</li>
-            <li>Supporto umano: condividere l&apos;app con amici e attività locali.</li>
+            <li>**Sostenere i Costi Operativi:** Server, manutenzione e infrastruttura richiedono risorse. Ogni contributo economico ci permette di mantenere l'app attiva e performante.</li>
+            <li>**Espandere il Team:** Cerchiamo talenti in programmazione, design, marketing e copywriting per accelerare lo sviluppo di nuove funzionalità e migliorare l'esperienza utente.</li>
+            <li>**Amplificare il Messaggio:** Condividere MyCivitanova con amici, familiari e attività locali è un gesto semplice ma potente che ci aiuta a crescere e a raggiungere più persone.</li>
           </ul>
         </section>
 
@@ -198,8 +197,8 @@ export default function CostruiamoPage() {
           {/* Card 1: Donazione */}
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow flex flex-col">
             <div className="flex-1">
-              <h3 className="h3">💙 Fai una donazione</h3>
-              <p className="mt-2 text-white/80 text-sm">Anche 1€ fa la differenza.</p>
+              <h3 className="h3">💖 Dona il Tuo Contributo</h3>
+              <p className="mt-2 text-white/80 text-sm">Ogni piccolo gesto conta. Il tuo supporto economico è vitale per coprire i costi e finanziare nuove, entusiasmanti funzionalità.</p>
             </div>
             <a
               href="https://www.buymeacoffee.com/yourid"
@@ -207,17 +206,18 @@ export default function CostruiamoPage() {
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center justify-center px-4 py-3 rounded-xl font-semibold bg-blue-600 hover:bg-blue-700 transition-all action-button-float shine-btn"
             >
-              Sostieni con BuyMeACoffee
+              Supporta su BuyMeACoffee
             </a>
           </div>
 
           {/* Card 2: Unisciti al progetto */}
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow">
-            <h3 className="h3">🧩 Unisciti al progetto</h3>
+            <h3 className="h3">🤝 Unisciti al Nostro Team</h3>
+            <p className="mt-2 text-white/80 text-sm">Se hai competenze in sviluppo, design, marketing o copywriting, la tua energia è ciò che ci serve per portare MyCivitanova al livello successivo.</p>
             <form className="mt-3 space-y-3" onSubmit={handleSubmit}>
               <input
                 name="name"
-                placeholder="Nome"
+                placeholder="Il tuo Nome"
                 className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 focus:border-accent focus:outline-none"
                 value={formData.name}
                 onChange={handleChange}
@@ -226,7 +226,7 @@ export default function CostruiamoPage() {
               <input
                 type="email"
                 name="email"
-                placeholder="Email"
+                placeholder="La tua Email"
                 className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 focus:border-accent focus:outline-none"
                 value={formData.email}
                 onChange={handleChange}
@@ -234,14 +234,14 @@ export default function CostruiamoPage() {
               />
               <input
                 name="role"
-                placeholder="Ruolo (es. Sviluppatore, Designer, Marketer)"
+                placeholder="Il tuo Ruolo (es. Sviluppatore Frontend, UI Designer, Content Creator)"
                 className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 focus:border-accent focus:outline-none"
                 value={formData.role}
                 onChange={handleChange}
               />
               <textarea
                 name="message"
-                placeholder="Messaggio"
+                placeholder="Parlaci di te e di come vorresti contribuire!"
                 rows={4}
                 className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 focus:border-accent focus:outline-none"
                 value={formData.message}
@@ -252,13 +252,13 @@ export default function CostruiamoPage() {
                 disabled={submitting}
                 className="w-full px-4 py-2 rounded-xl font-semibold bg-accent text-black hover:opacity-90 transition-all shine-btn"
               >
-                {submitting ? "Invio..." : "Proponi la tua collaborazione"}
+                {submitting ? "Invio..." : "Invia la tua Proposta"}
               </button>
               {submitted === "ok" && (
-                <p className="text-green-400 text-xs">Bozza email aperta nell&apos;app di posta. Grazie!</p>
+                <p className="text-green-400 text-xs">Bozza email aperta nell'app di posta. Grazie per il tuo interesse!</p>
               )}
               {submitted === "error" && (
-                <p className="text-red-400 text-xs">Errore durante la preparazione dell&apos;email. Riprova.</p>
+                <p className="text-red-400 text-xs">Si è verificato un errore durante la preparazione dell'email. Riprova più tardi.</p>
               )}
             </form>
           </div>
@@ -266,8 +266,8 @@ export default function CostruiamoPage() {
           {/* Card 3: Diffondi */}
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow flex flex-col">
             <div className="flex-1">
-              <h3 className="h3">📣 Diffondi MyCivitanova</h3>
-              <p className="mt-2 text-white/80 text-sm">Aiutami a far conoscere MyCivitanova: più siamo, più cresce.</p>
+              <h3 className="h3">📢 Diffondi la Voce</h3>
+              <p className="mt-2 text-white/80 text-sm">Aiutaci a far conoscere MyCivitanova! Ogni condivisione amplifica il nostro impatto e ci avvicina al nostro obiettivo di una città più connessa.</p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <a
@@ -304,7 +304,7 @@ export default function CostruiamoPage() {
                 onClick={copyToClipboard}
                 className="col-span-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm text-center"
               >
-                {copied ? "Link copiato!" : "Copia link"}
+                {copied ? "Link copiato!" : "Copia Link"}
               </button>
             </div>
           </div>
@@ -312,15 +312,15 @@ export default function CostruiamoPage() {
 
         {/* Blocco 5 – Trasparenza */}
         <section className="glass-card border border-white/10 rounded-2xl p-5 card-glow" data-animate>
-          <h2 className="h2 mb-3">🔒 Trasparenza</h2>
+          <h2 className="h2 mb-3">Transparency Report: Il Tuo Supporto, il Nostro Impegno</h2>
           <p className="text-white/80">
-            "Ogni euro raccolto viene reinvestito unicamente per lo sviluppo di nuove funzionalità e per migliorare l’esperienza degli utenti. Nessun guadagno personale: questo è un progetto indipendente nato per la città."
+            Ogni singolo euro donato a MyCivitanova viene interamente reinvestito nello sviluppo di nuove funzionalità, nel miglioramento dell'esperienza utente e nel mantenimento dell'infrastruttura. Questo è un progetto indipendente, nato per la città e senza fini di lucro personale. La tua fiducia è la nostra priorità.
           </p>
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-              <span>Obiettivo: nuova sezione parcheggi</span>
+              <span>Obiettivo Attuale: Sviluppo della Nuova Sezione Parcheggi Intelligenti</span>
               <span>
-                Raccolti <span className="text-white">€{raised}</span> su €{goal}
+                Raccolti <span className="text-white">€{raised}</span> di €{goal}
               </span>
             </div>
             <div className="h-3 bg-white/10 rounded-full overflow-hidden glossy-bar">
@@ -329,23 +329,23 @@ export default function CostruiamoPage() {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="mt-1 text-right text-xs text-white/70">{progress}%</div>
+            <div className="mt-1 text-right text-xs text-white/70">{progress}% Completato</div>
           </div>
         </section>
 
         {/* Visione futura */}
         <section className="glass-card border border-white/10 rounded-2xl p-6 card-glow" data-animate>
-          <h2 className="h2 mb-3">🌟 Visione futura</h2>
+          <h2 className="h2 mb-3">🌟 La Nostra Visione: Un Futuro Digitale per Civitanova</h2>
           <p className="text-white/80 leading-relaxed">
-            "Questo è solo l’inizio. Immagino MyCivitanova come un punto di riferimento digitale per cittadini, turisti e attività locali. Con il tuo supporto possiamo trasformare questo progetto in qualcosa che rimarrà nel tempo."
+            Questo è solo l'inizio di un viaggio entusiasmante. Immaginiamo MyCivitanova come il cuore pulsante digitale della città, un punto di riferimento indispensabile per residenti, visitatori e attività commerciali. Con il tuo prezioso supporto, possiamo trasformare questa visione in una realtà duratura, creando un impatto positivo che si estenderà per anni a venire.
           </p>
         </section>
 
         {/* Extra – Firma, foto, changelog */}
         <section className="grid md:grid-cols-3 gap-4" data-animate>
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow">
-            <h3 className="h3 mb-2">✍️ Firma</h3>
-            <p className="text-white/80">– [Il tuo nome], [la tua età] anni, founder di MyCivitanova</p>
+            <h3 className="h3 mb-2">✍️ Il Team di MyCivitanova</h3>
+            <p className="text-white/80">Un progetto nato dalla passione per la nostra città.</p>
           </div>
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow overflow-hidden">
             <h3 className="h3 mb-2">📷 Uno sguardo</h3>
@@ -371,8 +371,8 @@ export default function CostruiamoPage() {
             <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 flex items-center gap-3 card-glow">
               <div className="hidden sm:block text-2xl">💚</div>
               <div className="flex-1">
-                <div className="font-semibold">Ti piace l&apos;idea?</div>
-                <div className="text-xs text-white/70">Supporta o proponi la tua collaborazione</div>
+                <div className="font-semibold">Sei entusiasta della nostra visione?</div>
+                <div className="text-xs text-white/70">Unisciti a noi o supporta il progetto!</div>
               </div>
               <a
                 href="#"
@@ -381,9 +381,9 @@ export default function CostruiamoPage() {
                   const el = document.querySelector("form");
                   el?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="px-4 py-2 rounded-xl bg-accent text-black font-semibold nav-item-transition shine-btn"
+                className="px-5 py-3 rounded-full bg-accent text-black font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-in-out shine-btn"
               >
-                Partecipa
+                Unisciti a Noi!
               </a>
             </div>
           </div>

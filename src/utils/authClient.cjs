@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.supabase = exports.authClient = void 0;
-var firebaseAuth_1 = require("./firebaseAuth");
+var firebaseAuth_1 = require("./firebaseAuth.cjs");
 var FirebaseAuthClient = /** @class */ (function () {
     function FirebaseAuthClient() {
         // Firebase Auth gestisce automaticamente l'inizializzazione

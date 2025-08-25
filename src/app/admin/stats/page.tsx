@@ -57,12 +57,12 @@ export default function StatsPage() {
       const appStats = await DatabaseService.getAppStatistics();
       
       setStats({
-        totalUsers: appStats.total_users || 1247,
-        activeUsers: appStats.active_users_week || 342,
-        totalNews: appStats.total_news || 156,
-        totalEvents: appStats.total_events || 89,
-        totalComments: appStats.total_comments || 234,
-        totalBadges: appStats.total_badges_earned || 890,
+        totalUsers: appStats.total_users || 0,
+        activeUsers: appStats.active_users_week || 0,
+        totalNews: appStats.total_news || 0,
+        totalEvents: appStats.total_events || 0,
+        totalComments: appStats.total_comments || 0,
+        totalBadges: appStats.total_badges_earned || 0,
         weeklyGrowth: {
           users: 12,
           content: 8,
@@ -77,14 +77,14 @@ export default function StatsPage() {
       });
     } catch (error) {
       console.error('Errore caricamento statistiche:', error);
-      // Mock data in caso di errore
+      // Valori 0 in caso di errore per evidenziare il problema
       setStats({
-        totalUsers: 1247,
-        activeUsers: 342,
-        totalNews: 156,
-        totalEvents: 89,
-        totalComments: 234,
-        totalBadges: 890,
+        totalUsers: 0,
+        activeUsers: 0,
+        totalNews: 0,
+        totalEvents: 0,
+        totalComments: 0,
+        totalBadges: 0,
         weeklyGrowth: {
           users: 12,
           content: 8,

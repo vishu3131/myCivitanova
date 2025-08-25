@@ -24,6 +24,12 @@ export interface Profile {
     push_notifications: boolean;
     sms_notifications: boolean;
   };
+  // Firebase sync fields
+  firebase_uid?: string;
+  firebase_created_at?: string;
+  firebase_last_sign_in?: string;
+  last_sync_at?: string;
+  sync_status?: 'synced' | 'pending' | 'error';
   created_at: string;
   updated_at: string;
 }

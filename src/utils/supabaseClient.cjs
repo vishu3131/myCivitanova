@@ -54,11 +54,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.directSupabaseClient = exports.supabase = void 0;
-var authClient_1 = require("./authClient");
-var firebaseAuth_1 = require("./firebaseAuth");
+var authClient_1 = require("./authClient.cjs");
+var firebaseAuth_1 = require("./firebaseAuth.cjs");
 var supabase_js_1 = require("@supabase/supabase-js");
-var firebaseSupabaseSync_1 = require("../services/firebaseSupabaseSync");
-var firebaseClient_1 = require("./firebaseClient"); // Import Firebase auth directly and rename
+var firebaseSupabaseSync_1 = require("../services/firebaseSupabaseSync.cjs");
+var firebaseClient_1 = require("./firebaseClient.cjs"); // Import Firebase auth directly and rename
 // Explicitly type the imported auth, handling potential null from firebaseClient.ts
 var firebaseAuthInstance = firebaseClient_1.auth;
 // Configurazione Supabase diretta per operazioni di sincronizzazione

@@ -20,7 +20,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+// import { supabase } from '@/utils/supabaseClient.ts';
 
 interface User {
   id: string;
@@ -54,38 +54,25 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          email,
-          full_name,
-          avatar_url,
-          role,
-          status,
-          created_at,
-          last_sign_in_at,
-          total_xp,
-          current_level,
-          badges_count
-        `);
-
-      if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-      }
-
-      if (roleFilter !== 'all') {
-        query = query.eq('role', roleFilter);
-      }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
+      const params = new URLSearchParams();
+      if (searchTerm) params.set('search', searchTerm);
+      if (roleFilter !== 'all') params.set('role', roleFilter);
+      const res = await fetch(`/api/admin/users?${params.toString()}`);
+      const json = await res.json();
+      const data = (json.users || []).map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        full_name: u.full_name,
+        avatar_url: u.avatar_url,
+        role: u.role,
+        status: u.is_active ? 'active' : 'suspended',
+        created_at: u.created_at,
+        last_sign_in_at: u.firebase_last_sign_in,
+        total_xp: u.total_xp ?? 0,
+        current_level: u.current_level ?? 1,
+        badges_count: u.badges_count ?? 0,
+      }));
+      setUsers(data);
     } catch (error) {
       console.error('Errore nel caricamento degli utenti:', error);
       // Fallback con dati demo
@@ -102,30 +89,6 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
           current_level: 15,
           badges_count: 25
         },
-        {
-          id: '2',
-          email: 'moderator@civitanova.it',
-          full_name: 'Moderatore Test',
-          role: 'moderator',
-          status: 'active',
-          created_at: '2024-01-02T00:00:00Z',
-          last_sign_in_at: '2024-01-15T09:15:00Z',
-          total_xp: 3200,
-          current_level: 12,
-          badges_count: 18
-        },
-        {
-          id: '3',
-          email: 'user@example.com',
-          full_name: 'Utente Demo',
-          role: 'user',
-          status: 'active',
-          created_at: '2024-01-03T00:00:00Z',
-          last_sign_in_at: '2024-01-14T18:45:00Z',
-          total_xp: 1500,
-          current_level: 8,
-          badges_count: 12
-        }
       ]);
     } finally {
       setLoading(false);
@@ -140,13 +103,12 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
+      const res = await fetch('/api/admin/update-user-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, role: newRole })
+      });
+      if (!res.ok) throw new Error('API error');
       setUsers(prev => prev.map(user => 
         user.id === userId ? { ...user, role: newRole as any } : user
       ));
@@ -157,41 +119,11 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
   };
 
   const updateUserStatus = async (userId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ status: newStatus })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, status: newStatus as any } : user
-      ));
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento dello status:', error);
-      alert('Errore nell\'aggiornamento dello status');
-    }
+    alert('Aggiornamento stato utente non supportato in questa versione');
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questo utente? Questa azione è irreversibile.')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      setUsers(prev => prev.filter(user => user.id !== userId));
-    } catch (error) {
-      console.error('Errore nell\'eliminazione dell\'utente:', error);
-      alert('Errore nell\'eliminazione dell\'utente');
-    }
+    alert('Eliminazione utente non supportata in questa versione');
   };
 
   const getRoleColor = (role: string) => {

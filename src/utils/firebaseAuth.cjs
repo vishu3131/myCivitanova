@@ -59,7 +59,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.firebase = exports.firestore = exports.firebaseAuth = exports.FirestoreWrapper = exports.FirebaseAuthWrapper = void 0;
 var auth_1 = require("firebase/auth");
 var firestore_1 = require("firebase/firestore");
-var firebaseClient_1 = require("./firebaseClient");
+var firebaseClient_1 = require("./firebaseClient.cjs");
 // Wrapper per compatibilità con l'API Supabase
 var FirebaseAuthWrapper = /** @class */ (function () {
     function FirebaseAuthWrapper() {

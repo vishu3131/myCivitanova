@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { supabase } from './src/utils/supabaseClient.ts';
+import { supabase } from './src/utils/supabaseClient.cjs';
 
 async function checkFirebaseUsers() {
   console.log('🔍 Controllo tabella profiles (utenti Firebase)...');

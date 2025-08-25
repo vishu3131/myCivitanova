@@ -8,7 +8,7 @@
 import { authClient } from './authClient';
 import { firebase } from './firebaseAuth';
 import { createClient } from '@supabase/supabase-js';
-import { firebaseSupabaseSync } from '../services/firebaseSupabaseSync.ts';
+import { firebaseSupabaseSync } from '../services/firebaseSupabaseSync';
 import { auth as firebaseAuthRaw } from './firebaseClient'; // Import Firebase auth directly and rename
 import { Auth } from 'firebase/auth'; // Import Auth type
 
@@ -23,6 +23,10 @@ let directSupabaseClient: any = null;
 
 if (supabaseUrl && supabaseAnonKey) {
   directSupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+  console.error('❌ Impossibile inizializzare Supabase client:');
+  console.error('- NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅ Impostato' : '❌ Mancante');
+  console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Impostato' : '❌ Mancante');
 }
 
 // Interfaccia per il profilo utente sincronizzato
@@ -53,22 +57,22 @@ export const supabase = {
   auth: authClient,
   
   // Metodi database: usa Supabase diretto se disponibile, altrimenti fallback a Firebase wrapper
-  from: (directSupabaseClient?.from?.bind(directSupabaseClient)) ?? firebase.from.bind(firebase),
+  from: firebase.from.bind(firebase),
   
   // Client Supabase diretto per operazioni di sincronizzazione e funzionalità native Supabase
   direct: directSupabaseClient,
   
   // Espone rpc dal client Supabase diretto
-  rpc: directSupabaseClient?.rpc.bind(directSupabaseClient),
+  rpc: directSupabaseClient?.rpc?.bind(directSupabaseClient),
 
   // Espone storage dal client Supabase diretto
   storage: directSupabaseClient?.storage,
 
   // Espone channel dal client Supabase diretto
-  channel: directSupabaseClient?.channel.bind(directSupabaseClient),
+  channel: directSupabaseClient?.channel?.bind(directSupabaseClient),
 
   // Espone removeChannel dal client Supabase diretto
-  removeChannel: directSupabaseClient?.removeChannel.bind(directSupabaseClient),
+  removeChannel: directSupabaseClient?.removeChannel?.bind(directSupabaseClient),
 
   // Metodi per accedere ai dati sincronizzati
   sync: {
@@ -197,10 +201,19 @@ export const supabase = {
         const firebaseUser = firebaseAuthInstance?.currentUser; // Use optional chaining
 
         if (!firebaseUser) {
+          console.warn('Nessun utente Firebase autenticato per la sincronizzazione');
           return false;
         }
 
+        console.log(`🔄 Sincronizzazione utente ${firebaseUser.uid} in corso...`);
         const result = await firebaseSupabaseSync.syncUser(firebaseUser);
+        
+        if (result.success) {
+          console.log(`✅ Sincronizzazione completata con successo: ${result.syncType}`);
+        } else {
+          console.error(`❌ Errore nella sincronizzazione: ${result.error}`);
+        }
+        
         return result.success;
       } catch (error) {
         console.error('Errore nella sincronizzazione utente:', error);

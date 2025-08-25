@@ -8,7 +8,7 @@
 import { User } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db as firestore } from '../utils/firebaseClient';
-import { supabase } from '../utils/supabaseClient.ts';
+import { supabase } from '../utils/supabaseClient';
 import { AuthUser, UserProfile } from '../utils/firebaseAuth';
 
 // Interfacce per i dati di sincronizzazione
@@ -198,7 +198,7 @@ class FirebaseSupabaseSync {
         throw error;
       }
 
-      return data;
+      return data || null;
     } catch (error) {
       console.error('Errore nel recupero profilo Supabase:', error);
       return null;
@@ -209,116 +209,139 @@ class FirebaseSupabaseSync {
    * Crea un nuovo profilo in Supabase
    */
   private async createSupabaseProfile(firebaseProfile: FirebaseProfile): Promise<SyncResult> {
+    const startTime = Date.now();
+    
     try {
-      const profileData = {
+      // Prepara i dati per l'inserimento
+      const newProfile = {
         firebase_uid: firebaseProfile.uid,
         email: firebaseProfile.email,
-        full_name: firebaseProfile.displayName || null,
-        phone: firebaseProfile.phoneNumber || null,
-        avatar_url: firebaseProfile.photoURL || null,
+        full_name: firebaseProfile.displayName || '',
+        username: this.generateUsername(firebaseProfile),
+        phone: firebaseProfile.phoneNumber || '',
+        role: firebaseProfile.customClaims?.role || 'user',
+        avatar_url: firebaseProfile.photoURL || '',
+        is_active: true,
         is_verified: firebaseProfile.emailVerified,
-        firebase_created_at: firebaseProfile.metadata.creationTime || null,
-        firebase_last_sign_in: firebaseProfile.metadata.lastSignInTime || null,
-        sync_status: 'synced' as const,
-        last_sync_at: new Date().toISOString()
+        firebase_created_at: firebaseProfile.metadata.creationTime,
+        firebase_last_sign_in: firebaseProfile.metadata.lastSignInTime,
+        last_sync_at: new Date().toISOString(),
+        sync_status: 'synced'
       };
 
+      // Inserisci il nuovo profilo
       const { data, error } = await supabase
         .direct
         .from('profiles')
-        .insert(profileData)
+        .insert(newProfile)
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       return {
         success: true,
         profileId: data.id,
         syncType: 'create',
-        duration: 0 // Calcolato dal chiamante
+        duration: Date.now() - startTime
       };
     } catch (error) {
-      let errorMessage;
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "object") {
-        errorMessage = JSON.stringify(error);
-      } else {
-        errorMessage = String(error);
-      }
-      throw new Error(`Errore creazione profilo: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      console.error('Errore nella creazione profilo Supabase:', errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage,
+        syncType: 'create',
+        duration: Date.now() - startTime
+      };
     }
   }
 
   /**
    * Aggiorna un profilo esistente in Supabase
    */
-  private async updateSupabaseProfile(
-    firebaseProfile: FirebaseProfile, 
-    existingProfile: SupabaseProfile
-  ): Promise<SyncResult> {
+  private async updateSupabaseProfile(firebaseProfile: FirebaseProfile, existingProfile: SupabaseProfile): Promise<SyncResult> {
+    const startTime = Date.now();
+    
     try {
-      // Controlla se ci sono cambiamenti
-      const hasChanges = 
-        existingProfile.email !== firebaseProfile.email ||
-        existingProfile.full_name !== firebaseProfile.displayName ||
-        existingProfile.phone !== firebaseProfile.phoneNumber ||
-        existingProfile.avatar_url !== firebaseProfile.photoURL ||
-        existingProfile.is_verified !== firebaseProfile.emailVerified;
+      // Prepara i dati per l'aggiornamento
+      const updates: Record<string, any> = {
+        email: firebaseProfile.email,
+        full_name: firebaseProfile.displayName || existingProfile.full_name,
+        phone: firebaseProfile.phoneNumber || existingProfile.phone,
+        role: firebaseProfile.customClaims?.role || existingProfile.role,
+        avatar_url: firebaseProfile.photoURL || existingProfile.avatar_url,
+        is_verified: firebaseProfile.emailVerified,
+        firebase_created_at: firebaseProfile.metadata.creationTime,
+        firebase_last_sign_in: firebaseProfile.metadata.lastSignInTime,
+        last_sync_at: new Date().toISOString(),
+        sync_status: 'synced'
+      };
 
+      // Verifica se ci sono effettivamente modifiche
+      let hasChanges = false;
+      for (const [key, value] of Object.entries(updates)) {
+        if (existingProfile[key as keyof SupabaseProfile] !== value) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      // Se non ci sono modifiche, aggiorna solo il timestamp di sincronizzazione
       if (!hasChanges) {
-        // Aggiorna solo il timestamp di sincronizzazione
-        await supabase
+        const { error } = await supabase
           .direct
           .from('profiles')
-          .update({ 
-            last_sync_at: new Date().toISOString(),
-            firebase_last_sign_in: firebaseProfile.metadata.lastSignInTime || null
-          })
-          .eq('firebase_uid', firebaseProfile.uid);
+          .update({ last_sync_at: new Date().toISOString() })
+          .eq('id', existingProfile.id);
+
+        if (error) {
+          throw error;
+        }
 
         return {
           success: true,
           profileId: existingProfile.id,
           syncType: 'update',
-          duration: 0
+          duration: Date.now() - startTime
         };
       }
 
-      // Aggiorna i dati modificati
-      const updateData = {
-        email: firebaseProfile.email,
-        full_name: firebaseProfile.displayName || null,
-        phone: firebaseProfile.phoneNumber || null,
-        avatar_url: firebaseProfile.photoURL || null,
-        is_verified: firebaseProfile.emailVerified,
-        firebase_last_sign_in: firebaseProfile.metadata.lastSignInTime || null,
-        sync_status: 'synced' as const,
-        last_sync_at: new Date().toISOString()
-      };
-
+      // Aggiorna il profilo con tutte le modifiche
       const { error } = await supabase
         .direct
         .from('profiles')
-        .update(updateData)
-        .eq('firebase_uid', firebaseProfile.uid);
+        .update(updates)
+        .eq('id', existingProfile.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       return {
         success: true,
         profileId: existingProfile.id,
         syncType: 'update',
-        duration: 0
+        duration: Date.now() - startTime
       };
     } catch (error) {
-      throw new Error(`Errore aggiornamento profilo: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      console.error('Errore nell\'aggiornamento profilo Supabase:', errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage,
+        syncType: 'update',
+        duration: Date.now() - startTime
+      };
     }
   }
 
   /**
-   * Aggiorna il mapping Firebase UID -> Supabase UUID
+   * Aggiorna il mapping tra Firebase UID e Supabase UUID
    */
   private async updateUserMapping(firebaseUid: string, supabaseUuid: string): Promise<void> {
     try {
@@ -329,128 +352,165 @@ class FirebaseSupabaseSync {
           firebase_uid: firebaseUid,
           supabase_uuid: supabaseUuid,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'firebase_uid'
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
     } catch (error) {
-      console.error('Errore aggiornamento mapping:', error);
+      console.error('Errore nell\'aggiornamento mapping utente:', error);
     }
   }
 
   /**
-   * Registra l'operazione di sincronizzazione
+   * Genera un username basato sul profilo Firebase
+   */
+  private generateUsername(profile: FirebaseProfile): string {
+    // Usa il displayName se disponibile
+    if (profile.displayName) {
+      return profile.displayName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .substring(0, 15);
+    }
+    
+    // Altrimenti usa l'email senza dominio
+    const emailUsername = profile.email.split('@')[0];
+    return emailUsername.substring(0, 15);
+  }
+
+  /**
+   * Registra un'operazione di sincronizzazione
    */
   private async logSync(logData: {
     firebase_uid: string;
     profile_id?: string;
-    sync_type: 'create' | 'update' | 'delete';
-    sync_status: 'success' | 'error' | 'pending';
+    sync_type: 'create' | 'update';
+    sync_status: 'success' | 'error';
     firebase_data?: any;
-    supabase_data?: any;
     error_message?: string;
     sync_duration_ms: number;
   }): Promise<void> {
     try {
-      await supabase
+      const { error } = await supabase
         .direct
         .from('sync_logs')
-        .insert(logData);
+        .insert({
+          ...logData,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Errore nel log sincronizzazione:', error);
+      }
     } catch (error) {
-      console.error('Errore nel logging della sincronizzazione:', error);
+      console.error('Errore nel log sincronizzazione:', error);
     }
   }
 
   /**
-   * Ottiene le statistiche di sincronizzazione
+   * Sincronizza tutti gli utenti da Firestore a Supabase
    */
-  async getSyncStats(): Promise<SyncStats> {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_sync_stats');
-
-      if (error) throw error;
-
-      return {
-        totalUsers: parseInt(data[0]?.total_users || '0'),
-        syncedUsers: parseInt(data[0]?.synced_users || '0'),
-        pendingUsers: parseInt(data[0]?.pending_users || '0'),
-        errorUsers: parseInt(data[0]?.error_users || '0'),
-        lastSync: data[0]?.last_sync || null
-      };
-    } catch (error) {
-      console.error('Errore nel recupero statistiche:', error);
-      return {
-        totalUsers: 0,
-        syncedUsers: 0,
-        pendingUsers: 0,
-        errorUsers: 0,
-        lastSync: null
-      };
-    }
-  }
-
-  /**
-   * Sincronizza tutti gli utenti (per operazioni batch)
-   */
-  async syncAllUsers(): Promise<{ success: number; errors: number; total: number }> {
+  async syncAllUsers(): Promise<{
+    success: boolean;
+    stats: {
+      total: number;
+      success: number;
+      error: number;
+      duration: number;
+    };
+  }> {
     if (this.syncInProgress) {
-      throw new Error('Sincronizzazione già in corso');
+      return {
+        success: false,
+        stats: { total: 0, success: 0, error: 0, duration: 0 }
+      };
     }
 
     this.syncInProgress = true;
-    let success = 0;
-    let errors = 0;
-    let total = 0;
+    this.lastSyncTime = new Date();
+    const startTime = Date.now();
+    
+    const stats = {
+      total: 0,
+      success: 0,
+      error: 0,
+      duration: 0
+    };
 
     try {
-      console.log('🔄 Inizio sincronizzazione batch di tutti gli utenti');
-      
       // Ottieni tutti i profili da Firestore
-      const profilesQuery = query(collection(firestore, 'profiles'));
-      const profilesSnapshot = await getDocs(profilesQuery);
-      
-      total = profilesSnapshot.size;
-      console.log(`📊 Trovati ${total} profili da sincronizzare`);
+      const profilesSnapshot = await getDocs(collection(firestore, 'profiles'));
+      stats.total = profilesSnapshot.size;
 
-      for (const profileDoc of profilesSnapshot.docs) {
+      // Sincronizza ogni profilo
+      for (const doc of profilesSnapshot.docs) {
+        const profileData = doc.data();
+        const uid = doc.id;
+
         try {
-          const profileData = profileDoc.data();
-          const mockUser = {
-            uid: profileDoc.id,
+          // Crea un oggetto User fittizio per la sincronizzazione
+          const mockUser: User = {
+            uid,
             email: profileData.email || '',
-            displayName: profileData.displayName,
-            photoURL: profileData.photoURL,
-            phoneNumber: profileData.phoneNumber,
+            displayName: profileData.displayName || '',
+            photoURL: profileData.photoURL || null,
+            phoneNumber: profileData.phoneNumber || null,
             emailVerified: profileData.emailVerified || false,
+            isAnonymous: false,
             metadata: {
-              creationTime: profileData.createdAt,
-              lastSignInTime: profileData.lastSignInTime
-            }
-          } as User;
+              creationTime: profileData.createdAt || '',
+              lastSignInTime: profileData.lastSignInTime || '',
+              createdAt: profileData.createdAt || '',
+              lastLoginAt: profileData.lastSignInTime || ''
+            },
+            providerData: [],
+            refreshToken: '',
+            tenantId: null,
+            delete: async () => {},
+            getIdToken: async () => '',
+            getIdTokenResult: async () => ({
+              token: '',
+              authTime: '',
+              issuedAtTime: '',
+              expirationTime: '',
+              signInProvider: null,
+              signInSecondFactor: null,
+              claims: {}
+            }),
+            reload: async () => {},
+            toJSON: () => ({}),
+            providerId: '',
+          };
 
+          // Sincronizza l'utente
           const result = await this.syncUser(mockUser);
           if (result.success) {
-            success++;
+            stats.success++;
           } else {
-            errors++;
+            stats.error++;
           }
         } catch (error) {
-          console.error(`Errore sincronizzazione ${profileDoc.id}:`, error);
-          errors++;
+          console.error(`Errore nella sincronizzazione utente ${uid}:`, error);
+          stats.error++;
         }
       }
 
-      this.lastSyncTime = new Date();
-      console.log(`✅ Sincronizzazione batch completata: ${success} successi, ${errors} errori`);
-      
-      return { success, errors, total };
+      stats.duration = Date.now() - startTime;
+      return { success: true, stats };
+    } catch (error) {
+      console.error('Errore nella sincronizzazione di tutti gli utenti:', error);
+      stats.duration = Date.now() - startTime;
+      return { success: false, stats };
     } finally {
       this.syncInProgress = false;
     }
   }
 
   /**
-   * Verifica se la sincronizzazione è in corso
+   * Verifica se è in corso una sincronizzazione
    */
   isSyncInProgress(): boolean {
     return this.syncInProgress;
@@ -462,8 +522,89 @@ class FirebaseSupabaseSync {
   getLastSyncTime(): Date | null {
     return this.lastSyncTime;
   }
+
+  /**
+   * Ottiene le statistiche di sincronizzazione
+   */
+  async getSyncStats(): Promise<SyncStats> {
+    try {
+      // Verifica che il client Supabase sia disponibile
+      if (!supabase.rpc) {
+        console.warn('Client Supabase non disponibile. Verifica le variabili d\'ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+        return this.getFallbackStats();
+      }
+
+      // Usa la funzione RPC di Supabase per ottenere le statistiche
+      const { data, error } = await supabase.rpc('get_sync_stats');
+
+      if (error) {
+        console.error('Errore nella chiamata RPC get_sync_stats:', error);
+        // Se la funzione RPC non esiste, prova a calcolare le statistiche manualmente
+        if (error.code === '42883') {
+          console.warn('La funzione RPC get_sync_stats non esiste. Calcolo statistiche manualmente...');
+          return this.calculateStatsManually();
+        }
+        throw error;
+      }
+
+      return data || this.getFallbackStats();
+    } catch (error) {
+      console.error('Errore nel recupero statistiche sincronizzazione:', error);
+      return this.getFallbackStats();
+    }
+  }
+
+  /**
+   * Restituisce statistiche di fallback quando il sistema principale non è disponibile
+   */
+  private getFallbackStats(): SyncStats {
+    return {
+      totalUsers: 0,
+      syncedUsers: 0,
+      pendingUsers: 0,
+      errorUsers: 0,
+      lastSync: null
+    };
+  }
+
+  /**
+   * Calcola le statistiche manualmente quando la funzione RPC non è disponibile
+   */
+  private async calculateStatsManually(): Promise<SyncStats> {
+    try {
+      // Prova a ottenere i dati direttamente dalla tabella profiles
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('sync_status, last_sync_at');
+
+      if (error) {
+        console.error('Errore nel recupero manuale delle statistiche:', error);
+        return this.getFallbackStats();
+      }
+
+      const totalUsers = profiles?.length || 0;
+      const syncedUsers = profiles?.filter(p => p.sync_status === 'synced').length || 0;
+      const pendingUsers = profiles?.filter(p => p.sync_status === 'pending').length || 0;
+      const errorUsers = profiles?.filter(p => p.sync_status === 'error').length || 0;
+      const lastSync = profiles?.reduce((latest, profile) => {
+        if (!profile.last_sync_at) return latest;
+        if (!latest) return profile.last_sync_at;
+        return new Date(profile.last_sync_at) > new Date(latest) ? profile.last_sync_at : latest;
+      }, null as string | null);
+
+      return {
+        totalUsers,
+        syncedUsers,
+        pendingUsers,
+        errorUsers,
+        lastSync
+      };
+    } catch (error) {
+      console.error('Errore nel calcolo manuale delle statistiche:', error);
+      return this.getFallbackStats();
+    }
+  }
 }
 
-// Esporta l'istanza singleton
+// Esporta un'istanza singleton
 export const firebaseSupabaseSync = FirebaseSupabaseSync.getInstance();
-export default firebaseSupabaseSync;

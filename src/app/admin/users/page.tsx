@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { DatabaseService } from '@/lib/database.ts';
+// import { DatabaseService } from '@/lib/database.ts';
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 import { 
   Users, 
@@ -39,6 +39,12 @@ interface User {
     push_notifications: boolean;
     sms_notifications: boolean;
   };
+  // Firebase sync fields
+  firebase_uid?: string;
+  firebase_created_at?: string;
+  firebase_last_sign_in?: string;
+  last_sync_at?: string;
+  sync_status?: 'synced' | 'pending' | 'error';
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +57,7 @@ export default function UsersPage() {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [verificationFilter, setVerificationFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [syncFilter, setSyncFilter] = useState('all');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<User['role']>('user');
@@ -65,23 +72,27 @@ export default function UsersPage() {
     setLoading(true);
     try {
       // Fetch total count first (if needed for pagination UI)
-      const { count } = await DatabaseService.getUsersCount();
-      setTotalUsersCount(count || 0);
+      const params = new URLSearchParams();
+      if (selectedRole && selectedRole !== 'all') params.set('role', selectedRole);
+      const countRes = await fetch(`/api/admin/users/count?${params.toString()}`, { cache: 'no-store' });
+      const countJson = await countRes.json();
+      setTotalUsersCount(countJson.count || 0);
 
       const offset = (currentPage - 1) * usersPerPage;
-      const usersData = await DatabaseService.getUsers({
-        limit: usersPerPage,
-        offset: offset,
-        role: selectedRole === 'all' ? undefined : (selectedRole as User['role']),
-      });
-      setUsers(usersData);
+      params.set('limit', String(usersPerPage));
+      params.set('offset', String(offset));
+      if (searchTerm) params.set('search', searchTerm);
+
+      const usersRes = await fetch(`/api/admin/users?${params.toString()}`, { cache: 'no-store' });
+      const usersJson = await usersRes.json();
+      setUsers(usersJson.users || []);
     } catch (error) {
       console.error('Errore caricamento utenti:', error);
       setUsers([]); // Clear users on error
     } finally {
       setLoading(false);
     }
-  }, [currentPage, usersPerPage, selectedRole]);
+  }, [currentPage, usersPerPage, selectedRole, searchTerm]);
 
   useEffect(() => {
     if (currentUser) {
@@ -125,7 +136,12 @@ export default function UsersPage() {
 
     setLoading(true);
     try {
-      await DatabaseService.updateUserRole(userToEdit.id, newRole);
+      const res = await fetch('/api/admin/update-user-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userToEdit.id, role: newRole })
+      });
+      if (!res.ok) throw new Error('API error');
       setEditSuccess('Ruolo utente aggiornato con successo!');
       loadUsers(); // Refresh the list
       setIsEditModalOpen(false);
@@ -153,7 +169,13 @@ export default function UsersPage() {
                        (dateFilter === 'week' && (now.getTime() - userDate.getTime()) <= 7 * 24 * 60 * 60 * 1000) ||
                        (dateFilter === 'month' && (now.getTime() - userDate.getTime()) <= 30 * 24 * 60 * 60 * 1000);
     
-    return matchesSearch && matchesRole && matchesVerification && matchesDate;
+    const matchesSync = syncFilter === 'all' ||
+                       (syncFilter === 'synced' && user.firebase_uid && user.sync_status === 'synced') ||
+                       (syncFilter === 'not_synced' && !user.firebase_uid) ||
+                       (syncFilter === 'pending' && user.firebase_uid && user.sync_status === 'pending') ||
+                       (syncFilter === 'error' && user.firebase_uid && user.sync_status === 'error');
+    
+    return matchesSearch && matchesRole && matchesVerification && matchesDate && matchesSync;
   });
 
   const getRoleColor = (role: string) => {
@@ -347,6 +369,25 @@ export default function UsersPage() {
               </div>
             </div>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-yellow-500/10 rounded-lg">
+                <Users className="w-6 h-6 text-yellow-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {users.filter(u => u.firebase_uid).length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Firebase</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Filters */}
@@ -428,6 +469,22 @@ export default function UsersPage() {
                   <option value="month">Ultimo mese</option>
                 </select>
               </div>
+
+              {/* Firebase Sync Filter */}
+              <div className="md:w-48">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Firebase</label>
+                <select
+                  value={syncFilter}
+                  onChange={(e) => setSyncFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tutti gli stati</option>
+                  <option value="synced">Sincronizzati</option>
+                  <option value="not_synced">Non sincronizzati</option>
+                  <option value="pending">In attesa</option>
+                  <option value="error">Errore</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -452,6 +509,9 @@ export default function UsersPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Registrato
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Firebase
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Azioni
@@ -530,6 +590,38 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {new Date(user.created_at).toLocaleDateString('it-IT')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        {user.firebase_uid ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                user.sync_status === 'synced' ? 'bg-green-500' :
+                                user.sync_status === 'pending' ? 'bg-yellow-500' :
+                                user.sync_status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                              }`}></div>
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {user.sync_status === 'synced' ? 'Sincronizzato' :
+                                 user.sync_status === 'pending' ? 'In attesa' :
+                                 user.sync_status === 'error' ? 'Errore' : 'Sconosciuto'}
+                              </span>
+                            </div>
+                            {user.firebase_created_at && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Firebase: {new Date(user.firebase_created_at).toLocaleDateString('it-IT')}
+                              </div>
+                            )}
+                            {user.last_sync_at && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Sync: {new Date(user.last_sync_at).toLocaleDateString('it-IT')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Non sincronizzato</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">

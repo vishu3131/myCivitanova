@@ -55,8 +55,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.firebaseSupabaseSync = void 0;
 var firestore_1 = require("firebase/firestore");
-var firebaseClient_1 = require("../utils/firebaseClient");
-var supabaseClient_1 = require("../utils/supabaseClient");
+var firebaseClient_1 = require("../utils/firebaseClient.cjs");
+var supabaseClient_1 = require("../utils/supabaseClient.cjs");
 var FirebaseSupabaseSync = /** @class */ (function () {
     function FirebaseSupabaseSync() {
         this.syncInProgress = false;
