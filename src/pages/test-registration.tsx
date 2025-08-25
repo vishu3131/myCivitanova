@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import { firebaseClient } from '@/utils/firebaseAuth';
 
 export default function TestRegistration() {
   const [email, setEmail] = useState('');
@@ -13,71 +13,55 @@ export default function TestRegistration() {
     setResult('Avvio test registrazione...');
 
     try {
-      // Test 1: Verifica connessione Supabase
-      setResult(prev => prev + '\n1. Test connessione Supabase...');
-      const { data: testData, error: testError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-      
-      if (testError) {
-        setResult(prev => prev + '\n❌ Errore connessione: ' + testError.message);
+      // Test 1: Verifica connessione Firebase
+      setResult(prev => prev + '\n1. Test connessione Firebase...');
+      try {
+        const testData = await firebaseClient.from('profiles').select('count').limit(1);
+        setResult(prev => prev + '\n✅ Connessione Firebase OK');
+      } catch (testError) {
+        setResult(prev => prev + '\n❌ Errore connessione: ' + (testError as Error).message);
         return;
       }
-      setResult(prev => prev + '\n✅ Connessione Supabase OK');
 
       // Test 2: Registrazione utente
       if (email && password && fullName) {
         setResult(prev => prev + '\n2. Test registrazione utente...');
         
-        const { data, error } = await supabase.auth.signUp({
-          email: email,
-          password: password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
+        const userCredential = await firebaseClient.auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-        if (error) {
-          setResult(prev => prev + '\n❌ Errore registrazione: ' + error.message);
-          return;
-        }
+        setResult(prev => prev + '\n✅ Utente creato: ' + user.uid);
 
-        setResult(prev => prev + '\n✅ Utente creato: ' + data.user?.id);
-
-        // Test 3: Verifica creazione profilo
-        if (data.user) {
+        // Test 3: Verifica creazione profilo Firebase
+        if (user) {
           setResult(prev => prev + '\n3. Verifica creazione profilo...');
           
           // Attendi un momento per il trigger
           await new Promise(resolve => setTimeout(resolve, 2000));
           
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
+          try {
+            const profileData = await firebaseClient
+              .from('profiles')
+              .select('*')
+              .eq('id', user.uid)
+              .single();
 
-          if (profileError) {
+            setResult(prev => prev + '\n✅ Profilo creato automaticamente: ' + JSON.stringify(profileData, null, 2));
+          } catch (profileError) {
             setResult(prev => prev + '\n⚠️ Profilo non trovato, tentativo creazione manuale...');
             
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: data.user.id,
-                email: email,
-                full_name: fullName,
-              });
-
-            if (insertError) {
-              setResult(prev => prev + '\n❌ Errore creazione profilo: ' + insertError.message);
-            } else {
+            try {
+              await firebaseClient
+                .from('profiles')
+                .insert({
+                  id: user.uid,
+                  email: email,
+                  full_name: fullName,
+                });
               setResult(prev => prev + '\n✅ Profilo creato manualmente');
+            } catch (insertError) {
+              setResult(prev => prev + '\n❌ Errore creazione profilo: ' + (insertError as Error).message);
             }
-          } else {
-            setResult(prev => prev + '\n✅ Profilo creato automaticamente: ' + JSON.stringify(profileData, null, 2));
           }
         }
       }
@@ -93,7 +77,7 @@ export default function TestRegistration() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-6">Test Registrazione Supabase</h1>
+        <h1 className="text-2xl font-bold mb-6">Test Registrazione Firebase</h1>
         
         <div className="space-y-4 mb-6">
           <div>

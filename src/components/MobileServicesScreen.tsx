@@ -92,7 +92,7 @@ const services = [
     time: '10 min',
     cost: 'Variabile',
     color: 'from-indigo-500 to-indigo-600',
-    url: 'https://www.comune.civitanova-marche.mc.it/servizi/scuola',
+    url: 'https://www.comune.civitanova.mc.it/refezione-scolastica',
     badge: 'In arrivo'
   },
   {

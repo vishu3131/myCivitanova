@@ -78,7 +78,7 @@ Questi servizi sono in fase di sviluppo e implementazione. L'obiettivo è elimin
     description: 'Non è solo un social, è una piattaforma per migliorare davvero la tua città insieme agli altri cittadini!',
     detailedText: `La community di MyCivitanova è progettata per l'engagement civico reale:
 
-💬 Discussioni Costruttive: Dialoga con altri cittadini su temi importanti
+<span role="img" aria-label="Chat bubble emoji">💬</span> Discussioni Costruttive: Dialoga con altri cittadini su temi importanti
 🎯 Segnalazioni Efficaci: Riporta problemi e segui la loro risoluzione
 🏆 Iniziative Collettive: Partecipa a progetti per migliorare la città
 💰 Crowdfunding Civico: Sostieni progetti di interesse pubblico

@@ -28,7 +28,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface UserSettings {
   theme: 'dark' | 'light' | 'neon';

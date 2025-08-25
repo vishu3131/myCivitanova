@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from "@/components/admin/AdminLayout";
 import DatabaseTest from "@/components/admin/DatabaseTest";
-import { DatabaseService } from "@/lib/database";
+import { DatabaseService } from "@/lib/database.ts";
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
-import { supabase } from "@/utils/supabaseClient";
+import { firebaseClient } from "@/utils/firebaseAuth";
 import {
   Users,
   FileText,

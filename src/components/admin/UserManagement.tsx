@@ -20,7 +20,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface User {
   id: string;

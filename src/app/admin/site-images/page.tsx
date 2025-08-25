@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Image, Film, PlusSquare, Trash2, Edit, Loader } from 'lucide-react';
-import { SiteImage, SiteImageSection } from '@/lib/database';
+import { SiteImage, SiteImageSection } from '@/lib/database.ts';
 
 interface SiteImageSectionWithImages extends SiteImageSection {
   images: SiteImage[];

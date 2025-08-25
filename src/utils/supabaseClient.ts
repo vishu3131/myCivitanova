@@ -1,30 +1,224 @@
-import { createClient } from '@supabase/supabase-js';
+/**
+ * MYCIVITANOVA - CLIENT SUPABASE UNIFICATO CON SINCRONIZZAZIONE
+ * 
+ * Client unificato che combina Firebase Auth e Supabase Database
+ * con supporto per la sincronizzazione automatica dei profili utente.
+ */
 
+import { authClient } from './authClient';
+import { firebase } from './firebaseAuth';
+import { createClient } from '@supabase/supabase-js';
+import { firebaseSupabaseSync } from '../services/firebaseSupabaseSync.ts';
+import { auth as firebaseAuthRaw } from './firebaseClient'; // Import Firebase auth directly and rename
+import { Auth } from 'firebase/auth'; // Import Auth type
+
+// Explicitly type the imported auth, handling potential null from firebaseClient.ts
+const firebaseAuthInstance: Auth | null = firebaseAuthRaw as Auth | null;
+
+// Configurazione Supabase diretta per operazioni di sincronizzazione
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Check if environment variables are set and not placeholder values
-const isValidUrl = (url: string | undefined): boolean => {
-  if (!url || url === 'YOUR_SUPABASE_URL') return false;
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
+let directSupabaseClient: any = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+  directSupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+}
+
+// Interfaccia per il profilo utente sincronizzato
+export interface SyncedUserProfile {
+  id: string;
+  firebase_uid: string;
+  email: string;
+  full_name?: string;
+  username?: string;
+  phone?: string;
+  role: string;
+  avatar_url?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  total_xp: number;
+  current_level: number;
+  level_progress: number;
+  badges_count: number;
+  badges_list: string[];
+  created_at: string;
+  updated_at: string;
+  last_sync_at: string;
+}
+
+// Crea un client unificato che usa Firebase per auth e Supabase per database sincronizzato
+export const supabase = {
+  // Metodi di autenticazione da Firebase
+  auth: authClient,
+  
+  // Metodi database: usa Supabase diretto se disponibile, altrimenti fallback a Firebase wrapper
+  from: (directSupabaseClient?.from?.bind(directSupabaseClient)) ?? firebase.from.bind(firebase),
+  
+  // Client Supabase diretto per operazioni di sincronizzazione e funzionalità native Supabase
+  direct: directSupabaseClient,
+  
+  // Espone rpc dal client Supabase diretto
+  rpc: directSupabaseClient?.rpc.bind(directSupabaseClient),
+
+  // Espone storage dal client Supabase diretto
+  storage: directSupabaseClient?.storage,
+
+  // Espone channel dal client Supabase diretto
+  channel: directSupabaseClient?.channel.bind(directSupabaseClient),
+
+  // Espone removeChannel dal client Supabase diretto
+  removeChannel: directSupabaseClient?.removeChannel.bind(directSupabaseClient),
+
+  // Metodi per accedere ai dati sincronizzati
+  sync: {
+    /**
+     * Ottiene il profilo utente corrente dal database sincronizzato
+     */
+    async getCurrentUserProfile(): Promise<SyncedUserProfile | null> {
+      try {
+        const { data: { session } } = await authClient.getSession();
+        const currentUser = session?.user;
+
+        if (!currentUser || !directSupabaseClient) {
+          return null;
+        }
+
+        const { data, error } = await directSupabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('firebase_uid', currentUser.id) // Use currentUser.id from AuthUser
+          .single();
+
+        if (error) {
+          console.error('Errore nel recupero profilo sincronizzato:', error);
+          return null;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Errore nel recupero profilo utente:', error);
+        return null;
+      }
+    },
+
+    /**
+     * Aggiorna il profilo utente corrente nel database sincronizzato
+     */
+    async updateCurrentUserProfile(updates: Partial<SyncedUserProfile>): Promise<boolean> {
+      try {
+        const { data: { session } } = await authClient.getSession();
+        const currentUser = session?.user;
+
+        if (!currentUser || !directSupabaseClient) {
+          return false;
+        }
+
+        const { error } = await directSupabaseClient
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('firebase_uid', currentUser.id); // Use currentUser.id from AuthUser
+
+        if (error) {
+          console.error('Errore nell\'aggiornamento profilo:', error);
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Errore nell\'aggiornamento profilo utente:', error);
+        return false;
+      }
+    },
+
+    /**
+     * Ottiene un profilo utente per Firebase UID
+     */
+    async getUserProfileByFirebaseUid(firebaseUid: string): Promise<SyncedUserProfile | null> {
+      try {
+        if (!directSupabaseClient) {
+          return null;
+        }
+
+        const { data, error } = await directSupabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('firebase_uid', firebaseUid)
+          .single();
+
+        if (error) {
+          console.error('Errore nel recupero profilo per UID:', error);
+          return null;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Errore nel recupero profilo per Firebase UID:', error);
+        return null;
+      }
+    },
+
+    /**
+     * Ottiene tutti i profili utente (solo per admin)
+     */
+    async getAllUserProfiles(limit = 50, offset = 0): Promise<SyncedUserProfile[]> {
+      try {
+        if (!directSupabaseClient) {
+          return [];
+        }
+
+        const { data, error } = await directSupabaseClient
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) {
+          console.error('Errore nel recupero di tutti i profili:', error);
+          return [];
+        }
+
+        return data || [];
+      } catch (error) {
+        console.error('Errore nel recupero di tutti i profili utente:', error);
+        return [];
+      }
+    },
+
+    /**
+     * Forza la sincronizzazione dell'utente corrente
+     */
+    async syncCurrentUser(): Promise<boolean> {
+      try {
+        // Get the actual Firebase User object from firebaseClient
+        const firebaseUser = firebaseAuthInstance?.currentUser; // Use optional chaining
+
+        if (!firebaseUser) {
+          return false;
+        }
+
+        const result = await firebaseSupabaseSync.syncUser(firebaseUser);
+        return result.success;
+      } catch (error) {
+        console.error('Errore nella sincronizzazione utente:', error);
+        return false;
+      }
+    },
+
+    /**
+     * Ottiene le statistiche di sincronizzazione
+     */
+    async getStats() {
+      return firebaseSupabaseSync.getSyncStats();
+    }
   }
 };
 
-const isValidKey = (key: string | undefined): boolean => {
-  return !!(key && key !== 'YOUR_SUPABASE_ANON_KEY' && key.length > 10);
-};
+// Mantieni l'export per compatibilità
+export default supabase;
 
-const hasValidConfig = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey);
-
-if (!hasValidConfig) {
-  console.warn('Supabase environment variables are not properly configured. Using dummy client.');
-}
-
-// Crea un client dummy se le variabili non sono disponibili (per il build)
-export const supabase = hasValidConfig
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
-  : createClient('https://dummy.supabase.co', 'dummy-key');
+// Export del client Supabase diretto per uso avanzato
+export { directSupabaseClient };

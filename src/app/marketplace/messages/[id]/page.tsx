@@ -217,7 +217,7 @@ export default function ConversationPage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium line-clamp-1">{listing.title}</div>
                   <div className="text-sm text-white/70">
-                    💬 con {getOtherUserName()}
+                    <span role="img" aria-label="Chat bubble emoji">💬</span> con {getOtherUserName()}
                   </div>
                 </div>
               </Link>
@@ -242,7 +242,7 @@ export default function ConversationPage() {
       >
         {messages.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">💬</div>
+            <div className="text-4xl mb-4" role="img" aria-label="Chat bubble emoji">💬</div>
             <p className="text-white/70">
               Inizia la conversazione inviando un messaggio!
             </p>

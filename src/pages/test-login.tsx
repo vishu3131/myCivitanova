@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabaseClient';
-import { User } from '@supabase/supabase-js';
+import { firebaseClient } from '@/utils/firebaseAuth';
+import { User } from 'firebase/auth';
 
 export default function TestLogin() {
   const [email, setEmail] = useState('');
@@ -13,41 +13,37 @@ export default function TestLogin() {
   useEffect(() => {
     // Controlla se l'utente è già loggato
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = firebaseClient.auth.currentUser;
       setUser(user);
       
       if (user) {
-        // Carica il profilo
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+        // Carica il profilo Firebase
+        const profileData = await firebaseClient.from('profiles').select('*').eq('id', user.uid).single();
         setProfile(profileData);
       }
     };
     
     checkUser();
 
-    // Ascolta i cambiamenti di autenticazione
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
+    // Ascolta i cambiamenti di autenticazione Firebase
+    const unsubscribe = firebaseClient.auth.onAuthStateChanged(
+      (user) => {
+        setUser(user);
+        if (user) {
           // Carica il profilo quando l'utente si logga
-          supabase
+          firebaseClient
             .from('profiles')
             .select('*')
-            .eq('id', session.user.id)
+            .eq('id', user.uid)
             .single()
-            .then(({ data }) => setProfile(data));
+            .then((data) => setProfile(data));
         } else {
           setProfile(null);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const testLogin = async () => {
@@ -55,34 +51,22 @@ export default function TestLogin() {
     setResult('Avvio test login...');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      const userCredential = await firebaseClient.auth.signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
 
-      if (error) {
-        setResult('❌ Errore login: ' + error.message);
-        return;
-      }
+      setResult('✅ Login riuscito! Utente: ' + user.email);
+      setUser(user);
 
-      setResult('✅ Login riuscito! Utente: ' + data.user.email);
-      setUser(data.user);
-
-      // Carica il profilo
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError) {
-        setResult(prev => prev + '\n⚠️ Profilo non trovato: ' + profileError.message);
-      } else {
+      // Carica il profilo Firebase
+      try {
+        const profileData = await firebaseClient.from('profiles').select('*').eq('id', user.uid).single();
         setResult(prev => prev + '\n✅ Profilo caricato: ' + JSON.stringify(profileData, null, 2));
         setProfile(profileData);
+      } catch (profileError) {
+        setResult(prev => prev + '\n⚠️ Profilo non trovato: ' + (profileError as Error).message);
       }
     } catch (err) {
-      setResult('💥 Errore imprevisto: ' + (err as Error).message);
+      setResult('💥 Errore login: ' + (err as Error).message);
     }
 
     setLoading(false);
@@ -93,15 +77,10 @@ export default function TestLogin() {
     setResult('Logout in corso...');
 
     try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        setResult('❌ Errore logout: ' + error.message);
-      } else {
-        setResult('✅ Logout riuscito!');
-        setUser(null);
-        setProfile(null);
-      }
+      await firebaseClient.auth.signOut();
+      setResult('✅ Logout riuscito!');
+      setUser(null);
+      setProfile(null);
     } catch (err) {
       setResult('💥 Errore logout: ' + (err as Error).message);
     }
@@ -114,15 +93,13 @@ export default function TestLogin() {
     setResult('Controllo sessione...');
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const user = firebaseClient.auth.currentUser;
       
-      if (error) {
-        setResult('❌ Errore sessione: ' + error.message);
-      } else if (session) {
+      if (user) {
         setResult('✅ Sessione attiva: ' + JSON.stringify({
-          user_id: session.user.id,
-          email: session.user.email,
-          expires_at: session.expires_at
+          user_id: user.uid,
+          email: user.email,
+          email_verified: user.emailVerified
         }, null, 2));
       } else {
         setResult('ℹ️ Nessuna sessione attiva');
@@ -137,14 +114,14 @@ export default function TestLogin() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-6">Test Autenticazione Supabase</h1>
+        <h1 className="text-2xl font-bold mb-6">Test Autenticazione Firebase</h1>
         
         {user ? (
           <div className="mb-6 p-4 bg-green-100 border border-green-400 rounded-md">
             <h3 className="text-lg font-semibold text-green-800 mb-2">Utente Loggato</h3>
-            <p><strong>ID:</strong> {user.id}</p>
+            <p><strong>ID:</strong> {user.uid}</p>
             <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Confermato:</strong> {user.email_confirmed_at ? 'Sì' : 'No'}</p>
+            <p><strong>Confermato:</strong> {user.emailVerified ? 'Sì' : 'No'}</p>
             
             {profile && (
               <div className="mt-4">

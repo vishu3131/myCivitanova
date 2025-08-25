@@ -15,7 +15,7 @@ export const COMMUNITY_CATEGORIES: Category[] = [
     id: 'generale',
     label: 'Generale',
     description: 'Discussioni generali sulla città',
-    icon: '💬',
+    icon: '<span role="img" aria-label="Chat bubble emoji">💬</span>',
     color: '#3B82F6'
   },
   {

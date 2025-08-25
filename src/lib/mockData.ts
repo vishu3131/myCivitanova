@@ -258,7 +258,7 @@ export const mockBadges: Badge[] = [
     id: 'badge-004',
     name: 'Commentatore',
     description: 'Scrivi 10 commenti costruttivi',
-    icon: '💬',
+    icon: '<span role="img" aria-label="Chat bubble emoji">💬</span>',
     color: '#8B5CF6',
     category: 'social',
     xp_reward: 200,

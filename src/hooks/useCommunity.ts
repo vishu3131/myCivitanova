@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 import { CommunityAPI, FetchPostsParams } from '@/lib/communityApi';
 import { useLoading } from '@/context/LoadingContext';
 

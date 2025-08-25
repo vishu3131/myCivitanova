@@ -5,7 +5,7 @@ import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User, Newspaper, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 import { PublicProfile } from './PublicProfile';
 import { EditProfileModal } from './EditProfileModal';
 import { NotificationsModal } from './NotificationsModal';
@@ -16,7 +16,8 @@ import { NotificationBadge } from './NotificationBadge';
 import { LogoutModal } from './LogoutModal';
 import { NewsManagement } from './NewsManagement';
 import Switch from './Switch';
-import LoginModal from './LoginModal';
+import { useAuth } from '@/hooks/useAuth';
+
 
 const userStats = [
   { id: 'visits', label: 'Luoghi visitati', value: 23, icon: MapPin, color: 'from-blue-500 to-blue-600' },
@@ -30,23 +31,21 @@ const getMenuSections = (userRole?: string, isLoggedIn?: boolean) => {
     {
       title: 'Account',
       items: [
-        { id: 'login-status', label: 'Stato Login', icon: Power, color: 'text-green-400', isToggle: true, isLoggedIn },
         { id: 'edit-profile', label: 'Modifica Profilo', icon: Edit3, color: 'text-blue-400' },
-        { id: 'public-profile', label: 'Profilo pubblico', icon: User, color: 'text-green-400' },
-        { id: 'notifications', label: 'Notifiche', icon: Bell, color: 'text-green-400', badge: '3' },
-        { id: 'privacy', label: 'Privacy e Sicurezza', icon: Shield, color: 'text-purple-400' },
+        { id: 'public-profile', label: 'Anteprima Pubblica', icon: User, color: 'text-purple-400' },
       ]
     },
     {
-      title: 'Supporto',
+      title: 'Preferenze',
       items: [
-        { id: 'help', label: 'Centro Assistenza', icon: HelpCircle, color: 'text-orange-400' },
-        { id: 'settings', label: 'Impostazioni', icon: Settings, color: 'text-gray-400' },
+        { id: 'notifications', label: 'Notifiche', icon: Bell, color: 'text-yellow-400', isSwitch: true, isLoggedIn },
+        { id: 'privacy', label: 'Privacy e Sicurezza', icon: Shield, color: 'text-green-400' },
+        { id: 'help', label: 'Centro Assistenza', icon: HelpCircle, color: 'text-indigo-400' },
+        { id: 'settings', label: 'Impostazioni', icon: Settings, color: 'text-cyan-400' },
       ]
     }
   ];
 
-  // Aggiungi sezione amministrazione per admin/editor/moderator
   if (userRole && ['admin', 'editor', 'moderator'].includes(userRole)) {
     sections.splice(1, 0, {
       title: 'Amministrazione',
@@ -55,13 +54,6 @@ const getMenuSections = (userRole?: string, isLoggedIn?: boolean) => {
       ]
     });
   }
-
-  sections.push({
-    title: 'Altro',
-    items: [
-      { id: 'logout', label: 'Esci', icon: LogOut, color: 'text-red-400' },
-    ]
-  });
 
   return sections;
 };
@@ -72,9 +64,10 @@ const recentActivity = [
   { id: 3, action: 'Guadagnato', place: '50 punti', time: '2 giorni fa', icon: Award },
 ];
 
-export function MobileProfileScreen() {
+export function MobileProfileScreen({ onClose }: MobileProfileScreenProps) {
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [profileUser, setProfileUser] = useState<any>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -87,7 +80,7 @@ export function MobileProfileScreen() {
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiList = ['😀','😎','🦄','🐱','🌸','🚀','👽','🐶','🍕','🎨'];
 
@@ -101,7 +94,7 @@ export function MobileProfileScreen() {
         if (storedUser) {
           const userFromStorage = JSON.parse(storedUser);
           console.log('Dati profilo recuperati da localStorage:', userFromStorage);
-          setUser(userFromStorage);
+          setProfileUser(userFromStorage);
           setLoadingProfile(false);
           return;
         }
@@ -119,16 +112,16 @@ export function MobileProfileScreen() {
 
           if (error) {
             console.error('Errore nel recupero del profilo:', error.message);
-            setUser(null);
+            setProfileUser(null);
             return;
           }
 
           if (data) {
             console.log('Dati profilo recuperati:', data); // Debug
-            setUser(data);
+            setProfileUser(data);
           } else {
             console.warn('Nessun profilo trovato per questo utente.');
-            setUser(null);
+            setProfileUser(null);
           }
         }
       } catch (error) {
@@ -169,11 +162,14 @@ export function MobileProfileScreen() {
         break;
       case 'login-status':
         if (!user) {
-          setShowLoginModal(true);
+          router.push('/login');
         }
         break;
       case 'logout':
         setShowLogout(true);
+        break;
+      case 'login':
+        router.push('/login');
         break;
       default:
         console.log('Menu item clicked:', itemId);
@@ -188,7 +184,7 @@ export function MobileProfileScreen() {
   };
 
   const handleProfileUpdate = (updatedUser: any) => {
-    setUser(updatedUser);
+    setProfileUser(updatedUser);
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
@@ -212,7 +208,7 @@ export function MobileProfileScreen() {
     const avatarUrl = urlData?.publicUrl;
     if (avatarUrl) {
       await supabase.from('profiles').update({ avatar: avatarUrl }).eq('id', user.id);
-      setUser({ ...user, avatar: avatarUrl });
+      setProfileUser({ ...profileUser, avatar: avatarUrl });
     }
     setAvatarUploading(false);
   };
@@ -220,7 +216,7 @@ export function MobileProfileScreen() {
   const handleEmojiSelect = async (emoji: string) => {
     if (!user) return;
     await supabase.from('profiles').update({ avatar: emoji }).eq('id', user.id);
-    setUser({ ...user, avatar: emoji });
+    setProfileUser({ ...profileUser, avatar: emoji });
   };
 
   return (
@@ -231,7 +227,7 @@ export function MobileProfileScreen() {
         {showPublicPreview && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
             <div className="relative">
-              <PublicProfile user={user || {}} />
+              <PublicProfile user={profileUser || {}} />
               <button
                 className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full"
                 onClick={() => setShowPublicPreview(false)}
@@ -250,13 +246,22 @@ export function MobileProfileScreen() {
               ) : (
                 <>
                   <h1 className="text-4xl font-extrabold text-white mb-4">
-                    {user?.display_name || `${user?.signupName || 'Nome'} ${user?.signupSurname || 'Cognome'}`}
+                    {profileUser?.display_name || `${profileUser?.signupName || 'Nome'} ${profileUser?.signupSurname || 'Cognome'}`}
                   </h1>
                   <div className="text-lg text-gray-200 space-y-2">
-                    <p>Email: {user?.email || 'Non disponibile'}</p>
-                    <p>Ruolo: {user?.role || 'Non disponibile'}</p>
-                    <p>Telefono: {user?.phone || 'Non disponibile'}</p>
-                    <p>Data di nascita: {user?.birthdate || 'Non disponibile'}</p>
+                    <p>Email: {profileUser?.email || 'Non disponibile'}</p>
+                    <p>Ruolo: {profileUser?.role || 'Non disponibile'}</p>
+                    <p>Telefono: {profileUser?.phone || 'Non disponibile'}</p>
+                    <p>Data di nascita: {profileUser?.birthdate || 'Non disponibile'}</p>
+                  </div>
+                  {/* Pulsante Login/Registrazione sempre visibile */}
+                  <div className="mt-6">
+                    <button
+                      onClick={() => router.push('/login')}
+                      className="bg-white text-blue-600 px-6 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg"
+                    >
+                      Accedi / Registrati
+                    </button>
                   </div>
                 </>
               )}
@@ -265,7 +270,7 @@ export function MobileProfileScreen() {
         </div>
         {/* Menu Sections */}
         <div className="px-6 space-y-6">
-          {getMenuSections(user?.role, !!user).map((section) => (
+          {getMenuSections(profileUser?.role, !!profileUser).map((section) => (
             <div key={section.title}>
               <h2 className="text-white text-lg font-bold mb-4">{section.title}</h2>
               <div
@@ -345,7 +350,7 @@ export function MobileProfileScreen() {
 
       {/* Modals */}
       <EditProfileModal
-        user={user}
+        user={profileUser}
         isOpen={showEditProfile}
         onClose={() => setShowEditProfile(false)}
         onUpdate={handleProfileUpdate}
@@ -354,56 +359,37 @@ export function MobileProfileScreen() {
       <NewsManagement
         isOpen={showNewsManagement}
         onClose={() => setShowNewsManagement(false)}
-        currentUser={user}
+        currentUser={profileUser}
       />
 
-      {showLoginModal && (
-        <LoginModal 
-          onClose={() => {
-            setShowLoginModal(false);
-            // Ricarica il profilo dopo il login
-            const fetchProfile = async () => {
-              const { data: { user: authUser } } = await supabase.auth.getUser();
-              if (authUser) {
-                const { data } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', authUser.id)
-                  .maybeSingle();
-                if (data) setUser(data);
-              }
-            };
-            fetchProfile();
-          }}
-        />
-      )}
+
 
       <NotificationsModal
-        user={user}
+        user={profileUser}
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
       />
 
       <PrivacySettingsModal
-        user={user}
+        user={profileUser}
         isOpen={showPrivacySettings}
         onClose={() => setShowPrivacySettings(false)}
       />
 
       <HelpCenterModal
-        user={user}
+        user={profileUser}
         isOpen={showHelpCenter}
         onClose={() => setShowHelpCenter(false)}
       />
 
       <SettingsModal
-        user={user}
+        user={profileUser}
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
 
       <LogoutModal
-        user={user}
+        user={profileUser}
         isOpen={showLogout}
         onClose={() => setShowLogout(false)}
         onLogout={handleLogout}
@@ -412,7 +398,7 @@ export function MobileProfileScreen() {
       <NewsManagement
         isOpen={showNewsManagement}
         onClose={() => setShowNewsManagement(false)}
-        currentUser={user}
+        currentUser={profileUser}
       />
 
       {showLogoutModal && (
@@ -442,3 +428,17 @@ export function MobileProfileScreen() {
     </div>
   );
 }
+
+useEffect(() => {
+  if (loading) {
+    setLoading(true);
+    return;
+  }
+  if (!isAuthenticated) {
+    setProfileUser(null);
+    setLoading(false);
+    return;
+  }
+  setProfileUser(profileUser);
+  setLoading(false);
+}, [user, loading, isAuthenticated]);

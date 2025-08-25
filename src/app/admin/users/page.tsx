@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { DatabaseService } from '@/lib/database';
+import { DatabaseService } from '@/lib/database.ts';
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 import { 
   Users, 
@@ -23,11 +23,24 @@ interface User {
   full_name?: string;
   avatar_url?: string;
   role: 'user' | 'moderator' | 'admin' | 'staff';
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
+  bio?: string;
   phone?: string;
   address?: string;
+  date_of_birth?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  privacy_settings: {
+    profile_public: boolean;
+    email_public: boolean;
+    phone_public: boolean;
+  };
+  notification_settings: {
+    email_notifications: boolean;
+    push_notifications: boolean;
+    sms_notifications: boolean;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 export default function UsersPage() {
@@ -36,6 +49,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [verificationFilter, setVerificationFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<User['role']>('user');
@@ -44,6 +59,7 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10); // Number of users per page
   const [totalUsersCount, setTotalUsersCount] = useState(0); // Total count of users
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -72,6 +88,17 @@ export default function UsersPage() {
       loadUsers();
     }
   }, [currentUser, loadUsers]);
+
+  // Auto-refresh users list every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh || !currentUser) return;
+
+    const interval = setInterval(() => {
+      loadUsers();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, currentUser, loadUsers]);
 
   const handleEditClick = (user: User) => {
     if (role !== 'admin') {
@@ -114,7 +141,19 @@ export default function UsersPage() {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    return matchesSearch && matchesRole;
+    
+    const matchesVerification = verificationFilter === 'all' || 
+                               (verificationFilter === 'verified' && user.is_verified) ||
+                               (verificationFilter === 'unverified' && !user.is_verified);
+    
+    const now = new Date();
+    const userDate = new Date(user.created_at);
+    const matchesDate = dateFilter === 'all' ||
+                       (dateFilter === 'today' && userDate.toDateString() === now.toDateString()) ||
+                       (dateFilter === 'week' && (now.getTime() - userDate.getTime()) <= 7 * 24 * 60 * 60 * 1000) ||
+                       (dateFilter === 'month' && (now.getTime() - userDate.getTime()) <= 30 * 24 * 60 * 60 * 1000);
+    
+    return matchesSearch && matchesRole && matchesVerification && matchesDate;
   });
 
   const getRoleColor = (role: string) => {
@@ -187,7 +226,7 @@ export default function UsersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -262,38 +301,133 @@ export default function UsersPage() {
               </div>
             </div>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-emerald-500/10 rounded-lg">
+                <Star className="w-6 h-6 text-emerald-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {users.filter(u => {
+                    const today = new Date();
+                    const userDate = new Date(u.created_at);
+                    return userDate.toDateString() === today.toDateString();
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Oggi</div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-500/10 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-indigo-500" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {users.filter(u => {
+                    const now = new Date();
+                    const userDate = new Date(u.created_at);
+                    return (now.getTime() - userDate.getTime()) <= 7 * 24 * 60 * 60 * 1000;
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Settimana</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Cerca utenti per nome o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+          <div className="flex flex-col gap-4">
+            {/* First Row - Search and Auto Refresh */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Cerca utenti per nome o email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Auto Refresh Toggle */}
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Aggiornamento automatico</span>
+                </label>
               </div>
             </div>
 
-            {/* Role Filter */}
-            <div className="md:w-48">
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Tutti i ruoli</option>
-                <option value="user">Utenti</option>
-                <option value="moderator">Moderatori</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Amministratori</option>
-              </select>
+            {/* Second Row - Advanced Filters */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Role Filter */}
+              <div className="md:w-48">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ruolo</label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tutti i ruoli</option>
+                  <option value="user">Utenti</option>
+                  <option value="moderator">Moderatori</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Amministratori</option>
+                </select>
+              </div>
+
+              {/* Verification Filter */}
+              <div className="md:w-48">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Verifica</label>
+                <select
+                  value={verificationFilter}
+                  onChange={(e) => setVerificationFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tutti gli stati</option>
+                  <option value="verified">Verificati</option>
+                  <option value="unverified">Non verificati</option>
+                </select>
+              </div>
+
+              {/* Date Filter */}
+              <div className="md:w-48">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Registrazione</label>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tutte le date</option>
+                  <option value="today">Oggi</option>
+                  <option value="week">Ultima settimana</option>
+                  <option value="month">Ultimo mese</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -306,6 +440,9 @@ export default function UsersPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Utente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Contatti
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Ruolo
@@ -342,7 +479,33 @@ export default function UsersPage() {
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             {user.email}
                           </div>
+                          {user.date_of_birth && (
+                            <div className="text-xs text-gray-400">
+                              Nato il {new Date(user.date_of_birth).toLocaleDateString('it-IT')}
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {user.phone && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500">📞</span>
+                            {user.phone}
+                          </div>
+                        )}
+                        {user.address && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500">📍</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-32">
+                              {user.address}
+                            </span>
+                          </div>
+                        )}
+                        {!user.phone && !user.address && (
+                          <span className="text-xs text-gray-400">Non disponibile</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

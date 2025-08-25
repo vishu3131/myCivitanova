@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, TrendingUp, Calendar, Users, Star } from 'lucide-react';
 import LeaderboardWidget from '@/components/LeaderboardWidget';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface UserProfile {
   id: string;

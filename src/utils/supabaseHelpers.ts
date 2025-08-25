@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient.ts';
 
 /**
  * Verifica se Supabase è configurato correttamente

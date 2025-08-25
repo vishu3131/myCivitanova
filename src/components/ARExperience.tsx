@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
+import { supabase } from '@/utils/supabaseClient.ts';
 
 type ARPoi = {
   id: number | string;

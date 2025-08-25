@@ -312,7 +312,7 @@ export default function ListingDetailPage() {
                     onClick={() => setShowContactForm(true)}
                     className="w-full py-3 bg-accent/30 hover:bg-accent/40 border border-accent/30 rounded-lg font-medium"
                   >
-                    💬 Invia messaggio
+                    <span role="img" aria-label="Chat bubble emoji">💬</span> Invia messaggio
                   </button>
                 ) : (
                   <div className="space-y-3">

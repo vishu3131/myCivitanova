@@ -14,7 +14,7 @@ import CityReportModal from './CityReportModal';
 import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import Link from 'next/link';
 import TreasureHuntWidget from './TreasureHuntWidget';
@@ -497,8 +497,9 @@ export function MobileHomeScreen() {
               </LazyRender>
             </div>
             <div className="col-span-1">
-              <div className="h-full bg-dark-300/50 backdrop-blur-sm rounded-xl p-2 sm:p-3 card-glow border border-white/10 flex items-center justify-center">
-                <div className="text-white/60 text-xs sm:text-sm">Prossimamente</div>
+              <div className="h-full bg-dark-300/50 backdrop-blur-sm rounded-xl p-2 sm:p-3 card-glow border border-white/10 flex items-center justify-center relative overflow-hidden group prossimamente-widget">
+                <div className="text-white/60 text-xs sm:text-sm relative z-10">Prossimamente</div>
+                <div className="prossimamente-overlay"></div>
               </div>
             </div>
           </div>
@@ -1651,6 +1652,29 @@ export function MobileHomeScreen() {
               transition: none;
               background-size: 100% 100%;
             }
+          }
+
+          /* Prossimamente Widget Styles */
+          .prossimamente-widget {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+
+          .prossimamente-widget:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.2), 0 0 30px rgba(6, 182, 212, 0.15);
+          }
+
+          .prossimamente-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, rgba(168,85,247,0.05), rgba(6,182,212,0.05));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+          }
+
+          .prossimamente-widget:hover .prossimamente-overlay {
+            opacity: 1;
           }
 
         `}</style>

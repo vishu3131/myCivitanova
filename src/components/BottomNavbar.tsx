@@ -1,8 +1,8 @@
 "use client";
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 import React, { useState } from 'react';
-import LoginModal from './LoginModal';
+
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import { Home, Search, MapPin, User, Compass, Users } from 'lucide-react';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
@@ -21,7 +21,7 @@ export function BottomNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuthWithRole();
-  const [showLogin, setShowLogin] = useState(false);
+
   const [showLogout, setShowLogout] = useState(false);
 
   const handleNavigation = (path: string, isCenter = false) => {
@@ -31,7 +31,7 @@ export function BottomNavbar() {
 
   const handleProfileClick = () => {
     if (!user) {
-      setShowLogin(true);
+      router.push('/login');
     } else {
       handleNavigation('/profilo');
     }
@@ -128,12 +128,7 @@ export function BottomNavbar() {
           );
         })}
       </div>
-      {showLogin && (
-        <LoginModal onClose={() => {
-          setShowLogin(false);
-          if (user) router.push('/profilo');
-        }} />
-      )}
+
       {showLogout && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-md w-full max-w-sm text-center">

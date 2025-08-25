@@ -40,7 +40,7 @@ import { CreatePostModal } from '@/components/CreatePostModal';
 import { CommunityPostCard } from '@/components/CommunityPostCard';
 import { CategoryFilter } from '@/components/community/CategoryFilter';
 import { SortMenu } from '@/components/community/SortMenu';
-import LoginModal from '@/components/LoginModal';
+
 import { useToast } from '@/components/Toast';
 import { useCommunity } from '@/hooks/useCommunity';
 import { useSidebar } from '@/context/SidebarContext';

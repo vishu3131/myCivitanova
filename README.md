@@ -17,7 +17,7 @@ Un'applicazione web moderna per la città di Civitanova Marche, sviluppata con N
 - **Frontend**: React 18.2.0 con TypeScript
 - **Styling**: Tailwind CSS 3.3.3
 - **Icons**: Lucide React
-- **Database**: Supabase (configurazione inclusa)
+- **Database**: Firebase (Authentication + Firestore)
 
 ## 🚀 Installazione e Avvio
 
@@ -34,8 +34,8 @@ npm install
 
 3. Configura le variabili d'ambiente:
 ```bash
-cp .env.local.example .env.local
-# Modifica .env.local con le tue configurazioni
+cp .env.example .env.local
+# Modifica .env.local con le tue credenziali Firebase
 ```
 
 4. Avvia il server di sviluppo:
@@ -78,7 +78,7 @@ L'applicazione è ottimizzata per il deploy su:
    ```bash
    # Copia il file di configurazione di produzione
    cp .env.production.example .env.production
-   # Modifica .env.production con le credenziali Supabase di produzione
+   # Modifica .env.production con le credenziali Firebase di produzione
    ```
 
 2. **Build di Produzione**:
@@ -98,7 +98,7 @@ L'applicazione è ottimizzata per il deploy su:
 
 4. **Verifica Configurazione**:
    - Assicurati che `NODE_ENV` sia impostato su `production`
-   - Verifica che tutte le variabili Supabase siano configurate correttamente
+   - Verifica che tutte le variabili Firebase siano configurate correttamente
    - Controlla che i dati mock siano disabilitati in produzione
 
 ## 📄 Licenza
@@ -129,8 +129,8 @@ Per domande o supporto, contatta: [info@civitanova.it]
    - Utilizza i secret manager del tuo provider di hosting quando possibile
 
 3. **Database**:
-   - Configura correttamente le Row Level Security (RLS) in Supabase
-   - Esegui regolarmente backup del database
+   - Configura correttamente le regole di sicurezza in Firebase Firestore
+   - Esegui regolarmente backup del database Firebase
 
 4. **Monitoraggio**:
    - Implementa un sistema di logging per tracciare errori e attività sospette

@@ -2,6 +2,7 @@
   "name": "civitanova-marche-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,11 +11,21 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@radix-ui/react-progress": "^1.1.7",
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.2.6",
     "@rive-app/react-canvas": "^4.22.1",
-    "@supabase/supabase-js": "^2.38.0",
+    "@supabase/mcp-server-postgrest": "^0.1.0",
+    "@supabase/supabase-js": "^2.56.0",
     "@types/leaflet": "^1.9.20",
     "@types/uuid": "^10.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.1",
+    "firebase": "^12.1.0",
+    "firebase-admin": "^13.4.0",
     "framer-motion": "^12.23.12",
     "gsap": "^3.13.0",
     "leaflet": "^1.9.4",
@@ -23,12 +34,13 @@
     "next": "^15.4.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-firebase-hooks": "^5.1.1",
     "react-hot-toast": "^2.6.0",
     "react-leaflet": "^5.0.0",
     "react-leaflet-markercluster": "^5.0.0-rc.0",
     "styled-components": "^6.0.7",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.1.6",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -36,9 +48,15 @@
     "@types/react": "^18.2.17",
     "@types/react-dom": "^18.2.7",
     "@types/styled-components": "^5.1.26",
-    "autoprefixer": "^10.4.14",
+    "autoprefixer": "^10.4.21",
+    "css-loader": "^7.1.2",
     "eslint": "^8.46.0",
     "eslint-config-next": "^14.2.3",
-    "postcss": "^8.4.27"
+    "postcss": "^8.5.6",
+    "postcss-loader": "^8.1.1",
+    "style-loader": "^4.0.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2"
   }
 }

@@ -19,7 +19,7 @@ import {
   X,
   RefreshCw
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface AppStatsData {
   users: {

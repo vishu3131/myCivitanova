@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Gift
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 import { Mission } from '@/types/gamification';
 
 interface Badge {

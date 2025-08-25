@@ -46,7 +46,7 @@ export function WelcomeWidget({ onReport }: { onReport?: () => void }) {
       }
       setShouldTriggerIntro(false);
     }
-  }, [shouldTriggerIntro]);}]}}}
+  }, [shouldTriggerIntro]);
   
   // Capitalizza la prima lettera della data
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);

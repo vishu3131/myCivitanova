@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { DemoXPSystem } from '@/data/demoData';
-import LoginModal from '@/components/LoginModal';
+
 
 interface XPWidgetProps {
   userId?: string;
@@ -15,7 +15,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
   const [demoNotification, setDemoNotification] = useState<any>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+
 
   useEffect(() => {
     if (!userId) {
@@ -54,7 +54,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
             
             {/* Pulsante Login */}
             <button
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => window.location.href = '/login'}
               className="bg-gradient-to-r from-accent to-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:from-accent/90 hover:to-blue-500/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               Accedi ora
@@ -62,17 +62,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
           </div>
         </div>
         
-        {/* Modal di Login */}
-        {showLoginModal && (
-          <LoginModal 
-            onClose={() => setShowLoginModal(false)}
-            onLogin={() => {
-              setShowLoginModal(false);
-              // Ricarica la pagina per aggiornare lo stato dell'utente
-              window.location.reload();
-            }}
-          />
-        )}
+
       </>
     );
   }
@@ -235,7 +225,7 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
   const { userStats, loading, xpNotification } = useXPSystem(userId);
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+
 
   useEffect(() => {
     if (!userId) {
@@ -257,7 +247,7 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
             </div>
             <h4 className="text-white font-semibold text-sm mb-1">Login richiesto</h4>
             <button
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => window.location.href = '/login'}
               className="bg-gradient-to-r from-accent to-blue-500 text-white text-xs font-medium px-3 py-1.5 rounded-md hover:from-accent/90 hover:to-blue-500/90 transition-all duration-300"
             >
               Accedi
@@ -265,16 +255,7 @@ export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
           </div>
         </div>
         
-        {/* Modal di Login */}
-        {showLoginModal && (
-          <LoginModal 
-            onClose={() => setShowLoginModal(false)}
-            onLogin={() => {
-              setShowLoginModal(false);
-              window.location.reload();
-            }}
-          />
-        )}
+
       </>
     );
   }

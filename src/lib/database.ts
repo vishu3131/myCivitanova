@@ -1,5 +1,5 @@
 // MyCivitanova - Database utilities and types
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 // Types per il database
 export interface Profile {
@@ -519,10 +519,10 @@ export class DatabaseService {
   static async getUsersCount() {
     const { count, error } = await supabase
       .from('profiles')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
 
     if (error) throw error;
-    return { count };
+    return { count: count || 0 };
   }
 
   static async updateUserRole(userId: string, role: Profile['role']) {

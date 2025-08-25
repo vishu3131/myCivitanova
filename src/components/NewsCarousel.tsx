@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Eye, Star } from 'lucide-react';
 import { NewsItem } from '@/types/news';
 import { newsService } from '@/services/newsService';
-import { supabase } from '@/utils/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
 const typeStyles = {
   urgent: {
@@ -50,9 +50,14 @@ export function NewsCarousel() {
         }
 
         // Altrimenti usa Supabase Auth
-        const { data: { user } } = await supabase.auth.getUser();
+        const supabaseLocalClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        console.log('Supabase auth object (local):', supabaseLocalClient.auth); // Debugging line
+        const { data: { user } } = await supabaseLocalClient.auth.getUser();
         if (user) {
-          const { data: profile } = await supabase
+          const { data: profile } = await supabaseLocalClient
             .from('profiles')
             .select('*')
             .eq('id', user.id)
@@ -114,7 +119,7 @@ export function NewsCarousel() {
         setNews(prevNews => 
           prevNews.map(item => 
             item.id === newsItem.id 
-              ? { ...item, views_count: item.views_count + 1 }
+              ? { ...item, views_count: (item.views_count || 0) + 1 }
               : item
           )
         );

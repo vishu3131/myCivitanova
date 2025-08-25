@@ -48,7 +48,7 @@ export default function NeonTitle({
       console.error('Errore durante la ricarica con intro:', error);
       window.location.reload();
     }
-  }, []);}]}}}
+  }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();

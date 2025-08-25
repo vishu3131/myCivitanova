@@ -22,7 +22,7 @@ import {
   Medal,
   Sparkles
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface UserStats {
   total_xp: number;
@@ -86,7 +86,7 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
 
       // Get user stats using RPC function
       const { data: userStats, error: statsError } = await supabase
-        .rpc('get_user_stats', { user_id: userId });
+        .rpc('get_user_stats', { p_user_id: userId });
 
       if (statsError) throw statsError;
 
@@ -97,7 +97,7 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
       // Get recent XP activities
       const { data: activities, error: activitiesError } = await supabase
         .from('xp_transactions')
-        .select('*')
+        .select('id, activity_type, xp_amount as xp_earned, created_at, description')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -108,7 +108,7 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
 
       // Get recent badges
       const { data: badges, error: badgesError } = await supabase
-        .rpc('get_user_badges', { user_id: userId })
+        .rpc('get_user_badges', { user_uuid: userId })
         .limit(5);
 
       if (!badgesError && badges) {

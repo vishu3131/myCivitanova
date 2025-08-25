@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface XPResult {
   new_total_xp: number;
@@ -204,8 +204,7 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         timestamp: new Date().toISOString(),
         hasUserId: !!userId,
         supabaseConnected: !!supabase,
-        supabaseUrl: supabase?.supabaseUrl || 'Non disponibile',
-        supabaseKey: supabase?.supabaseKey ? 'Presente' : 'Non presente'
+        directSupabaseClientConnected: !!supabase.direct
       };
       
       // Log solo se l'errore non è vuoto

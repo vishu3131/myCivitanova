@@ -354,7 +354,7 @@ function NewsCard({
           <div className="flex items-center gap-4 text-xs text-gray-500">
             <span>👁 {news.views_count}</span>
             <span>👍 {news.likes_count}</span>
-            <span>💬 {news.comments_count}</span>
+            <span><span role="img" aria-label="Chat bubble emoji">💬</span> {news.comments_count}</span>
             <span>📅 {new Date(news.created_at).toLocaleDateString()}</span>
           </div>
         </div>

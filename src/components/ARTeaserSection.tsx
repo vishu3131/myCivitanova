@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { SiteImage } from '@/lib/database';
+import { SiteImage } from '@/lib/database.ts';
 
 export function ARTeaserSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);

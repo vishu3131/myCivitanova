@@ -65,7 +65,7 @@ const getStatusLabel = (status: string) => {
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'report': return '🚨';
-    case 'discussion': return '💬';
+    case 'discussion': return <span role="img" aria-label="Chat bubble emoji">💬</span>;
     case 'event': return '📅';
     case 'group': return '👥';
     default: return '📝';
@@ -343,7 +343,7 @@ export function CommunityPostCard({
 
         {/* Tipo e Status */}
         <div className="flex items-center space-x-2 mt-3 mb-2">
-          <span className="text-lg">{getTypeIcon(post.type)}</span>
+          <span className="text-lg" role="img" aria-label="Post type icon">{getTypeIcon(post.type)}</span>
           <span className="text-white/60 text-sm capitalize">{post.type}</span>
           {post.category && (
             <>

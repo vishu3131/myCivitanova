@@ -22,7 +22,7 @@ export const BottomNav = () => {
             <Icon className="w-6 h-6" />
             <span className="text-xs text-gray-500">{label}</span>
           </Link>
-        ))
+        ))}
       </div>
     </nav>
   );

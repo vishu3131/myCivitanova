@@ -50,22 +50,25 @@ import {
   Battery,
   Signal,
   X,
-  Smile
+  Smile,
+  AlertCircle
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { useBadgeSystem } from './BadgeSystem';
 import { FuturisticEditProfileModal } from './FuturisticEditProfileModal';
 import { FuturisticUserStats } from './FuturisticUserStats';
 import FuturisticBadgeCollection from './FuturisticBadgeCollection';
 import FuturisticAdvancedSettings from './FuturisticAdvancedSettings';
-import LoginModal from './LoginModal';
+import { useAuth } from '@/hooks/useAuth';
+
 
 // Interfaces
 interface UserProfile {
   id: string;
   email: string;
   full_name?: string;
+  username?: string;
   avatar_url?: string;
   role: 'user' | 'moderator' | 'admin' | 'staff';
   bio?: string;
@@ -121,59 +124,95 @@ interface FuturisticProfileScreenProps {
 }
 
 export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProps) {
+  const { user, loading, isAuthenticated } = useAuth();
   // State management
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [profileUser, setProfileUser] = useState(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentBadges, setRecentBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  
   const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'badges' | 'settings'>('overview');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'neon'>('dark');
-  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Utility functions for formatting
+  const formatBirthDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString('it-IT', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const formatAddress = (address: string) => {
+    if (!address || address.trim().length === 0) return null;
+    return address.trim();
+  };
+
+  const formatUsername = (username: string) => {
+    if (!username || username.trim().length === 0) return null;
+    return username.trim().toLowerCase();
+  };
+
 
   // Hooks
   const { addXP, dailyLogin } = useXPSystem(user?.id);
   const { getUserBadges } = useBadgeSystem(user?.id || '');
 
-  // Load user data
-  const loadUserData = useCallback(async () => {
+  // Load user profile data
+  const loadUserProfile = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      setLoading(true);
-
-      // Try localStorage first (for bypass login)
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        const userFromStorage = JSON.parse(storedUser);
-        setUser(userFromStorage);
-        await loadUserStats(userFromStorage.id);
-        setLoading(false);
+      // Check local cache first
+      const cachedProfile = localStorage.getItem(`profile_${user.id}`);
+      
+      if (cachedProfile) {
+        const parsedProfile = JSON.parse(cachedProfile);
+        setProfileUser(parsedProfile.data);
+        setLastUpdated(new Date(parsedProfile.timestamp).toLocaleString());
+        
+        // Update in background
+        setTimeout(loadFreshProfile, 0);
         return;
       }
-
-      // Get authenticated user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        setLoading(false);
-        return;
-      }
-
-      // Get profile data
+      
+      await loadFreshProfile();
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+    
+    async function loadFreshProfile() {
+      // Get profile data from database
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', authUser.id)
+        .eq('id', user.id)
         .single();
 
       if (error) {
         console.error('Error loading profile:', error);
-        setLoading(false);
         return;
       }
-
-      setUser(profileData);
+      
+      // Save to cache with timestamp
+      const profileCache = {
+        data: profileData,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileCache));
+      
+      setProfileUser(profileData);
+      setLastUpdated(new Date().toLocaleString());
       await loadUserStats(profileData.id);
       await loadRecentBadges(profileData.id);
       
@@ -185,13 +224,8 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
           setTimeout(() => setXpAnimation(null), 3000);
         }
       }
-
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    } finally {
-      setLoading(false);
     }
-  }, [dailyLogin]);
+  }, [user?.id, dailyLogin]);
 
   // Load user statistics
   const loadUserStats = async (userId: string) => {
@@ -331,7 +365,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
 
       // Update local state
       const updatedUser = { ...user, avatar_url: publicUrl, updated_at: new Date().toISOString() };
-      setUser(updatedUser);
+      setProfileUser(updatedUser);
       
       // Update localStorage if current user
       const storedUser = localStorage.getItem('currentUser');
@@ -344,14 +378,14 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
 
       setShowAvatarModal(false);
       
-      // Add XP for avatar update
-      if (addXP) {
-        const result = await addXP('avatar_update', 5);
-        if (result?.xp_earned) {
-          setXpAnimation(result.xp_earned);
-          setTimeout(() => setXpAnimation(null), 3000);
-        }
-      }
+            // Add XP for avatar update
+            if (addXP) {
+              const result = await addXP('avatar_update', 5);
+              if (result) { // Check if result is not null
+                setXpAnimation(5); // Use the amount directly for animation
+                setTimeout(() => setXpAnimation(null), 3000);
+              }
+            }
 
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -377,15 +411,11 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     if (user) {
       handleLogout();
     } else {
-      setShowLoginModal(true);
+      window.location.href = '/login';
     }
   };
 
-  // Handle successful login
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-    loadUserData(); // Reload user data after login
-  };
+
 
   // Get role color
   const getRoleColor = (role: string) => {
@@ -407,9 +437,11 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     }
   };
 
+  // Authentication state is managed by useAuth hook
+  
   useEffect(() => {
-    loadUserData();
-  }, [loadUserData]);
+    loadUserProfile();
+  }, [loadUserProfile]);
 
   if (loading) {
     return (
@@ -576,6 +608,16 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                 >
                   {user?.full_name || 'Utente'}
                 </motion.h2>
+                {lastUpdated && (
+                  <motion.p 
+                    initial={{ x: -50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-xs text-gray-400 mb-2"
+                  >
+                    Ultimo aggiornamento: {lastUpdated}
+                  </motion.p>
+                )}
                 
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
@@ -591,10 +633,39 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   {user?.is_verified && (
                     <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                       <Shield className="w-4 h-4" />
-                      Verificato
-                    </div>
+                  Verificato
+                </div>
+              )}
+            </motion.div>
+
+            {/* Authentication Status */}
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="mb-4 text-center md:text-left"
+            >
+              {user ? (
+                <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-300">
+                  <Lock className="w-4 h-4 text-green-400" />
+                  <span>Accesso Effettuato</span>
+                  {user.is_verified ? (
+                    <span className="text-green-400 flex items-center gap-1">
+                      <Shield className="w-4 h-4" /> Email Verificata
+                    </span>
+                  ) : (
+                    <span className="text-orange-400 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" /> Email Non Verificata
+                    </span>
                   )}
-                </motion.div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-300">
+                  <Lock className="w-4 h-4 text-red-400" />
+                  <span>Non hai effettuato l'accesso</span>
+                </div>
+              )}
+            </motion.div>
 
                 {user?.bio && (
                   <motion.p
@@ -613,6 +684,12 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   transition={{ delay: 0.3 }}
                   className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-400"
                 >
+                  {formatUsername(user?.username || '') && (
+                    <div className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      @{formatUsername(user?.username || '')}
+                    </div>
+                  )}
                   {user?.email && (
                     <div className="flex items-center gap-1">
                       <Mail className="w-4 h-4" />
@@ -623,6 +700,18 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                     <div className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
                       {user.phone}
+                    </div>
+                  )}
+                  {formatAddress(user?.address || '') && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {formatAddress(user?.address || '')}
+                    </div>
+                  )}
+                  {formatBirthDate(user?.date_of_birth || '') && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Nato il {formatBirthDate(user?.date_of_birth || '')}
                     </div>
                   )}
                   {user?.created_at && (
@@ -824,7 +913,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                           initial={{ width: 0 }}
                           animate={{ width: `${userStats.level_progress}%` }}
                           transition={{ duration: 1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full relative"
+                          className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full relative"
                         >
                           <div className="absolute inset-0 bg-white/20 animate-pulse" />
                         </motion.div>
@@ -968,13 +1057,21 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
           user={user}
           onClose={() => setShowEditModal(false)}
           onUserUpdate={async (updatedUser) => {
+            // Update both state and cache
+            const profileCache = {
+              data: updatedUser,
+              timestamp: new Date().toISOString()
+            };
+            localStorage.setItem(`profile_${user?.id}`, JSON.stringify(profileCache));
+            
             setUser(updatedUser);
+            setLastUpdated(new Date().toLocaleString());
             
             // Add XP for profile update
             if (addXP) {
               const result = await addXP('profile_update', 10);
-              if (result?.xp_earned) {
-                setXpAnimation(result.xp_earned);
+              if (result) { // Check if result is not null
+                setXpAnimation(10); // Use the amount directly for animation
                 setTimeout(() => setXpAnimation(null), 3000);
               }
             }
@@ -1046,12 +1143,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
       </AnimatePresence>
 
       {/* Login Modal */}
-      {showLoginModal && (
-        <LoginModal
-          onClose={() => setShowLoginModal(false)}
-          onLogin={handleLoginSuccess}
-        />
-      )}
+
     </div>
   );
 }

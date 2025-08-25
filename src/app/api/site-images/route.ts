@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
+import { DatabaseService } from '@/lib/database.ts';
 
 // GET all image sections and their images
 export async function GET() {

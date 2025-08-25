@@ -11,6 +11,7 @@ import { LoadingProvider } from '@/context/LoadingContext';
 import { GlobalLoader } from '@/components/GlobalLoader';
 import IntroOverlay from '@/components/IntroOverlay';
 import { Toaster } from 'react-hot-toast';
+import { FirebaseSupabaseSyncProvider } from '@/components/FirebaseSupabaseSyncProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -54,65 +55,70 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseHostname = (() => {
-    try {
-      return supabaseUrl ? new URL(supabaseUrl).hostname : null;
-    } catch {
-      return null;
-    }
-  })();
+  // Firebase configuration will be handled in components that need it
 
   return (
-    <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="it" className={`${inter?.variable || ''} ${spaceGrotesk?.variable || ''}`}>
       <head>
         {/* Network preconnects to reduce handshake latency */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        {supabaseHostname && (
-          <>
-            <link rel="dns-prefetch" href={`//${supabaseHostname}`} />
-            <link rel="preconnect" href={`https://${supabaseHostname}`} crossOrigin="anonymous" />
-          </>
-        )}
+        {/* Firebase preconnects will be handled automatically */}
       </head>
       <body className="font-sans bg-black text-white">
         <ErrorBoundary>
           <LoadingProvider>
             <SidebarProvider>
-              <IntroOverlay />
-              <GlobalLoader />
-              <PageTransition>
-                {children}
-              </PageTransition>
-              <div>
-                <BottomNavbarClientWrapper />
-                {/* <CircularDevNavigation /> */}
-              </div>
-              <Toaster
-                position="top-center"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                  },
-                  success: {
-                    duration: 3000,
-                    iconTheme: {
-                      primary: '#4ade80',
-                      secondary: '#fff',
-                    },
-                  },
-                  error: {
-                    duration: 4000,
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#fff',
-                    },
-                  },
+              <FirebaseSupabaseSyncProvider
+                options={{
+                  autoSync: true,
+                  refreshInterval: 30000,
+                  enableNotifications: false,
+                  realtimeSync: true,
+                  realtimeSyncOptions: {
+                    enableAuthSync: true,
+                    enableProfileSync: true,
+                    enableBatchSync: false,
+                    debounceDelay: 1000,
+                    maxRetries: 3,
+                    retryDelay: 2000
+                  }
                 }}
-              />
+              >
+                <IntroOverlay />
+                <GlobalLoader />
+                <PageTransition>
+                  {children}
+                </PageTransition>
+                <div>
+                  <BottomNavbarClientWrapper />
+                  {/* <CircularDevNavigation /> */}
+                </div>
+                <Toaster
+                  position="top-center"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#363636',
+                      color: '#fff',
+                    },
+                    success: {
+                      duration: 3000,
+                      iconTheme: {
+                        primary: '#4ade80',
+                        secondary: '#fff',
+                      },
+                    },
+                    error: {
+                      duration: 4000,
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#fff',
+                      },
+                    },
+                  }}
+                />
+              </FirebaseSupabaseSyncProvider>
             </SidebarProvider>
           </LoadingProvider>
         </ErrorBoundary>

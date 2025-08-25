@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabaseClient';
-import { isSupabaseConfigured } from '@/utils/supabaseHelpers';
+import { firebaseClient } from '@/utils/firebaseAuth';
 import { 
   Trash2, 
   Eye, 

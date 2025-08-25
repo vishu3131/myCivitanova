@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Eye, Star } from 'lucide-react';
 import { NewsItem } from '@/types/news';
 import { newsService } from '@/services/newsService';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts';
 
 interface NewsItemComponentProps {
   news: NewsItem;

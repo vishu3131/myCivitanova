@@ -143,7 +143,7 @@ export default function MessagesPage() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {conversations.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">💬</div>
+            <div className="text-6xl mb-4" role="img" aria-label="Chat bubble emoji">💬</div>
             <h2 className="text-xl font-semibold mb-2">Nessuna conversazione</h2>
             <p className="text-white/70 mb-6">
               Non hai ancora iniziato nessuna conversazione.
@@ -196,7 +196,7 @@ export default function MessagesPage() {
                     
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-white/70">
-                        💬 con {conversation.otherUserName}
+                        <span role="img" aria-label="Chat bubble emoji">💬</span> con {conversation.otherUserName}
                       </span>
                       {conversation.buyer_id === user.id && (
                         <span className="text-xs px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-full">

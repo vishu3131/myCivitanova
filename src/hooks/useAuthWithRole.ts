@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient.ts'; // Ora utilizza Firebase tramite il wrapper
 
 export interface AuthUser {
   id: string;
@@ -24,7 +24,7 @@ export function useAuthWithRole() {
         try {
           const testConn = await supabase.from('profiles').select('id').limit(1);
           if (testConn.error) {
-            console.warn('Database Supabase non disponibile, usando utente admin di sviluppo');
+            console.warn('Database Firebase non disponibile, usando utente admin di sviluppo');
             // Crea un utente admin fittizio per lo sviluppo
             const devUser: AuthUser = {
               id: 'dev-admin-123',
@@ -35,12 +35,9 @@ export function useAuthWithRole() {
             setRole('admin');
             setLoading(false);
             return;
-          } else {
-            console.log('Connessione al database Supabase riuscita.');
           }
         } catch (err) {
-          console.warn('Database Supabase non disponibile, usando utente admin di sviluppo:', err);
-          // Crea un utente admin fittizio per lo sviluppo
+          console.warn('Errore connessione database, usando utente admin di sviluppo');
           const devUser: AuthUser = {
             id: 'dev-admin-123',
             email: 'admin@civitanova.dev',
@@ -61,19 +58,20 @@ export function useAuthWithRole() {
           email: session.user.email || '',
         };
         setUser(safeUser);
-        // Recupera il ruolo dal profilo
+        // Recupera il ruolo dal profilo Firebase
         try {
           const { data, error } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
+            .eq('firebase_uid', session.user.id);
             
           if (error) {
             console.error('Errore nel recupero del ruolo:', error.message);
             setRole('user'); // Default role if error
           } else {
-            setRole(data?.role || 'user');
+            // data è ora un array, prendiamo il primo elemento
+            const profile = Array.isArray(data) && data.length > 0 ? data[0] : null;
+            setRole(profile?.role || 'user');
           }
         } catch (err) {
           console.error('Errore imprevisto nel recupero del ruolo:', err);
@@ -96,10 +94,15 @@ export function useAuthWithRole() {
       }
       setLoading(false);
     };
+    
     getSessionAndRole();
-    subscription = supabase.auth.onAuthStateChange(() => {
+    
+    // Ascolta i cambiamenti di autenticazione Firebase
+    subscription = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
       getSessionAndRole();
     });
+    
     return () => {
       subscription?.data?.subscription?.unsubscribe();
     };

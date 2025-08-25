@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabaseClient';
-import { User } from '@supabase/supabase-js';
+import { firebaseClient } from '@/utils/firebaseAuth';
+import { User } from 'firebase/auth';
 
 export default function TestAuthComplete() {
   const [user, setUser] = useState<User | null>(null);
@@ -11,35 +11,40 @@ export default function TestAuthComplete() {
   useEffect(() => {
     checkCurrentUser();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          loadProfile(session.user.id);
+    const unsubscribe = firebaseClient.auth.onAuthStateChanged(
+      (user) => {
+        setUser(user);
+        if (user) {
+          loadProfile(user.uid);
         } else {
           setProfile(null);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const checkCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = firebaseClient.auth.currentUser;
     setUser(user);
     if (user) {
-      loadProfile(user.id);
+      loadProfile(user.uid);
     }
   };
 
   const loadProfile = async (userId: string) => {
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setProfile(profileData);
+    try {
+      const profileData = await firebaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Errore caricamento profilo:', error);
+      setProfile(null);
+    }
   };
 
   const testCompleteAuth = async () => {
@@ -49,87 +54,81 @@ export default function TestAuthComplete() {
     try {
       // Test 1: Connessione database
       setResult(prev => prev + '1️⃣ Test connessione database...\n');
-      const { data: dbTest, error: dbError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-      
-      if (dbError) {
+      try {
+        const dbTest = await firebaseClient
+          .from('profiles')
+          .select('count')
+          .limit(1);
+        setResult(prev => prev + '✅ Connessione database OK\n\n');
+      } catch (dbError: any) {
         setResult(prev => prev + '❌ Errore connessione DB: ' + dbError.message + '\n');
         return;
       }
-      setResult(prev => prev + '✅ Connessione database OK\n\n');
 
       // Test 2: Login con admin esistente
       setResult(prev => prev + '2️⃣ Test login admin esistente...\n');
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: 'admin@civitanova.it',
-        password: 'admin123' // Password di default per admin
-      });
-
-      if (loginError) {
+      try {
+        const loginData = await firebaseClient.auth.signInWithEmailAndPassword(
+          'admin@civitanova.it',
+          'admin123'
+        );
+        setResult(prev => prev + '✅ Login admin riuscito\n');
+        setUser(loginData.user);
+      } catch (loginError: any) {
         setResult(prev => prev + '❌ Login fallito: ' + loginError.message + '\n');
         
         // Prova con password alternativa
         setResult(prev => prev + '🔄 Provo password alternativa...\n');
-        const { data: loginData2, error: loginError2 } = await supabase.auth.signInWithPassword({
-          email: 'admin@civitanova.it',
-          password: 'password123'
-        });
-        
-        if (loginError2) {
-          setResult(prev => prev + '❌ Login alternativo fallito: ' + loginError2.message + '\n');
-          return;
-        } else {
+        try {
+          const loginData2 = await firebaseClient.auth.signInWithEmailAndPassword(
+            'admin@civitanova.it',
+            'password123'
+          );
           setResult(prev => prev + '✅ Login riuscito con password alternativa\n');
           setUser(loginData2.user);
+        } catch (loginError2: any) {
+          setResult(prev => prev + '❌ Login alternativo fallito: ' + loginError2.message + '\n');
+          return;
         }
-      } else {
-        setResult(prev => prev + '✅ Login admin riuscito\n');
-        setUser(loginData.user);
       }
 
       // Test 3: Caricamento profilo
       setResult(prev => prev + '\n3️⃣ Test caricamento profilo...\n');
-      const currentUser = user || loginData?.user;
+      const currentUser = firebaseClient.auth.currentUser;
       if (currentUser) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single();
-
-        if (profileError) {
-          setResult(prev => prev + '❌ Errore caricamento profilo: ' + profileError.message + '\n');
-        } else {
+        try {
+          const profileData = await firebaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', currentUser.uid)
+            .single();
           setResult(prev => prev + '✅ Profilo caricato:\n' + JSON.stringify(profileData, null, 2) + '\n');
           setProfile(profileData);
+        } catch (profileError: any) {
+          setResult(prev => prev + '❌ Errore caricamento profilo: ' + profileError.message + '\n');
         }
       }
 
       // Test 4: Verifica sessione
       setResult(prev => prev + '\n4️⃣ Test verifica sessione...\n');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const currentUserSession = firebaseClient.auth.currentUser;
       
-      if (sessionError) {
-        setResult(prev => prev + '❌ Errore sessione: ' + sessionError.message + '\n');
-      } else if (session) {
-        setResult(prev => prev + '✅ Sessione attiva fino: ' + new Date(session.expires_at! * 1000).toLocaleString() + '\n');
+      if (currentUserSession) {
+        setResult(prev => prev + '✅ Sessione attiva per: ' + currentUserSession.email + '\n');
       } else {
         setResult(prev => prev + '⚠️ Nessuna sessione attiva\n');
       }
 
       // Test 5: Test RLS policies
       setResult(prev => prev + '\n5️⃣ Test RLS policies...\n');
-      const { data: profilesData, error: rlsError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name')
-        .limit(3);
-      
-      if (rlsError) {
+      try {
+        const profilesData = await firebaseClient
+          .from('profiles')
+          .select('id, email, full_name')
+          .limit(3);
+        setResult(prev => prev + '✅ RLS funzionante, profili visibili: ' + (profilesData?.length || 0) + '\n');
+      } catch (rlsError: any) {
         setResult(prev => prev + '❌ Errore RLS: ' + rlsError.message + '\n');
-      } else {
-        setResult(prev => prev + '✅ RLS funzionante, profili visibili: ' + profilesData.length + '\n');
       }
 
       setResult(prev => prev + '\n🎉 Test autenticazione completato con successo!');
@@ -145,15 +144,10 @@ export default function TestAuthComplete() {
     setResult('🔄 Logout in corso...\n');
 
     try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        setResult(prev => prev + '❌ Errore logout: ' + error.message);
-      } else {
-        setResult(prev => prev + '✅ Logout completato!');
-        setUser(null);
-        setProfile(null);
-      }
+      await firebaseClient.auth.signOut();
+      setResult(prev => prev + '✅ Logout completato!');
+      setUser(null);
+      setProfile(null);
     } catch (err) {
       setResult(prev => prev + '💥 Errore logout: ' + (err as Error).message);
     }
@@ -170,20 +164,10 @@ export default function TestAuthComplete() {
     const testName = 'Test User';
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: testEmail,
-        password: testPassword,
-        options: {
-          data: {
-            full_name: testName,
-          },
-        },
-      });
-
-      if (error) {
-        setResult(prev => prev + '❌ Errore registrazione: ' + error.message + '\n');
-        return;
-      }
+      const data = await firebaseClient.auth.createUserWithEmailAndPassword(
+        testEmail,
+        testPassword
+      );
 
       setResult(prev => prev + '✅ Utente registrato: ' + data.user?.email + '\n');
 
@@ -191,30 +175,28 @@ export default function TestAuthComplete() {
       if (data.user) {
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) {
+        try {
+          const profileData = await firebaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.uid)
+            .single();
+          setResult(prev => prev + '✅ Profilo creato automaticamente\n');
+        } catch (profileError: any) {
           setResult(prev => prev + '⚠️ Profilo non creato automaticamente, creazione manuale...\n');
           
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: testEmail,
-              full_name: testName,
-            });
-
-          if (insertError) {
-            setResult(prev => prev + '❌ Errore creazione profilo: ' + insertError.message + '\n');
-          } else {
+          try {
+            await firebaseClient
+              .from('profiles')
+              .insert({
+                id: data.user.uid,
+                email: testEmail,
+                full_name: testName,
+              });
             setResult(prev => prev + '✅ Profilo creato manualmente\n');
+          } catch (insertError: any) {
+            setResult(prev => prev + '❌ Errore creazione profilo: ' + insertError.message + '\n');
           }
-        } else {
-          setResult(prev => prev + '✅ Profilo creato automaticamente\n');
         }
       }
 
@@ -229,17 +211,17 @@ export default function TestAuthComplete() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">🔐 Test Completo Autenticazione</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">🔐 Test Completo Autenticazione Firebase</h1>
         
         {user ? (
           <div className="mb-6 p-4 bg-green-100 border border-green-400 rounded-md">
             <h3 className="text-lg font-semibold text-green-800 mb-2">👤 Utente Autenticato</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p><strong>ID:</strong> {user.id}</p>
+                <p><strong>ID:</strong> {user.uid}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Confermato:</strong> {user.email_confirmed_at ? '✅ Sì' : '❌ No'}</p>
-                <p><strong>Ultimo accesso:</strong> {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Mai'}</p>
+                <p><strong>Confermato:</strong> {user.emailVerified ? '✅ Sì' : '❌ No'}</p>
+                <p><strong>Ultimo accesso:</strong> {user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleString() : 'Mai'}</p>
               </div>
               
               {profile && (

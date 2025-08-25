@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
+import { DatabaseService } from '@/lib/database.ts';
 
 // NOTE: This route now supports precise geocoding of demo POIs by address.
 // For demo mode, we resolve addresses to exact lat/lng via OpenStreetMap Nominatim

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { DatabaseService } from '@/lib/database';
+import { DatabaseService } from '@/lib/database.ts';
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 import { 
   Calendar, 
