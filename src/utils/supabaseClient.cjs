@@ -66,8 +66,14 @@ var supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 var supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 var directSupabaseClient = null;
 exports.directSupabaseClient = directSupabaseClient;
-if (supabaseUrl && supabaseAnonKey) {
-    exports.directSupabaseClient = directSupabaseClient = (0, supabase_js_1.createClient)(supabaseUrl, supabaseAnonKey);
+// Prefer the service role key for server-side direct operations (bypass RLS when needed).
+// Fall back to anon key only if service role key is not available.
+// IMPORTANT: this module is used in client-side bundles. Do NOT read or embed
+// SUPABASE_SERVICE_ROLE_KEY here. Server-side code should use `src/utils/supabaseServer.ts`.
+var _clientKey = supabaseAnonKey;
+if (supabaseUrl && _clientKey) {
+    exports.directSupabaseClient = directSupabaseClient = (0, supabase_js_1.createClient)(supabaseUrl, _clientKey);
+    // Intentionally using ANON key for client-side operations only.
 }
 // Crea un client unificato che usa Firebase per auth e Supabase per database sincronizzato
 exports.supabase = {

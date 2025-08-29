@@ -167,6 +167,22 @@ class FirebaseAuthClient {
     }
   }
 
+  // Ottieni utente corrente (compatibile con supabase.auth.getUser)
+  async getUser(): Promise<{ data: { user: AuthUser | null }, error: { message: string; code?: string } | null }> {
+    try {
+      const result = await firebaseAuth.getUser();
+
+      if (result.error || !result.data.user) {
+        return { data: { user: null }, error: result.error || null };
+      }
+
+      const user = this.convertFirebaseUser(result.data.user);
+      return { data: { user }, error: null };
+    } catch (error: any) {
+      return { data: { user: null }, error: { message: error.message || 'Errore durante il recupero utente' } };
+    }
+  }
+
   // Reset password tramite Firebase
   async resetPasswordForEmail(email: string): Promise<{ error: any }> {
     try {

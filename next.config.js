@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configurazione base
+  // Imposto la root di Turbopack per evitare che rilevi lockfile esterni alla repo
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       {

@@ -204,11 +204,21 @@ export function MobileHomeScreen() {
     const initializeData = async () => {
       setIsLoading(true);
       try {
-        // Fetch user count (for potential future use)
-        const { count, error } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
-        if (!error) setUserCount(count ?? 0);
+        // Defer user count fetch to idle to avoid blocking first paint
+        const scheduleUserCountFetch = () => {
+          const run = async () => {
+            const { count, error } = await supabase
+              .from('users')
+              .select('*', { count: 'exact', head: true });
+            if (!error) setUserCount(count ?? 0);
+          };
+          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(run);
+          } else {
+            setTimeout(run, 800);
+          }
+        };
+        scheduleUserCountFetch();
 
         // Get preferences from localStorage
         if (typeof window !== 'undefined') {
@@ -241,7 +251,7 @@ export function MobileHomeScreen() {
   }, [authLoading]);
 
   // Show loading while auth is loading or data is loading
-  const isAppLoading = authLoading || isLoading;
+  const isAppLoading = authLoading;
 
   // Realtime update (optional) - deferred to idle to not block initial load
   useEffect(() => {

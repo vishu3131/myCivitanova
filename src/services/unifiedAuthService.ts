@@ -122,11 +122,17 @@ class UnifiedAuthService {
       
       await setDoc(doc(firestore, 'profiles', firebaseUser.uid), firebaseProfileData);
       
-      // 4. Sincronizza con Supabase
-      const syncResult = await firebaseSupabaseSync.syncUser(firebaseUser);
-      
-      if (!syncResult.success) {
-        console.warn('⚠️ Sincronizzazione Supabase fallita durante registrazione:', syncResult.error);
+      // 4. Sincronizza con Supabase (server-side via API con service_role)
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        await fetch('/api/sync/user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        });
+      } catch (syncApiErr) {
+        console.warn('⚠️ Errore chiamata API di sincronizzazione server-side:', syncApiErr);
       }
       
       // 5. Ottieni il profilo sincronizzato da Supabase
@@ -174,11 +180,17 @@ class UnifiedAuthService {
       
       const firebaseUser = userCredential.user;
       
-      // 2. Verifica e sincronizza il profilo
-      const syncResult = await firebaseSupabaseSync.syncUser(firebaseUser);
-      
-      if (!syncResult.success) {
-        console.warn('⚠️ Sincronizzazione fallita durante login:', syncResult.error);
+      // 2. Verifica e sincronizza il profilo (server-side via API con service_role)
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        await fetch('/api/sync/user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        });
+      } catch (syncApiErr) {
+        console.warn('⚠️ Errore chiamata API di sincronizzazione server-side:', syncApiErr);
       }
       
       // 3. Ottieni il profilo da Supabase
