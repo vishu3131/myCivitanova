@@ -1,5 +1,5 @@
 // MyCivitanova - Fundraising API utilities
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { safeSupabaseOperation } from '@/utils/supabaseHelpers';
 
 // Types for fundraising system

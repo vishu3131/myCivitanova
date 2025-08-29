@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactDOM from 'react-dom';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { isSupabaseConfigured } from '@/utils/supabaseHelpers';
 import WasteReportForm, { WasteReportData } from './WasteReportForm';
 

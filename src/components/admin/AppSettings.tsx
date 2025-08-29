@@ -20,7 +20,7 @@ import {
   CheckCircle,
   Info
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 interface AppSettingsData {
   general: {

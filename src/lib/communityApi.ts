@@ -1,4 +1,4 @@
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { CommunityPost, CreatePostData, CommunityComment, CreateCommentData } from '@/hooks/useCommunity';
 import { isValidCategory, DEFAULT_CATEGORY, VALID_CATEGORY_IDS } from '@/lib/categories';
 import { getConfig } from '@/config/production';

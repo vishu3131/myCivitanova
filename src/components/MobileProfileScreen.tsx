@@ -5,7 +5,7 @@ import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { ArrowLeft, Settings, Edit3, Bell, Shield, HelpCircle, LogOut, ChevronRight, Camera, Star, Award, MapPin, User, Newspaper, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { PublicProfile } from './PublicProfile';
 import { EditProfileModal } from './EditProfileModal';
 import { NotificationsModal } from './NotificationsModal';

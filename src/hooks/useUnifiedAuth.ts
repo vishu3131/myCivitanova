@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../utils/firebaseClient';
 import { unifiedAuthService, RegisterData, LoginData, ProfileUpdateData, AuthResult } from '../services/unifiedAuthService';
-import { SyncedUserProfile } from '../utils/supabaseClient.ts';
+import { SyncedUserProfile } from '../utils/supabaseClient';
 
 // Interfaccia per lo stato di autenticazione
 export interface AuthState {

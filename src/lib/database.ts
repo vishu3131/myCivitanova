@@ -1,5 +1,5 @@
 // MyCivitanova - Database utilities and types
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 // Types per il database
 export interface Profile {

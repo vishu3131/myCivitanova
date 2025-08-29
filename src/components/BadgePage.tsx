@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BadgeSystem } from './BadgeSystem';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 interface BadgePageProps {
   userId?: string;

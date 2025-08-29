@@ -8,7 +8,7 @@
 import { User, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db as firestore } from '../utils/firebaseClient';
-import { supabase, SyncedUserProfile } from '../utils/supabaseClient.ts';
+import { supabase, SyncedUserProfile } from '../utils/supabaseClient';
 import { firebaseSupabaseSync } from './firebaseSupabaseSync';
 import { realtimeSyncTriggers } from './realtimeSyncTriggers';
 
@@ -86,6 +86,8 @@ class UnifiedAuthService {
    */
   async register(data: RegisterData): Promise<AuthResult> {
     try {
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      if (!firestore) throw new Error('Firestore not initialized');
       console.log(`👤 Registrazione nuovo utente: ${data.email}`);
       
       // 1. Crea utente in Firebase Auth
@@ -169,6 +171,8 @@ class UnifiedAuthService {
    */
   async login(data: LoginData): Promise<AuthResult> {
     try {
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      if (!firestore) console.warn('Firestore not initialized; profile update will be skipped');
       console.log(`🔐 Login utente: ${data.email}`);
       
       // 1. Autentica con Firebase
@@ -202,7 +206,7 @@ class UnifiedAuthService {
       
       // 4. Aggiorna ultimo accesso in Firestore
       try {
-        await updateDoc(doc(firestore, 'profiles', firebaseUser.uid), {
+  await updateDoc(doc(firestore!, 'profiles', firebaseUser.uid), {
           lastLoginAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -233,6 +237,7 @@ class UnifiedAuthService {
    */
   async logout(): Promise<AuthResult> {
     try {
+      if (!auth) throw new Error('Firebase Auth not initialized');
       console.log('🚪 Logout utente...');
       
       // Pulisci i trigger di sincronizzazione
@@ -260,7 +265,9 @@ class UnifiedAuthService {
    */
   async updateProfile(updates: ProfileUpdateData): Promise<AuthResult> {
     try {
-      const currentUser = auth.currentUser;
+  if (!auth) throw new Error('Firebase Auth not initialized');
+  if (!firestore) throw new Error('Firestore not initialized');
+  const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('Nessun utente autenticato');
       }
@@ -320,9 +327,9 @@ class UnifiedAuthService {
    */
   async resetPassword(email: string): Promise<AuthResult> {
     try {
-      console.log(`📧 Invio email reset password per: ${email}`);
-      
-      await sendPasswordResetEmail(auth, email);
+  console.log(`📧 Invio email reset password per: ${email}`);
+  if (!auth) throw new Error('Firebase Auth not initialized');
+  await sendPasswordResetEmail(auth, email);
       
       console.log('✅ Email reset password inviata');
       
@@ -343,6 +350,7 @@ class UnifiedAuthService {
    */
   async resendVerificationEmail(): Promise<AuthResult> {
     try {
+      if (!auth) throw new Error('Firebase Auth not initialized');
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('Nessun utente autenticato');
@@ -382,14 +390,16 @@ class UnifiedAuthService {
    * Verifica se l'utente è autenticato
    */
   isAuthenticated(): boolean {
-    return !!auth.currentUser;
+  if (!auth) return false;
+  return !!auth.currentUser;
   }
 
   /**
    * Ottiene l'utente Firebase corrente
    */
   getCurrentFirebaseUser(): User | null {
-    return auth.currentUser;
+  if (!auth) return null;
+  return auth.currentUser;
   }
 
   /**
@@ -397,7 +407,8 @@ class UnifiedAuthService {
    */
   async forceSyncCurrentUser(): Promise<boolean> {
     try {
-      const currentUser = auth.currentUser;
+  if (!auth) throw new Error('Firebase Auth not initialized');
+  const currentUser = auth.currentUser;
       if (!currentUser) {
         console.warn('Nessun utente autenticato per la sincronizzazione');
         return false;

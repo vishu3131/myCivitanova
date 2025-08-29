@@ -14,7 +14,7 @@ import CityReportModal from './CityReportModal';
 import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import Link from 'next/link';
 import TreasureHuntWidget from './TreasureHuntWidget';

@@ -1,4 +1,4 @@
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import type { Listing, ListingExpanded, ListingImage, FetchListingsParams } from '@/types/marketplace';
 
 export interface ListingReview {

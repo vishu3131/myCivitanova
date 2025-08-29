@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 
 // Configurazione Firebase
 const firebaseConfig = {
@@ -32,9 +32,9 @@ const isValidConfig = () => {
   });
 };
 
-let app;
-let auth;
-let db;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
 // Inizializza Firebase
 try {

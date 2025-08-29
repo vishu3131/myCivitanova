@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { demoBadges, DemoXPSystem } from '@/data/demoData';
 

@@ -21,7 +21,7 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

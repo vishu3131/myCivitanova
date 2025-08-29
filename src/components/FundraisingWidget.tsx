@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HeartHandshake, Coins, Sparkles } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 interface FundraisingStats {
   totalRaised: number;

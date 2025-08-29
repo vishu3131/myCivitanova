@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
@@ -85,9 +85,27 @@ export default function LoginPage() {
         if (error) throw error;
 
         setSuccess('Login effettuato con successo!');
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
+
+        // Wait for the auth session to be available before redirecting to home.
+        // This avoids a race where the app redirects before auth hooks have initialized.
+        const waitForSession = async (timeoutMs = 4000) => {
+          const start = Date.now();
+          while (Date.now() - start < timeoutMs) {
+            try {
+              const res = await supabase.auth.getSession();
+              if (res && res.data && res.data.session && res.data.session.user) {
+                return res.data.session;
+              }
+            } catch (e) {
+              // ignore and retry
+            }
+            await new Promise((r) => setTimeout(r, 200));
+          }
+          return null;
+        };
+
+        await waitForSession(4000);
+        router.push('/');
       } else {
         // Registrazione
         const { data, error } = await supabase.auth.signUp({

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
 import { ArrowLeft, Search, Filter, Navigation, MapPin, Star, Clock, Layers } from 'lucide-react';

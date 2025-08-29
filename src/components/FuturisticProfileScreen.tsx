@@ -53,7 +53,7 @@ import {
   Smile,
   AlertCircle
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 import { useXPSystem } from '@/hooks/useXPSystem';
 import { useBadgeSystem } from './BadgeSystem';
 import { FuturisticEditProfileModal } from './FuturisticEditProfileModal';

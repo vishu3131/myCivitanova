@@ -1,5 +1,5 @@
 "use client";
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 import React, { useState } from 'react';
 

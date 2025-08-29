@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, Award, Crown, Shield, Zap, Target, Calendar, Users, Heart, Sparkles, Lock } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 interface Badge {
   id: string;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabaseClient.ts'; // Ora utilizza Firebase tramite il wrapper
+import { supabase } from '@/utils/supabaseClient'; // Ora utilizza Firebase tramite il wrapper
 
 export interface AuthUser {
   id: string;

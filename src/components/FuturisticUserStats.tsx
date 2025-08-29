@@ -22,7 +22,7 @@ import {
   Medal,
   Sparkles
 } from 'lucide-react';
-import { supabase } from '@/utils/supabaseClient.ts';
+import { supabase } from '@/utils/supabaseClient';
 
 interface UserStats {
   total_xp: number;
