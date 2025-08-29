@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
+  ,"scan:secrets": "node ./scripts/scan-secrets.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
