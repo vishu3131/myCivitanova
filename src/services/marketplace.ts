@@ -361,6 +361,56 @@ export async function createOrGetConversation(listingId: string, sellerId: strin
   return data as MarketplaceConversation;
 }
 
+// Backwards compatible helper: createConversation expects an object payload in some callers
+export async function createConversation(payload: { listing_id: string; buyer_id?: string; seller_id: string } ) : Promise<MarketplaceConversation> {
+  // If buyer_id is provided use it, otherwise rely on current auth user
+  const buyerId = payload.buyer_id ?? (await supabase.auth.getUser()).data.user?.id;
+  if (!buyerId) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('marketplace_conversations')
+    .insert({
+      listing_id: payload.listing_id,
+      buyer_id: buyerId,
+      seller_id: payload.seller_id
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data as MarketplaceConversation;
+}
+
+// Backwards compatible getter: can be called either with (id) or with (listingId, buyerId, sellerId)
+export async function getConversation(idOrListingId: string, maybeBuyerId?: string, maybeSellerId?: string): Promise<MarketplaceConversation> {
+  // If only one argument provided, treat as conversation id
+  if (!maybeBuyerId && !maybeSellerId) {
+    const { data, error } = await supabase
+      .from('marketplace_conversations')
+      .select('*')
+      .eq('id', idOrListingId)
+      .single();
+    if (error) throw error;
+    return data as MarketplaceConversation;
+  }
+
+  // Otherwise fetch by listing/buyer/seller
+  const listingId = idOrListingId;
+  const buyerId = maybeBuyerId!;
+  const sellerId = maybeSellerId!;
+
+  const { data, error } = await supabase
+    .from('marketplace_conversations')
+    .select('*')
+    .eq('listing_id', listingId)
+    .eq('buyer_id', buyerId)
+    .eq('seller_id', sellerId)
+    .single();
+
+  if (error) throw error;
+  return data as MarketplaceConversation;
+}
+
 export async function fetchUserConversations(userId: string) {
   const { data, error } = await supabase
     .from('marketplace_conversations')

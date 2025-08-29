@@ -505,3 +505,10 @@ export const firebase = {
     console.log('Firebase removeChannel called');
   }
 };
+
+// Backwards-compatible alias expected by some modules
+export const firebaseClient = {
+  auth,
+  db,
+  firebase
+};

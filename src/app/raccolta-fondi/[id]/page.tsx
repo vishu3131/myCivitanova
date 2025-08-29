@@ -22,7 +22,7 @@ import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import DonationForm from '@/components/fundraising/DonationForm';
 import DonationsList from '@/components/fundraising/DonationsList';
 import CampaignUpdates from '@/components/fundraising/CampaignUpdates';
-import FundraisingMessages from '@/components/fundraising/FundraisingMessages';
+import { FundraisingMessages } from '@/components/fundraising/FundraisingMessages';
 
 const CATEGORIES = [
   { value: 'community', label: 'Comunità', color: 'bg-blue-100 text-blue-800' },
@@ -48,10 +48,11 @@ export default function CampaignDetailPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    if (params.id) {
-      loadCampaign(params.id as string);
+    const id = params?.id as string | undefined;
+    if (id) {
+      loadCampaign(id);
     }
-  }, [params.id]);
+  }, [params?.id]);
 
   useEffect(() => {
     if (campaign && user) {
@@ -81,8 +82,8 @@ export default function CampaignDetailPage() {
         FundraisingAPI.getUserLikeStatus(campaign.id, user.id),
         FundraisingAPI.getUserFollowStatus(campaign.id, user.id)
       ]);
-      setIsLiked(likeStatus.liked);
-      setIsFollowing(followStatus.following);
+  setIsLiked(likeStatus?.liked ?? false);
+  setIsFollowing(followStatus?.following ?? false);
     } catch (err) {
       console.error('Errore nel controllo delle interazioni:', err);
     }
@@ -92,8 +93,8 @@ export default function CampaignDetailPage() {
     if (!campaign || !user) return;
 
     try {
-      const result = await FundraisingAPI.toggleLike(campaign.id, user.id);
-      setIsLiked(result.liked);
+  const result = await FundraisingAPI.toggleLike(campaign.id, user.id);
+  setIsLiked(result?.liked ?? false);
       // Reload campaign to get updated likes count
       loadCampaign(campaign.id);
     } catch (err) {
@@ -105,8 +106,8 @@ export default function CampaignDetailPage() {
     if (!campaign || !user) return;
 
     try {
-      const result = await FundraisingAPI.toggleFollow(campaign.id, user.id);
-      setIsFollowing(result.following);
+  const result = await FundraisingAPI.toggleFollow(campaign.id, user.id);
+  setIsFollowing(result?.following ?? false);
       // Reload campaign to get updated follows count
       loadCampaign(campaign.id);
     } catch (err) {
@@ -375,6 +376,7 @@ export default function CampaignDetailPage() {
             >
               <FundraisingMessages 
                 campaignId={campaign.id}
+                campaignTitle={campaign.title}
                 isCreator={user?.id === campaign.creator_id}
               />
             </motion.div>
@@ -487,8 +489,8 @@ export default function CampaignDetailPage() {
               </div>
               <DonationForm
                 campaignId={campaign.id}
-                onSuccess={handleDonationSuccess}
-                onCancel={() => setShowDonationForm(false)}
+                campaignTitle={campaign.title}
+                onDonationComplete={handleDonationSuccess}
               />
             </div>
           </div>
