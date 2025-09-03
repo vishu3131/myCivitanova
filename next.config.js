@@ -117,24 +117,8 @@ const nextConfig = {
     // Evita che errori di type-checking blocchino la build per ora
     ignoreBuildErrors: true,
   },
-  webpack: (config, { isDev, webpack }) => {
-    config.module.rules.push({
-      test: /\.css$/i,
-      use: [
-        'style-loader',
-        'css-loader',
-        {
-          loader: 'postcss-loader',
-          options: {
-            postcssOptions: {
-              config: './postcss.config.js',
-            },
-          },
-        },
-      ],
-    });
-    return config;
-  },
+  // Rimossa configurazione webpack personalizzata per CSS
+  // Next.js gestisce automaticamente CSS e PostCSS
 };
 
 

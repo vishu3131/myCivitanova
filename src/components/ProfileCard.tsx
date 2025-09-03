@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import './ProfileCard.css';
-import SafeImage from './SafeImage';
+import { SafeImage } from './SafeImage';
 
 interface ProfileCardProps {
   avatar: string;

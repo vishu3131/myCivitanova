@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/utils/supabase/client';
+import { supabase } from '@/utils/supabaseClient';
 import { motion } from 'framer-motion';
 import { Clock, RefreshCw, CheckCircle, AlertTriangle, Search, ChevronDown, X, Download, MapPin, Eye, ExternalLink } from 'lucide-react';
 
