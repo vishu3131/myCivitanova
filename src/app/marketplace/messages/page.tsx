@@ -15,6 +15,7 @@ import { MarketplaceConversation, ListingExpanded } from "@/types/marketplace";
 interface ConversationWithListing extends MarketplaceConversation {
   listing?: ListingExpanded;
   otherUserName?: string;
+  unread_count?: number; // Added unread_count
 }
 
 export default function MessagesPage() {
@@ -41,13 +42,15 @@ export default function MessagesPage() {
               ...conversation,
               listing,
               otherUserName: listing?.author?.full_name || 'Utente Sconosciuto',
+              unread_count: conversation.unread_count // Ensure unread_count is passed
             };
           } catch (error) {
             console.error(`Failed to load details for conversation ${conversation.id}`, error);
             return { 
               ...conversation, 
               listing: undefined,
-              otherUserName: 'Dati non disponibili' 
+              otherUserName: 'Dati non disponibili',
+              unread_count: conversation.unread_count // Ensure unread_count is passed
             };
           }
         })
@@ -73,41 +76,7 @@ export default function MessagesPage() {
 
 
   const handleConversationClick = (conversationId: string) => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const conversationsData = await fetchUserConversations(user.id);
-      
-      // Load listing details for each conversation
-      const conversationsWithDetails = await Promise.all(
-        conversationsData.map(async (conversation) => {
-          try {
-            const listing = await fetchListingById(conversation.listing_id);
-            const otherUserId = conversation.buyer_id === user.id ? conversation.seller_id : conversation.buyer_id;
-            
-            return {
-              ...conversation,
-              listing,
-              otherUserName: `Utente #${otherUserId.slice(-8)}`
-            };
-          } catch (error) {
-            console.error('Error loading listing for conversation:', error);
-            return {
-              ...conversation,
-              otherUserName: 'Utente sconosciuto'
-            };
-          }
-        })
-      );
-      
-      setConversations(conversationsWithDetails);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-      toast.error('Errore nel caricamento delle conversazioni');
-    } finally {
-      setLoading(false);
-    }
+    router.push(`/marketplace/messages/${conversationId}`);
   };
 
   const formatDate = (dateString: string) => {

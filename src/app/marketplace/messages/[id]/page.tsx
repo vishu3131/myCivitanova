@@ -91,41 +91,6 @@ export default function ConversationPage() {
     }
   }, [messages, conversation, user, conversationId]);
 
-  const loadConversationData = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const [conversationData, messagesData] = await Promise.all([
-        getConversation(conversationId),
-        fetchConversationMessages(conversationId)
-      ]);
-      
-      // Check if user is part of this conversation
-      if (conversationData.buyer_id !== user.id && conversationData.seller_id !== user.id) {
-        toast.error('Non hai accesso a questa conversazione');
-        router.push('/marketplace/messages');
-        return;
-      }
-      
-      setConversation(conversationData);
-      setMessages(messagesData);
-      
-      // Load listing details
-      try {
-        const listingData = await fetchListingById(conversationData.listing_id);
-        setListing(listingData);
-      } catch (error) {
-        console.error('Error loading listing:', error);
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      toast.error('Errore nel caricamento della conversazione');
-      router.push('/marketplace/messages');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

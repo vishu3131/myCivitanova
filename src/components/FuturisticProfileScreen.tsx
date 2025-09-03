@@ -61,6 +61,7 @@ import { FuturisticUserStats } from './FuturisticUserStats';
 import FuturisticBadgeCollection from './FuturisticBadgeCollection';
 import FuturisticAdvancedSettings from './FuturisticAdvancedSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'react-hot-toast'; // Added
 
 
 // Interfaces
@@ -126,10 +127,13 @@ interface FuturisticProfileScreenProps {
 export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProps) {
   const { user, loading, isAuthenticated } = useAuth();
   // State management
-  const [profileUser, setProfileUser] = useState(null);
+  const [profileUser, setProfileUser] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentBadges, setRecentBadges] = useState<Badge[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]); // Added
+  const [xpHistory, setXpHistory] = useState<any[]>([]); // Added
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true); // Added
   
   const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'badges' | 'settings'>('overview');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -137,8 +141,6 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'neon'>('dark');
-
-  // Utility functions for formatting
   const formatBirthDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -173,7 +175,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     if (!user?.id) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase.direct
         .from('user_stats')
         .select('*')
         .eq('user_id', user.id)
@@ -193,7 +195,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const loadBadges = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase.direct
         .from('user_badges')
         .select('*, badges(*)')
         .eq('user_id', user.id)
@@ -238,7 +240,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     
     async function loadFreshProfile() {
       // Get profile data from database
-      const { data: profileData, error } = await supabase
+      const { data: profileData, error } = await supabase.direct
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -271,14 +273,11 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
       }
     }
   }, [user?.id, dailyLogin, loadUserStats, loadBadges]);
-      console.error('Error loading badges:', error);
-    }
-  }, [user?.id]);
 
   const loadXPHistory = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase.direct
         .from('xp_history')
         .select('*')
         .eq('user_id', user.id)
@@ -307,7 +306,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
             const cacheAge = (now.getTime() - cacheTimestamp.getTime()) / 1000 / 60; // in minutes
 
             if (cacheAge < 60) { // Cache is valid for 60 minutes
-              setUser(parsed.data);
+              setProfileUser(parsed.data);
               setLastUpdated(new Date(parsed.timestamp).toLocaleString());
               return;
             }
@@ -318,7 +317,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
         }
         
         // If no valid cache, fetch from DB
-        const { data: userProfile, error } = await supabase
+        const { data: userProfile, error } = await supabase.direct
           .from('profiles')
           .select('*')
           .eq('id', userId)
@@ -333,7 +332,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
             timestamp: new Date().toISOString()
           };
           localStorage.setItem(`profile_${userId}`, JSON.stringify(profileCache));
-          setUser(userProfile);
+          setProfileUser(userProfile);
           setLastUpdated(new Date().toLocaleString());
         }
       }
@@ -347,7 +346,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
           checkUser();
         }
         if (_event === 'SIGNED_OUT') {
-          setUser(null);
+          setProfileUser(null);
           setUserStats(null);
           setBadges([]);
           setRecentBadges([]);
@@ -1043,7 +1042,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
             };
             localStorage.setItem(`profile_${user?.id}`, JSON.stringify(profileCache));
             
-            setUser(updatedUser);
+            setProfileUser(updatedUser);
             setLastUpdated(new Date().toLocaleString());
             
             // Add XP for profile update
@@ -1089,9 +1088,47 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleAvatarUpload(file);
+                    if (file && user?.id) {
+                      setAvatarUploading(true);
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+                        const { error: uploadError } = await supabase.direct.storage
+                          .from('avatars')
+                          .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: true,
+                          });
+                        
+                        if (uploadError) throw uploadError;
+
+                        const { data: publicUrlData } = supabase.direct.storage
+                          .from('avatars')
+                          .getPublicUrl(fileName);
+                        
+                        const newAvatarUrl = publicUrlData.publicUrl;
+
+                        const { data: updatedProfile, error: updateError } = await supabase.direct
+                          .from('profiles')
+                          .update({ avatar_url: newAvatarUrl })
+                          .eq('id', user.id)
+                          .select('*')
+                          .single();
+
+                        if (updateError) throw updateError;
+
+                        setProfileUser(updatedProfile);
+                        toast.success('Avatar aggiornato con successo!');
+                      } catch (error) {
+                        console.error('Error uploading avatar:', error);
+                        toast.error('Errore durante l\'aggiornamento dell\'avatar.');
+                      } finally {
+                        setAvatarUploading(false);
+                        setShowAvatarModal(false);
+                      }
+                    }
                   }}
                 />
                 

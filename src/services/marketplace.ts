@@ -38,7 +38,7 @@ export interface MarketplaceMessage {
   id: string;
   conversation_id: string;
   sender_id: string;
-  message: string;
+  content: string;
   message_type: 'text' | 'image' | 'offer';
   offer_amount?: number;
   offer_currency?: string;
@@ -59,7 +59,7 @@ export async function fetchListings(params: FetchListingsParams) {
     offset = 0,
   } = params;
 
-  let q = supabase
+  let q = supabase.direct
     .from('listings')
     .select('*', { count: 'exact' })
     .eq('type', type)
@@ -71,11 +71,11 @@ export async function fetchListings(params: FetchListingsParams) {
   if (onlyVerified) q = q.eq('verified', true);
   if (query) {
     // Usa text search su title; valutare FTS su titolo+descrizione con indice GIN
-    q = q.textSearch('title', query, { type: 'websearch' });
+    q = q.textSearch('title', query, { config: 'english' }); // 'websearch' is not a valid config, using 'english'
   }
 
-  if (sort === 'prezzo') q = q.order('price_amount', { ascending: true, nullsFirst: false });
-  else if (sort === 'rating') q = q.order('average_rating', { ascending: false, nullsFirst: true });
+  if (sort === 'prezzo') q = q.order('price_amount', { ascending: true });
+  else if (sort === 'rating') q = q.order('average_rating', { ascending: false });
   else q = q.order('created_at', { ascending: false });
 
   const { data, error, count } = await q;
@@ -84,7 +84,7 @@ export async function fetchListings(params: FetchListingsParams) {
 }
 
 export async function fetchListingImages(listingId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_images')
     .select('*')
     .eq('listing_id', listingId)
@@ -104,7 +104,7 @@ export async function fetchListingsWithImages(params: FetchListingsParams) {
 }
 
 export async function createListing(payload: Partial<Listing>) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listings')
     .insert(payload)
     .select('*')
@@ -119,18 +119,18 @@ export async function uploadListingImage(listingId: string, file: File, position
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
   const path = `listings/${listingId}/${fileName}`;
   
-  const { error: uploadErr } = await supabase.storage.from(bucket).upload(path, file, {
+  const { error: uploadErr } = await supabase.direct.storage.from(bucket).upload(path, file, {
     cacheControl: '3600',
     upsert: false
   });
   if (uploadErr) throw uploadErr;
   
-  const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data: publicUrl } = supabase.direct.storage.from(bucket).getPublicUrl(path);
   const url = publicUrl.publicUrl;
 
   // Get next position if not provided
   if (position === undefined) {
-    const { data: existingImages } = await supabase
+    const { data: existingImages } = await supabase.direct
       .from('listing_images')
       .select('position')
       .eq('listing_id', listingId)
@@ -139,7 +139,7 @@ export async function uploadListingImage(listingId: string, file: File, position
     position = existingImages && existingImages.length > 0 ? existingImages[0].position + 1 : 0;
   }
 
-  const { data: img, error: dbErr } = await supabase
+  const { data: img, error: dbErr } = await supabase.direct
     .from('listing_images')
     .insert({ 
       listing_id: listingId, 
@@ -175,7 +175,7 @@ export async function uploadMultipleImages(listingId: string, files: File[]) {
 // ===== LISTING CRUD OPERATIONS =====
 
 export async function fetchListingById(id: string): Promise<Listing | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listings')
     .select('*')
     .eq('id', id)
@@ -189,7 +189,7 @@ export async function fetchListingById(id: string): Promise<Listing | null> {
 }
 
 export async function updateListing(id: string, updates: Partial<Listing>) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listings')
     .update(updates)
     .eq('id', id)
@@ -200,7 +200,7 @@ export async function updateListing(id: string, updates: Partial<Listing>) {
 }
 
 export async function deleteListing(id: string) {
-  const { error } = await supabase
+  const { error } = await supabase.direct
     .from('listings')
     .update({ status: 'deleted' })
     .eq('id', id);
@@ -208,7 +208,7 @@ export async function deleteListing(id: string) {
 }
 
 export async function fetchUserListings(userId: string, status?: string) {
-  let query = supabase
+  let query = supabase.direct
     .from('listings')
     .select('*')
     .eq('user_id', userId)
@@ -227,14 +227,14 @@ export async function fetchUserListings(userId: string, status?: string) {
 
 export async function toggleFavorite(listingId: string, isFav: boolean) {
   if (isFav) {
-    const { error } = await supabase
+    const { error } = await supabase.direct
       .from('listing_favorites')
       .delete()
       .eq('listing_id', listingId)
       .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
     if (error) throw error;
   } else {
-    const { error } = await supabase
+    const { error } = await supabase.direct
       .from('listing_favorites')
       .insert({ 
         listing_id: listingId,
@@ -245,7 +245,7 @@ export async function toggleFavorite(listingId: string, isFav: boolean) {
 }
 
 export async function checkIsFavorite(listingId: string): Promise<boolean> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_favorites')
     .select('id')
     .eq('listing_id', listingId)
@@ -257,7 +257,7 @@ export async function checkIsFavorite(listingId: string): Promise<boolean> {
 }
 
 export async function fetchUserFavorites(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_favorites')
     .select(`
       *,
@@ -273,7 +273,7 @@ export async function fetchUserFavorites(userId: string) {
 // ===== REVIEWS OPERATIONS =====
 
 export async function createReview(listingId: string, rating: number, comment?: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_reviews')
     .insert({ 
       listing_id: listingId, 
@@ -288,7 +288,7 @@ export async function createReview(listingId: string, rating: number, comment?: 
 }
 
 export async function fetchListingReviews(listingId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_reviews')
     .select(`
       *,
@@ -305,7 +305,7 @@ export async function fetchListingReviews(listingId: string) {
 }
 
 export async function updateReview(reviewId: string, rating: number, comment?: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_reviews')
     .update({ rating, comment })
     .eq('id', reviewId)
@@ -316,7 +316,7 @@ export async function updateReview(reviewId: string, rating: number, comment?: s
 }
 
 export async function deleteReview(reviewId: string) {
-  const { error } = await supabase
+  const { error } = await supabase.direct
     .from('listing_reviews')
     .delete()
     .eq('id', reviewId);
@@ -330,7 +330,7 @@ export async function createOrGetConversation(listingId: string, sellerId: strin
   if (!currentUser) throw new Error('User not authenticated');
   
   // Check if conversation already exists
-  const { data: existing, error: fetchError } = await supabase
+  const { data: existing, error: fetchError } = await supabase.direct
     .from('marketplace_conversations')
     .select('*')
     .eq('listing_id', listingId)
@@ -347,7 +347,7 @@ export async function createOrGetConversation(listingId: string, sellerId: strin
   }
   
   // Create new conversation
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_conversations')
     .insert({
       listing_id: listingId,
@@ -367,7 +367,7 @@ export async function createConversation(payload: { listing_id: string; buyer_id
   const buyerId = payload.buyer_id ?? (await supabase.auth.getUser()).data.user?.id;
   if (!buyerId) throw new Error('User not authenticated');
 
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_conversations')
     .insert({
       listing_id: payload.listing_id,
@@ -385,7 +385,7 @@ export async function createConversation(payload: { listing_id: string; buyer_id
 export async function getConversation(idOrListingId: string, maybeBuyerId?: string, maybeSellerId?: string): Promise<MarketplaceConversation> {
   // If only one argument provided, treat as conversation id
   if (!maybeBuyerId && !maybeSellerId) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase.direct
       .from('marketplace_conversations')
       .select('*')
       .eq('id', idOrListingId)
@@ -399,7 +399,7 @@ export async function getConversation(idOrListingId: string, maybeBuyerId?: stri
   const buyerId = maybeBuyerId!;
   const sellerId = maybeSellerId!;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_conversations')
     .select('*')
     .eq('listing_id', listingId)
@@ -412,7 +412,7 @@ export async function getConversation(idOrListingId: string, maybeBuyerId?: stri
 }
 
 export async function fetchUserConversations(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_conversations')
     .select(`
       *,
@@ -436,7 +436,7 @@ export async function fetchUserConversations(userId: string) {
 
 export async function sendMessage(
   conversationId: string, 
-  message: string, 
+  content: string, 
   messageType: 'text' | 'image' | 'offer' = 'text',
   offerAmount?: number,
   offerCurrency?: string
@@ -444,12 +444,12 @@ export async function sendMessage(
   const currentUser = (await supabase.auth.getUser()).data.user;
   if (!currentUser) throw new Error('User not authenticated');
   
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_messages')
     .insert({
       conversation_id: conversationId,
       sender_id: currentUser.id,
-      message,
+      content,
       message_type: messageType,
       offer_amount: offerAmount,
       offer_currency: offerCurrency
@@ -462,7 +462,7 @@ export async function sendMessage(
 }
 
 export async function fetchConversationMessages(conversationId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('marketplace_messages')
     .select(`
       *,
@@ -479,7 +479,7 @@ export async function fetchConversationMessages(conversationId: string) {
 }
 
 export async function markMessagesAsRead(conversationId: string, userId: string) {
-  const { error } = await supabase
+  const { error } = await supabase.direct
     .from('marketplace_messages')
     .update({ is_read: true })
     .eq('conversation_id', conversationId)
@@ -493,7 +493,7 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
 
 export async function deleteListingImage(imageId: string) {
   // First get the image to delete from storage
-  const { data: image, error: fetchError } = await supabase
+  const { data: image, error: fetchError } = await supabase.direct
     .from('listing_images')
     .select('url, listing_id')
     .eq('id', imageId)
@@ -507,7 +507,7 @@ export async function deleteListingImage(imageId: string) {
       const urlParts = image.url.split('/');
       const fileName = urlParts[urlParts.length - 1];
       const path = `listings/${image.listing_id}/${fileName}`;
-      await supabase.storage.from('marketplace').remove([path]);
+      await supabase.direct.storage.from('marketplace').remove([path]);
     } catch (storageError) {
       console.warn('Failed to delete from storage:', storageError);
       // Continue with database deletion even if storage deletion fails
@@ -515,7 +515,7 @@ export async function deleteListingImage(imageId: string) {
   }
   
   // Delete from database
-  const { error } = await supabase
+  const { error } = await supabase.direct
     .from('listing_images')
     .delete()
     .eq('id', imageId);
@@ -524,7 +524,7 @@ export async function deleteListingImage(imageId: string) {
 }
 
 export async function updateImagePosition(imageId: string, position: number) {
-  const { error } = await supabase
+  const { error } = await supabase.direct
     .from('listing_images')
     .update({ position })
     .eq('id', imageId);
@@ -534,7 +534,7 @@ export async function updateImagePosition(imageId: string, position: number) {
 
 export async function reorderImages(listingId: string, imageIds: string[]) {
   const updates = imageIds.map((imageId, index) => 
-    supabase
+    supabase.direct
       .from('listing_images')
       .update({ position: index })
       .eq('id', imageId)
@@ -550,7 +550,7 @@ export async function reorderImages(listingId: string, imageIds: string[]) {
 }
 
 export async function getImageMetadata(imageId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.direct
     .from('listing_images')
     .select('*')
     .eq('id', imageId)
@@ -563,12 +563,12 @@ export async function getImageMetadata(imageId: string) {
 export async function ensureStorageBucket() {
   try {
     // Check if bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
+    const { data: buckets } = await supabase.direct.storage.listBuckets();
     const marketplaceBucket = buckets?.find(bucket => bucket.name === 'marketplace');
     
     if (!marketplaceBucket) {
       // Create bucket if it doesn't exist
-      const { error } = await supabase.storage.createBucket('marketplace', {
+      const { error } = await supabase.direct.storage.createBucket('marketplace', {
         public: true,
         allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
         fileSizeLimit: 5242880 // 5MB
@@ -590,7 +590,7 @@ export async function getImageUploadUrl(fileName: string, listingId: string) {
   const uniqueName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
   const path = `listings/${listingId}/${uniqueName}`;
   
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabase.direct.storage
     .from('marketplace')
     .createSignedUploadUrl(path);
   
@@ -618,7 +618,7 @@ export interface AdvancedSearchFilters {
 }
 
 export async function searchListings(searchTerm: string, filters?: AdvancedSearchFilters) {
-  let query = supabase
+  let query = supabase.direct
     .from('listings')
     .select(`
       *,
@@ -639,7 +639,11 @@ export async function searchListings(searchTerm: string, filters?: AdvancedSearc
   
   // Search term
   if (searchTerm) {
-    query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tags.ilike.%${searchTerm}%`);
+    query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    // Tags are stored as text[], so ilike won't work directly.
+    // For tags, you might need to use a different approach, e.g.,
+    // query = query.contains('tags', [searchTerm]);
+    // or fetch all and filter in client-side if performance allows.
   }
   
   // Basic filters
@@ -680,8 +684,8 @@ export async function searchListings(searchTerm: string, filters?: AdvancedSearc
   
   // Tags filter
   if (filters?.tags && filters.tags.length > 0) {
-    const tagConditions = filters.tags.map(tag => `tags.ilike.%${tag}%`).join(',');
-    query = query.or(tagConditions);
+    // For tags, using 'cs' (contains) operator for array types
+    query = query.contains('tags', filters.tags);
   }
   
   const { data, error } = await query.order('created_at', { ascending: false });

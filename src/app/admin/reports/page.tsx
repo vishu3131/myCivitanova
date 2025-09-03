@@ -104,7 +104,7 @@ const AdminReportsPage = () => {
         query = query.ilike('title', `%${filters.search}%`);
       }
 
-      const { data, error } = await query.range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
+      const { data, error } = await query;
 
       if (error) throw error;
       setReports(data || []);
@@ -123,12 +123,12 @@ const AdminReportsPage = () => {
         .select('*', { count: 'exact', head: true });
 
       if (error) throw error;
-      setTotalReports(count || 0);
+      setStats(prev => ({ ...prev, total: count || 0 }));
 
       // Calcola le altre statistiche
       const { data: statsData, error: statsError } = await supabase.rpc('get_reports_stats');
       if (statsError) throw statsError;
-      setStats(statsData);
+      setStats(prev => ({ ...prev, ...statsData }));
 
     } catch (error) {
       console.error('Errore nel caricamento delle statistiche:', error);
@@ -141,6 +141,10 @@ const AdminReportsPage = () => {
   }, [loadReports, loadStats]);
 
   const handleFilterChange = (filterName: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterName]: value }));
+  };
+
+  const updateReportStatus = useCallback(async (reportId: string, newStatus: CityReport['status'], notes?: string) => {
     try {
       const updateData: any = {
         status: newStatus,
@@ -156,7 +160,7 @@ const AdminReportsPage = () => {
         updateData.resolved_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
+      const { error } = await supabase.direct
         .from('city_reports')
         .update(updateData)
         .eq('id', reportId);
@@ -173,7 +177,7 @@ const AdminReportsPage = () => {
       console.error('Errore aggiornamento stato:', error);
       alert('Errore durante l\'aggiornamento dello stato');
     }
-  };
+  }, [loadReports, loadStats]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('it-IT', {

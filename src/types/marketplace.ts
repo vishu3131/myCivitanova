@@ -49,6 +49,11 @@ export type ListingReview = {
 
 export type ListingExpanded = Listing & {
   listing_images?: ListingImage[];
+  author?: {
+    id: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
 };
 
 export type FetchListingsParams = {
@@ -67,7 +72,7 @@ export type MarketplaceConversation = {
   listing_id: string;
   buyer_id: string;
   seller_id: string;
-  status: 'active' | 'closed';
+  status: 'active' | 'closed' | 'blocked';
   last_message?: string | null;
   last_message_at?: string | null;
   created_at: string;
@@ -83,6 +88,7 @@ export type MarketplaceConversation = {
     full_name?: string | null;
     avatar_url?: string | null;
   };
+  unread_count?: number; // Added for messages page
 };
 
 export type MarketplaceMessage = {
