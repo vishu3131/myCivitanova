@@ -23,6 +23,7 @@ export default function TestAuthComplete() {
     );
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkCurrentUser = async () => {

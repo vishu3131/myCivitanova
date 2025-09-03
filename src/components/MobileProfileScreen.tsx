@@ -19,6 +19,8 @@ import Switch from './Switch';
 import { useAuth } from '@/hooks/useAuth';
 
 
+type MobileProfileScreenProps = { onClose?: () => void };
+
 const userStats = [
   { id: 'visits', label: 'Luoghi visitati', value: 23, icon: MapPin, color: 'from-blue-500 to-blue-600' },
   { id: 'events', label: 'Eventi partecipati', value: 8, icon: Star, color: 'from-purple-500 to-purple-600' },
@@ -84,6 +86,8 @@ export function MobileProfileScreen({ onClose }: MobileProfileScreenProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiList = ['😀','😎','🦄','🐱','🌸','🚀','👽','🐶','🍕','🎨'];
 
+  const menuSections = useMemo(() => getMenuSections(profileUser?.role, !!profileUser), [profileUser]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -134,143 +138,145 @@ export function MobileProfileScreen({ onClose }: MobileProfileScreenProps) {
     fetchProfile();
   }, []);
 
-  const handleMenuClick = async (itemId: string) => {
-    switch (itemId) {
-      case 'edit-profile':
-        setShowEditProfile(true);
-        break;
-      case 'news-management':
-        setShowNewsManagement(true);
-        break;
-      case 'public-profile':
-        setShowPublicPreview(true);
-        break;
-      case 'notifications':
-        setShowNotifications(true);
-        break;
-      case 'privacy':
-        setShowPrivacySettings(true);
-        break;
-      case 'help':
-        setShowHelpCenter(true);
-        break;
-      case 'settings':
-        setShowSettings(true);
-        break;
-      case 'news-management':
-        setShowNewsManagement(true);
-        break;
-      case 'login-status':
-        if (!user) {
+    const handleMenuClick = async (itemId: string) => {
+      switch (itemId) {
+        case 'edit-profile':
+          setShowEditProfile(true);
+          break;
+        case 'news-management':
+          setShowNewsManagement(true);
+          break;
+        case 'public-profile':
+          setShowPublicPreview(true);
+          break;
+        case 'notifications':
+          setShowNotifications(true);
+          break;
+        case 'privacy':
+          setShowPrivacySettings(true);
+          break;
+        case 'help':
+          setShowHelpCenter(true);
+          break;
+        case 'settings':
+          setShowSettings(true);
+          break;
+        case 'news-management':
+          setShowNewsManagement(true);
+          break;
+        case 'login-status':
+          if (!user) {
+            router.push('/login');
+          }
+          break;
+        case 'logout':
+          setShowLogout(true);
+          break;
+        case 'login':
           router.push('/login');
-        }
-        break;
-      case 'logout':
-        setShowLogout(true);
-        break;
-      case 'login':
-        router.push('/login');
-        break;
-      default:
-        console.log('Menu item clicked:', itemId);
-    }
-  };
+          break;
+        default:
+          console.log('Menu item clicked:', itemId);
+      }
+    };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('currentUser');
-    setShowLogout(false);
-    router.push('/');
-  };
+    const handleLogout = async () => {
+      await supabase.auth.signOut();
+      localStorage.removeItem('currentUser');
+      setShowLogout(false);
+      router.push('/');
+    };
 
-  const handleProfileUpdate = (updatedUser: any) => {
-    setProfileUser(updatedUser);
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    }
-  };
+    const handleProfileUpdate = (updatedUser: any) => {
+      setProfileUser(updatedUser);
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      }
+    };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAvatarError('');
-    if (!user || !e.target.files || e.target.files.length === 0) return;
-    setAvatarUploading(true);
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const filePath = `avatars/${user.id}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
-    if (uploadError) {
-      setAvatarError('Errore upload immagine');
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      setAvatarError('');
+      if (!user || !e.target.files || e.target.files.length === 0) return;
+      setAvatarUploading(true);
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${user.id}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      if (uploadError) {
+        setAvatarError('Errore upload immagine');
+        setAvatarUploading(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const avatarUrl = urlData?.publicUrl;
+      if (avatarUrl) {
+        await supabase.from('profiles').update({ avatar: avatarUrl }).eq('id', user.id);
+        setProfileUser({ ...profileUser, avatar: avatarUrl });
+      }
       setAvatarUploading(false);
-      return;
-    }
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    const avatarUrl = urlData?.publicUrl;
-    if (avatarUrl) {
-      await supabase.from('profiles').update({ avatar: avatarUrl }).eq('id', user.id);
-      setProfileUser({ ...profileUser, avatar: avatarUrl });
-    }
-    setAvatarUploading(false);
-  };
+    };
 
-  const handleEmojiSelect = async (emoji: string) => {
-    if (!user) return;
-    await supabase.from('profiles').update({ avatar: emoji }).eq('id', user.id);
-    setProfileUser({ ...profileUser, avatar: emoji });
-  };
+    const handleEmojiSelect = async (emoji: string) => {
+      if (!user) return;
+      await supabase.from('profiles').update({ avatar: emoji }).eq('id', user.id);
+      setProfileUser({ ...profileUser, avatar: emoji });
+    };
 
-  return (
-    <div className="min-h-screen bg-black relative overflow-x-hidden">
-      <StatusBar />
-      <div className="content-with-navbar">
-        {/* Anteprima profilo pubblico */}
-        {showPublicPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className="relative">
-              <PublicProfile user={profileUser || {}} />
-              <button
-                className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full"
-                onClick={() => setShowPublicPreview(false)}
-              >
-                Chiudi
-              </button>
+    return (
+      <>
+      <div className="min-h-screen bg-black relative overflow-x-hidden">
+        <StatusBar />
+        <div className="content-with-navbar">
+          {/* Anteprima profilo pubblico */}
+          {showPublicPreview && (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+              <div className="relative">
+                <PublicProfile user={profileUser || {}} />
+                <button
+                  className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full"
+                  onClick={() => setShowPublicPreview(false)}
+                >
+                  Chiudi
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-        {/* Sezione profilo utente */}
-        <div className="relative px-6 pt-16 pb-6">
-          <div className="flex flex-col items-center">
-            <div className="profile-header text-center py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg">
-              {loadingProfile ? (
-                <span className="text-white/70">Caricamento profilo...</span>
-              ) : (
-                <>
-                  <h1 className="text-4xl font-extrabold text-white mb-4">
-                    {profileUser?.display_name || `${profileUser?.signupName || 'Nome'} ${profileUser?.signupSurname || 'Cognome'}`}
-                  </h1>
-                  <div className="text-lg text-gray-200 space-y-2">
-                    <p>Email: {profileUser?.email || 'Non disponibile'}</p>
-                    <p>Ruolo: {profileUser?.role || 'Non disponibile'}</p>
-                    <p>Telefono: {profileUser?.phone || 'Non disponibile'}</p>
-                    <p>Data di nascita: {profileUser?.birthdate || 'Non disponibile'}</p>
-                  </div>
-                  {/* Pulsante Login/Registrazione sempre visibile */}
-                  <div className="mt-6">
-                    <button
-                      onClick={() => router.push('/login')}
-                      className="bg-white text-blue-600 px-6 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg"
-                    >
-                      Accedi / Registrati
-                    </button>
-                  </div>
-                </>
-              )}
+          )}
+          {/* Sezione profilo utente */}
+          <div className="relative px-6 pt-16 pb-6">
+            <div className="flex flex-col items-center">
+              <div className="profile-header text-center py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg">
+                {loadingProfile ? (
+                  <span className="text-white/70">Caricamento profilo...</span>
+                ) : (
+                  <>
+                    <h1 className="text-4xl font-extrabold text-white mb-4">
+                      {profileUser?.display_name || `${profileUser?.signupName || 'Nome'} ${profileUser?.signupSurname || 'Cognome'}`}
+                    </h1>
+                    <div className="text-lg text-gray-200 space-y-2">
+                      <p>Email: {profileUser?.email || 'Non disponibile'}</p>
+                      <p>Ruolo: {profileUser?.role || 'Non disponibile'}</p>
+                      <p>Telefono: {profileUser?.phone || 'Non disponibile'}</p>
+                      <p>Data di nascita: {profileUser?.birthdate || 'Non disponibile'}</p>
+                    </div>
+                    {/* Pulsante Login/Registrazione sempre visibile */}
+                    <div className="mt-6">
+                      <button
+                        onClick={() => router.push('/login')}
+                        className="bg-white text-blue-600 px-6 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg"
+                      >
+                        Accedi / Registrati
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
         {/* Menu Sections */}
         <div className="px-6 space-y-6">
-          {getMenuSections(profileUser?.role, !!profileUser).map((section) => (
+          {menuSections.map((section) => (
             <div key={section.title}>
               <h2 className="text-white text-lg font-bold mb-4">{section.title}</h2>
               <div
@@ -395,12 +401,6 @@ export function MobileProfileScreen({ onClose }: MobileProfileScreenProps) {
         onLogout={handleLogout}
       />
 
-      <NewsManagement
-        isOpen={showNewsManagement}
-        onClose={() => setShowNewsManagement(false)}
-        currentUser={profileUser}
-      />
-
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center border border-gray-700">
@@ -425,20 +425,6 @@ export function MobileProfileScreen({ onClose }: MobileProfileScreenProps) {
       )}
       
       <BottomNavbar />
-    </div>
-  );
-}
-
-useEffect(() => {
-  if (loading) {
-    setLoading(true);
-    return;
-  }
-  if (!isAuthenticated) {
-    setProfileUser(null);
-    setLoading(false);
-    return;
-  }
-  setProfileUser(profileUser);
-  setLoading(false);
-}, [user, loading, isAuthenticated]);
+      </>
+    );
+ }

@@ -23,6 +23,7 @@ import DonationForm from '@/components/fundraising/DonationForm';
 import DonationsList from '@/components/fundraising/DonationsList';
 import CampaignUpdates from '@/components/fundraising/CampaignUpdates';
 import { FundraisingMessages } from '@/components/fundraising/FundraisingMessages';
+import Image from 'next/image';
 
 const CATEGORIES = [
   { value: 'community', label: 'Comunità', color: 'bg-blue-100 text-blue-800' },
@@ -47,20 +48,7 @@ export default function CampaignDetailPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  useEffect(() => {
-    const id = params?.id as string | undefined;
-    if (id) {
-      loadCampaign(id);
-    }
-  }, [params?.id]);
-
-  useEffect(() => {
-    if (campaign && user) {
-      checkUserInteractions();
-    }
-  }, [campaign, user]);
-
-  const loadCampaign = async (id: string) => {
+  const loadCampaign = useCallback(async (id: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -72,9 +60,16 @@ export default function CampaignDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const checkUserInteractions = async () => {
+  useEffect(() => {
+    const id = params?.id as string | undefined;
+    if (id) {
+      loadCampaign(id);
+    }
+  }, [params?.id, loadCampaign]);
+
+  const checkUserInteractions = useCallback(async () => {
     if (!campaign || !user) return;
 
     try {
@@ -82,12 +77,18 @@ export default function CampaignDetailPage() {
         FundraisingAPI.getUserLikeStatus(campaign.id, user.id),
         FundraisingAPI.getUserFollowStatus(campaign.id, user.id)
       ]);
-  setIsLiked(likeStatus?.liked ?? false);
-  setIsFollowing(followStatus?.following ?? false);
+      setIsLiked(likeStatus?.liked ?? false);
+      setIsFollowing(followStatus?.following ?? false);
     } catch (err) {
       console.error('Errore nel controllo delle interazioni:', err);
     }
-  };
+  }, [campaign, user]);
+
+  useEffect(() => {
+    if (campaign && user) {
+      checkUserInteractions();
+    }
+  }, [campaign, user, checkUserInteractions]);
 
   const handleLike = async () => {
     if (!campaign || !user) return;
@@ -278,11 +279,12 @@ export default function CampaignDetailPage() {
               className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               {campaign.featured_image && (
-                <div className="aspect-video">
-                  <img
+                <div className="aspect-video relative">
+                  <Image
                     src={campaign.featured_image}
                     alt={campaign.title}
-                    className="w-full h-full object-cover"
+                    layout="fill"
+                    objectFit="cover"
                   />
                 </div>
               )}
@@ -316,11 +318,15 @@ export default function CampaignDetailPage() {
                 {/* Creator Info */}
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                   {campaign.creator?.avatar_url ? (
-                    <img
+                    <div className="w-12 h-12 rounded-full object-cover relative">
+                    <Image
                       src={campaign.creator.avatar_url}
-                      alt={campaign.creator.full_name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      alt={campaign.creator.full_name || 'Avatar del creatore'}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-full"
                     />
+                    </div>
                   ) : (
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <User className="w-6 h-6 text-white" />

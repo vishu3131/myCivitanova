@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { BadgeSystem } from './BadgeSystem';
 import { supabase } from '@/utils/supabaseClient';
+import { useCallback } from 'react';
 
 interface BadgePageProps {
   userId?: string;
@@ -114,29 +115,29 @@ function LeaderboardComponent({ userId }: { userId?: string }) {
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadLeaderboard = async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_leaderboard', {
-          limit_count: 20
-        });
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_leaderboard', {
+        limit_count: 20
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setLeaderboardData(data || []);
-      } catch (error) {
-        console.error('Errore nel caricamento della classifica:', error);
-        // Fallback con dati demo se il database non è disponibile
-        setLeaderboardData([
-          { id: '1', username: 'demo_user', display_name: 'Utente Demo', total_xp: 100, current_level: 1, badges_count: 1, rank: 1 }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadLeaderboard();
+      setLeaderboardData(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento della classifica:', error);
+      // Fallback con dati demo se il database non è disponibile
+      setLeaderboardData([
+        { id: '1', username: 'demo_user', display_name: 'Utente Demo', total_xp: 100, current_level: 1, badges_count: 1, rank: 1 }
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
 
   if (loading) {
     return (

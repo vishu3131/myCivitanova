@@ -146,12 +146,13 @@ export default function SpiaggiaPage() {
             setBeachesWithLiveData(updatedBeaches);
             
             // Mantieni la selezione corrente dell'utente se esiste
-            const currentSelectedBeach = updatedBeaches.find(beach => beach.id === selectedBeach.id);
-            if (currentSelectedBeach) {
-              setSelectedBeach(currentSelectedBeach);
-            } else {
-              setSelectedBeach(updatedBeaches[0]);
-            }
+            setSelectedBeach(prev => {
+              const currentSelectedBeach = updatedBeaches.find(beach => beach.id === prev.id);
+              if (currentSelectedBeach) {
+                return currentSelectedBeach;
+              }
+              return updatedBeaches[0];
+            });
           }
         }
       } catch (error) {

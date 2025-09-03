@@ -45,7 +45,7 @@ export default function LoginPromptModal({ isOpen, onClose }: LoginPromptModalPr
           {/* Content */}
           <div className="text-center mb-6">
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Per creare una campagna di raccolta fondi devi essere registrato e aver effettuato l'accesso.
+              Per creare una campagna di raccolta fondi devi essere registrato e aver effettuato l&apos;accesso.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-500">
               Se non hai ancora un account, puoi registrarti gratuitamente.

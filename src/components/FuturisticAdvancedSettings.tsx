@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, 
@@ -108,11 +108,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
   const [showDataExport, setShowDataExport] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
-  useEffect(() => {
-    loadSettings();
-  }, [userId]);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       // Load from localStorage first
       const localSettings = localStorage.getItem(`userSettings_${userId}`);
@@ -120,29 +116,32 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
         setSettings({ ...defaultSettings, ...JSON.parse(localSettings) });
       }
 
-      // Load from Supabase
+      // Then, fetch from Supabase to get the latest version
       const { data, error } = await supabase
         .from('user_settings')
-        .select('*')
+        .select('settings_data')
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading settings:', error);
-      } else if (data) {
-        const loadedSettings = {
-          ...defaultSettings,
-          ...data.settings
-        };
-        setSettings(loadedSettings);
-        localStorage.setItem(`userSettings_${userId}`, JSON.stringify(loadedSettings));
+      if (error && error.code !== 'PGRST116') { // Ignore no rows found error
+        throw error;
+      }
+
+      if (data) {
+        const dbSettings = { ...defaultSettings, ...data.settings_data };
+        setSettings(dbSettings);
+        localStorage.setItem(`userSettings_${userId}`, JSON.stringify(dbSettings));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const saveSettings = async (newSettings: UserSettings) => {
     try {
@@ -227,7 +226,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
       setShowDataExport(false);
     } catch (error) {
       console.error('Error exporting data:', error);
-      alert('Errore nell\'esportazione dei dati.');
+      alert('Errore nell&apos;esportazione dei dati.');
     }
   };
 
@@ -235,7 +234,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
     try {
       // This would typically involve a more complex process
       // For now, we'll just show a message
-      alert('La cancellazione dell\'account richiede conferma via email. Contatta il supporto.');
+      alert('La cancellazione dell&apos;account richiede conferma via email. Contatta il supporto.');
       setShowDeleteAccount(false);
     } catch (error) {
       console.error('Error deleting account:', error);
@@ -318,7 +317,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-white font-medium">Tema</div>
-                  <div className="text-sm text-gray-400">Scegli l'aspetto dell'app</div>
+                  <div className="text-sm text-gray-400">Scegli l&apos;aspetto dell&apos;app</div>
                 </div>
                 <select
                   value={settings.theme}
@@ -334,7 +333,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-white font-medium">Lingua</div>
-                  <div className="text-sm text-gray-400">Lingua dell'interfaccia</div>
+                  <div className="text-sm text-gray-400">Lingua dell&apos;interfaccia</div>
                 </div>
                 <select
                   value={settings.language}
@@ -486,10 +485,10 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
                     <div className="text-sm text-gray-400">
                       {key === 'auto_sync' ? 'Sincronizza automaticamente i dati' :
                        key === 'cache_enabled' ? 'Memorizza i dati per accesso più veloce' :
-                       key === 'low_data_mode' ? 'Riduce l\'uso dei dati mobili' :
+                       key === 'low_data_mode' ? 'Riduce l&apos;uso dei dati mobili' :
                        key === 'background_refresh' ? 'Aggiorna i contenuti in background' : ''}
-                    </div>
-                  </div>
+                     </div>
+                   </div>
                   <ToggleSwitch
                     enabled={value}
                     onChange={(newValue) => updateSetting('performance', key, newValue)}
@@ -525,7 +524,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
                 <LogOut className="w-5 h-5 text-yellow-400" />
                 <div>
                   <div className="text-white font-medium">Logout</div>
-                  <div className="text-sm text-gray-400">Esci dall'account</div>
+                  <div className="text-sm text-gray-400">Esci dall&apos;account</div>
                 </div>
               </button>
 
@@ -562,7 +561,7 @@ function FuturisticAdvancedSettings({ userId, onLogout }: FuturisticAdvancedSett
               className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700"
             >
               <h3 className="text-xl font-bold text-white mb-4">Conferma Logout</h3>
-              <p className="text-gray-300 mb-6">Sei sicuro di voler uscire dall'account?</p>
+              <p className="text-gray-300 mb-6">Sei sicuro di voler uscire dall&apos;account?</p>
               
               <div className="flex gap-3">
                 <button

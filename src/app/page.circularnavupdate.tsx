@@ -13,7 +13,7 @@ export default function CircularNavUpdatePreview() {
         </h1>
         <p className="text-gray-300 text-lg max-w-2xl mx-auto">
           Il componente di navigazione circolare è stato spostato leggermente a sinistra per un migliore centraggio. 
-          Clicca il pulsante centrale per aprire il menu e verificare l'allineamento.
+          Clicca il pulsante centrale per aprire il menu e verificare l&apos;allineamento.
         </p>
         
         {/* Sample content cards to show background */}

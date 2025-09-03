@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { StatusBar } from './StatusBar';
 import { BottomNavbar } from './BottomNavbar';
@@ -30,6 +30,29 @@ type PoiItem = {
 // Category chip shape
 type CategoryChip = { id: string; label: string; count: number };
 
+// Mock shopping activities integrated into Explore (module scope for stable identity)
+const shoppingActivities = [
+  {
+    id: 1,
+    name: 'Boutique Eleganza',
+    category: 'shopping',
+    subcategory: 'shopping',
+    image: '/images/boutique-eleganza.jpg',
+    rating: 4.8,
+    reviews: 120,
+    distance: '2.5 km',
+    time: '10-20 min',
+    description: 'Abbigliamento di alta moda e accessori esclusivi.',
+    address: 'Via Roma, 10',
+    openingHours: 'Lun-Sab: 10:00-19:00',
+    tags: ['moda', 'lusso', 'accessori'],
+    priceRange: '€€€',
+    phone: '+39 0733 123456',
+    website: 'www.boutiqueeleganza.it',
+    features: ['Wi-Fi gratuito', 'Parcheggio', 'Accesso disabili', 'Camerini ampi'],
+  },
+];
+
 export function MobileExploreScreen() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState('shopping');
@@ -39,29 +62,6 @@ export function MobileExploreScreen() {
   const [loading, setLoading] = useState(false);
   const { triggerHaptic } = useHapticFeedback();
 
-  // Mock shopping activities integrated into Explore
-  const shoppingActivities = [
-    {
-      id: 1,
-      name: 'Boutique Eleganza',
-      category: 'shopping',
-      subcategory: 'shopping',
-      image: '/images/boutique-eleganza.jpg',
-      rating: 4.8,
-      reviews: 120,
-      distance: '2.5 km',
-      time: '10-20 min',
-      description: 'Abbigliamento di alta moda e accessori esclusivi.',
-      address: 'Via Roma, 10',
-      openingHours: 'Lun-Sab: 10:00-19:00',
-      tags: ['moda', 'lusso', 'accessori'],
-      priceRange: '€€€',
-      phone: '+39 0733 123456',
-      website: 'www.boutiqueeleganza.it',
-      features: ['Wi-Fi gratuito', 'Parcheggio', 'Accesso disabili', 'Camerini ampi'],
-    },
-  ];
-
   const handleRefresh = async () => {
     triggerHaptic('light');
     await fetchPlaces();
@@ -70,7 +70,7 @@ export function MobileExploreScreen() {
   const pullToRefreshProps = usePullToRefresh({ onRefresh: handleRefresh });
 
   // Fetch POIs from unified API (demo ensures many pins and auto-geocoding)
-  const fetchPlaces = async () => {
+  const fetchPlaces = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/pois?demo=1');
@@ -81,12 +81,11 @@ export function MobileExploreScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPlaces();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchPlaces]);
 
   // Build category chips dynamically + keep a special shopping pill
   const categoryChips: CategoryChip[] = useMemo(() => {
@@ -140,7 +139,7 @@ export function MobileExploreScreen() {
           <div className="relative mb-6">
             <button
               onClick={() => setIsSearchModalOpen(true)}
-              className="w-full flex items-center gap-3 p-4 rounded-2xl border transition-all duration-200 hover:bg-white/5"
+              className="w-full flex items中心 gap-3 p-4 rounded-2xl border transition-all duration-200 hover:bg-white/5"
               style={{
                 background: 'rgba(255, 255, 255, 0.08)',
                 backdropFilter: 'blur(12px)',
@@ -232,7 +231,7 @@ export function MobileExploreScreen() {
             {loading && (
               <div className="grid grid-cols-1 gap-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse rounded-3xl overflow-hidden border border-white/10 bg-white/5 h-48" />
+                  <div key={i} className="animate-pulse rounded-3xl overflow-hidden border border-white/10 bg白色/5 h-48" />
                 ))}
               </div>
             )}

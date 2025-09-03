@@ -129,7 +129,7 @@ export default function ARExperience() {
         .filter(Boolean) as ARPoi[];
       
       if (mapped.length === 0) {
-        console.warn('Nessun POI trovato nel database, uso POI di test');
+        console.warn("Nessun POI trovato nel database, uso POI di test");
         setPois(testPoi);
         setStatus("Modo demo: usando POI di test");
         // Don't cache test data
@@ -145,8 +145,8 @@ export default function ARExperience() {
       
       setRetryCount(0);
     } catch (err: any) {
-      console.error('Errore caricamento POI:', err);
-      setError(err.message || 'Errore sconosciuto');
+      console.error("Errore caricamento POI:", err);
+      setError(err.message || "Errore sconosciuto");
       
       // Try to use cached data as fallback
       if (poisCacheRef.current?.data.length) {
@@ -163,7 +163,7 @@ export default function ARExperience() {
         loadingTimeoutRef.current = null;
       }
     }
-  }, []);
+  }, [CACHE_DURATION]);
   
   useEffect(() => {
     loadPois();
@@ -232,7 +232,7 @@ export default function ARExperience() {
   const onPlayAudio = useCallback(
     async (url?: string | null) => {
       if (!url) {
-        console.warn('URL audio non fornito');
+        console.warn("URL audio non fornito");
         return;
       }
       
@@ -254,42 +254,42 @@ export default function ARExperience() {
         };
         
         audio.onerror = (e) => {
-          console.error('Errore riproduzione audio:', e);
+          console.error("Errore riproduzione audio:", e);
           setIsAudioPlaying(false);
           setAudioUrl(null);
-          setStatus('Errore riproduzione audio');
-          setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
+          setStatus("Errore riproduzione audio");
+          setTimeout(() => setStatus("GPS attivo: cerca i punti vicini..."), 3000);
         };
         
         audio.onloadstart = () => {
-          setStatus('Caricamento audio...');
+          setStatus("Caricamento audio...");
         };
         
         audio.oncanplay = () => {
-          setStatus('Audio pronto');
+          setStatus("Audio pronto");
         };
         
         // Attempt to play
         await audio.play();
         setIsAudioPlaying(true);
         setAudioUrl(url);
-        setStatus('Riproduzione audio in corso...');
+        setStatus("Riproduzione audio in corso...");
         
       } catch (error: any) {
-        console.error('Errore riproduzione audio:', error);
+        console.error("Errore riproduzione audio:", error);
         setIsAudioPlaying(false);
         setAudioUrl(null);
         
         // Provide user-friendly error messages
-        if (error.name === 'NotAllowedError') {
-          setStatus('Riproduzione bloccata - Tocca per riprovare');
-        } else if (error.name === 'NotSupportedError') {
-          setStatus('Formato audio non supportato');
+        if (error.name === "NotAllowedError") {
+          setStatus("Riproduzione bloccata - Tocca per riprovare");
+        } else if (error.name === "NotSupportedError") {
+          setStatus("Formato audio non supportato");
         } else {
-          setStatus('Errore riproduzione audio');
+          setStatus("Errore riproduzione audio");
         }
         
-        setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
+        setTimeout(() => setStatus("GPS attivo: cerca i punti vicini..."), 3000);
       }
     },
     []
@@ -303,17 +303,17 @@ export default function ARExperience() {
       if (audio.paused) {
         await audio.play();
         setIsAudioPlaying(true);
-        setStatus('Riproduzione audio in corso...');
+        setStatus("Riproduzione audio in corso...");
       } else {
         audio.pause();
         setIsAudioPlaying(false);
-        setStatus('Audio in pausa');
+        setStatus("Audio in pausa");
       }
     } catch (error: any) {
-      console.error('Errore toggle audio:', error);
+      console.error("Errore toggle audio:", error);
       setIsAudioPlaying(false);
-      setStatus('Errore controllo audio');
-      setTimeout(() => setStatus('GPS attivo: cerca i punti vicini...'), 3000);
+      setStatus("Errore controllo audio");
+      setTimeout(() => setStatus("GPS attivo: cerca i punti vicini..."), 3000);
     }
   }, []);
 
@@ -492,7 +492,7 @@ export default function ARExperience() {
           <div className="w-full max-w-sm rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-5 text-center shadow-2xl animate-[fadeIn_.3s_ease]">
             <h3 className="text-lg font-semibold mb-2">Abilita Bussola</h3>
             <p className="text-white/80 text-sm mb-4">
-              Per orientare correttamente i POI è necessario abilitare l'accesso ai sensori.
+              Per orientare correttamente i POI è necessario abilitare l&apos;accesso ai sensori.
             </p>
             <button
               onClick={requestOrientationPermission}
@@ -591,7 +591,11 @@ export default function ARExperience() {
                 </button>
               </div>
             </div>
-            <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-amber-400"></div>
+            <div className="absolute inset-x-0 bottom-4 text-center z-20">
+              <p className="text-white text-sm bg-black/50 rounded-full px-4 py-2">
+                Tocca un&apos;icona per vedere i dettagli
+              </p>
+            </div>
           </div>
         </div>
       )}

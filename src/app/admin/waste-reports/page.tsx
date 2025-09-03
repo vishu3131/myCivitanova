@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { firebaseClient } from '@/utils/firebaseAuth';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import { supabase } from '@/utils/supabaseClient';
 import { 
   Trash2, 
   Eye, 
@@ -15,7 +16,6 @@ import {
   Phone,
   Mail,
   FileText,
-  Image as ImageIcon,
   Filter,
   Search,
   RefreshCw
@@ -51,6 +51,10 @@ const priorityConfig = {
   high: { label: 'Alta', color: 'text-red-400' }
 };
 
+const isSupabaseConfigured = () => {
+  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+};
+
 export default function WasteReportsPage() {
   const [reports, setReports] = useState<WasteReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +65,7 @@ export default function WasteReportsPage() {
   const [adminNotes, setAdminNotes] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -102,7 +106,7 @@ export default function WasteReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, priorityFilter, searchTerm]);
 
   const updateReportStatus = async (reportId: string, newStatus: string, notes?: string) => {
     try {
@@ -158,7 +162,7 @@ export default function WasteReportsPage() {
 
   useEffect(() => {
     fetchReports();
-  }, [statusFilter, priorityFilter, searchTerm]);
+  }, [fetchReports]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('it-IT');
@@ -407,11 +411,16 @@ export default function WasteReportsPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Foto Allegata</label>
                   <div className="bg-gray-700 p-4 rounded-lg">
-                    <img 
-                      src={selectedReport.photo_url} 
-                      alt="Foto segnalazione" 
-                      className="max-w-full h-auto rounded-lg"
-                    />
+                    <div className="relative w-full" style={{height: 320}}>
+                      <Image 
+                        src={selectedReport.photo_url} 
+                        alt="Foto segnalazione" 
+                        fill
+                        className="object-contain rounded-lg"
+                        sizes="100vw"
+                        unoptimized
+                      />
+                    </div>
                   </div>
                 </div>
               )}

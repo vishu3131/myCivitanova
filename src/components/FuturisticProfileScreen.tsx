@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Check for reduced motion preference
@@ -168,6 +168,51 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const { addXP, dailyLogin } = useXPSystem(user?.id);
   const { getUserBadges } = useBadgeSystem(user?.id || '');
 
+  // Load user statistics
+  const loadUserStats = useCallback(async () => {
+    if (!user?.id) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      if (error) throw error;
+      if (data) {
+        setUserStats(data);
+      }
+    } catch (error) {
+      console.error('Error loading user stats:', error);
+      toast.error('Errore nel caricamento delle statistiche utente.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
+
+  const loadBadges = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_badges')
+        .select('*, badges(*)')
+        .eq('user_id', user.id)
+        .order('earned_at', { ascending: false });
+
+      if (error) throw error;
+
+      const earnedBadges = data.map(ub => ({
+        ...ub.badges,
+        earned_at: ub.earned_at,
+      }));
+
+      setBadges(earnedBadges);
+      setRecentBadges(earnedBadges.slice(0, 3));
+    } catch (error) {
+      console.error('Error loading badges:', error);
+    }
+  }, [user?.id]);
+
   // Load user profile data
   const loadUserProfile = useCallback(async () => {
     if (!user?.id) return;
@@ -213,8 +258,8 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
       
       setProfileUser(profileData);
       setLastUpdated(new Date().toLocaleString());
-      await loadUserStats(profileData.id);
-      await loadRecentBadges(profileData.id);
+      await loadUserStats();
+      await loadBadges();
       
       // Daily login XP
       if (dailyLogin) {
@@ -225,177 +270,108 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
         }
       }
     }
-  }, [user?.id, dailyLogin]);
-
-  // Load user statistics
-  const loadUserStats = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('get_user_stats', {
-        p_user_id: userId
-      });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const stats = data[0];
-        setUserStats({
-          total_xp: stats.total_xp || 0,
-          current_level: stats.current_level || 1,
-          level_progress: stats.level_progress || 0,
-          level_title: stats.level_title || 'Nuovo Cittadino',
-          badges_count: stats.badges_count || 0,
-          xp_to_next_level: stats.xp_to_next_level || 100,
-          weekly_xp: stats.weekly_xp || 0,
-          monthly_xp: stats.monthly_xp || 0,
-          rank_position: stats.rank_position || 999,
-          activities_completed: stats.activities_completed || 0,
-          streak_days: stats.streak_days || 1
-        });
-      } else {
-        // Default stats for new users
-        setUserStats({
-          total_xp: 0,
-          current_level: 1,
-          level_progress: 0,
-          level_title: 'Nuovo Cittadino',
-          badges_count: 0,
-          xp_to_next_level: 100,
-          weekly_xp: 0,
-          monthly_xp: 0,
-          rank_position: 999,
-          activities_completed: 0,
-          streak_days: 1
-        });
-      }
-    } catch (error) {
-      console.error('Error loading user stats:', error);
+  }, [user?.id, dailyLogin, loadUserStats, loadBadges]);
+      console.error('Error loading badges:', error);
     }
-  };
+  }, [user?.id]);
 
-  // Load recent badges
-  const loadRecentBadges = async (userId: string) => {
+  const loadXPHistory = useCallback(async () => {
+    if (!user?.id) return;
     try {
-      const { data, error } = await supabase.rpc('get_user_badges', {
-        p_user_id: userId
-      });
+      const { data, error } = await supabase
+        .from('xp_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
       if (error) throw error;
-
-      if (data && Array.isArray(data) && data.length > 0) {
-        const badges = data.slice(0, 3).map((badge: any) => ({
-          id: badge.id,
-          name: badge.badge_name,
-          title: badge.badge_name,
-          description: badge.badge_description,
-          icon: badge.badge_icon,
-          color: badge.badge_color,
-          rarity: badge.badge_rarity,
-          earned_at: badge.earned_at
-        }));
-        setRecentBadges(badges);
-      } else {
-        // No badges found, set empty array
-        setRecentBadges([]);
-      }
+      setXpHistory(data);
     } catch (error) {
-      console.error('Error loading recent badges:', error);
-      setRecentBadges([]);
+      console.error('Error loading XP history:', error);
     }
-  };
+  }, [user?.id]);
 
-  // Handle avatar upload
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
+  useEffect(() => {
+    const checkUser = async () => {
+      const session = await supabase.auth.getSession();
+      if (session.data.session) {
+        const userId = session.data.session.user.id;
+        const cachedProfile = localStorage.getItem(`profile_${userId}`);
+        
+        if (cachedProfile) {
+          try {
+            const parsed = JSON.parse(cachedProfile);
+            const cacheTimestamp = new Date(parsed.timestamp);
+            const now = new Date();
+            const cacheAge = (now.getTime() - cacheTimestamp.getTime()) / 1000 / 60; // in minutes
 
-    try {
-      setAvatarUploading(true);
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Il file è troppo grande. Dimensione massima: 5MB');
-        return;
-      }
-
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Formato file non supportato. Usa JPG, PNG, WebP o GIF.');
-        return;
-      }
-      
-      // Create file name with user ID and timestamp
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      
-      // Delete old avatar if exists
-      if (user.avatar_url && user.avatar_url.includes('supabase')) {
-        const oldFileName = user.avatar_url.split('/').pop();
-        if (oldFileName) {
-          await supabase.storage
-            .from('avatars')
-            .remove([oldFileName]);
-        }
-      }
-      
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      // Update user profile in database
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      // Update local state
-      const updatedUser = { ...user, avatar_url: publicUrl, updated_at: new Date().toISOString() };
-      setProfileUser(updatedUser);
-      
-      // Update localStorage if current user
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        const currentUser = JSON.parse(storedUser);
-        if (currentUser.id === user.id) {
-          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        }
-      }
-
-      setShowAvatarModal(false);
-      
-            // Add XP for avatar update
-            if (addXP) {
-              const result = await addXP('avatar_update', 5);
-              if (result) { // Check if result is not null
-                setXpAnimation(5); // Use the amount directly for animation
-                setTimeout(() => setXpAnimation(null), 3000);
-              }
+            if (cacheAge < 60) { // Cache is valid for 60 minutes
+              setUser(parsed.data);
+              setLastUpdated(new Date(parsed.timestamp).toLocaleString());
+              return;
             }
+          } catch (e) {
+            console.error("Failed to parse cached profile", e);
+            localStorage.removeItem(`profile_${userId}`);
+          }
+        }
+        
+        // If no valid cache, fetch from DB
+        const { data: userProfile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      alert('Errore durante il caricamento dell\'avatar. Riprova.');
-    } finally {
-      setAvatarUploading(false);
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast.error('Impossibile caricare il profilo.');
+        } else if (userProfile) {
+          const profileCache = {
+            data: userProfile,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem(`profile_${userId}`, JSON.stringify(profileCache));
+          setUser(userProfile);
+          setLastUpdated(new Date().toLocaleString());
+        }
+      }
+    };
+
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (_event === 'SIGNED_IN' && session?.user) {
+          checkUser();
+        }
+        if (_event === 'SIGNED_OUT') {
+          setUser(null);
+          setUserStats(null);
+          setBadges([]);
+          setRecentBadges([]);
+          setXpHistory([]);
+          if (user?.id) {
+            localStorage.removeItem(`profile_${user.id}`);
+          }
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadUserStats();
+      loadBadges();
+      loadXPHistory();
     }
-  };
+  }, [user?.id, loadUserStats, loadBadges, loadXPHistory]);
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -580,10 +556,13 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                 <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br ${getRoleColor(user?.role || 'user')} p-1`}>
                   <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
                     {user?.avatar_url ? (
-                      <img
+                      <Image
                         src={user.avatar_url}
                         alt="Avatar"
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
+                        priority
                       />
                     ) : (
                       <User className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" />
@@ -662,7 +641,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
               ) : (
                 <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-300">
                   <Lock className="w-4 h-4 text-red-400" />
-                  <span>Non hai effettuato l'accesso</span>
+                  <span>Non hai effettuato l&apos;accesso</span>
                 </div>
               )}
             </motion.div>
@@ -1101,7 +1080,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                 <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-cyan-400 transition-all cursor-pointer"
                      onClick={() => document.getElementById('avatar-upload')?.click()}>
                   <Camera className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-300 mb-2">Clicca per selezionare un'immagine</p>
+                  <p className="text-gray-300 mb-2">Clicca per selezionare un&apos;immagine</p>
                   <p className="text-sm text-gray-500">JPG, PNG, WebP o GIF (max 5MB)</p>
                 </div>
                 

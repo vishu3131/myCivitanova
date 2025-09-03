@@ -23,6 +23,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { supabase } from '@/utils/supabaseClient';
+import { useCallback } from 'react';
 
 interface UserStats {
   total_xp: number;
@@ -77,8 +78,31 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
   const [activeChart, setActiveChart] = useState<'xp' | 'activities' | 'progress'>('xp');
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
 
+  // Load XP history based on time range
+  const loadXPHistory = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const { data: historyData, error } = await supabase
+        .rpc('get_xp_history', { 
+          user_id: userId, 
+          time_range: timeRange 
+        });
+
+      if (error) throw error;
+
+      if (historyData) {
+        setXpHistory(historyData);
+      }
+    } catch (error) {
+      console.error('Error loading XP history:', error);
+      // Fallback to empty array if function doesn't exist yet
+      setXpHistory([]);
+    }
+  }, [userId, timeRange]);
+
   // Load user statistics
-  const loadUserStats = async () => {
+  const loadUserStats = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -123,43 +147,20 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
     } finally {
       setLoading(false);
     }
-  };
-
-  // Load XP history based on time range
-  const loadXPHistory = async () => {
-    if (!userId) return;
-
-    try {
-      const { data: historyData, error } = await supabase
-        .rpc('get_xp_history', { 
-          user_id: userId, 
-          time_range: timeRange 
-        });
-
-      if (error) throw error;
-
-      if (historyData) {
-        setXpHistory(historyData);
-      }
-    } catch (error) {
-      console.error('Error loading XP history:', error);
-      // Fallback to empty array if function doesn't exist yet
-      setXpHistory([]);
-    }
-  };
+  }, [userId, loadXPHistory]);
 
   // Reload XP history when time range changes
   useEffect(() => {
     if (userId && isVisible) {
       loadXPHistory();
     }
-  }, [timeRange, userId, isVisible]);
+  }, [userId, isVisible, loadXPHistory]);
 
   useEffect(() => {
     if (isVisible && userId) {
       loadUserStats();
     }
-  }, [isVisible, userId]);
+  }, [isVisible, userId, loadUserStats]);
 
   // Generate chart data based on time range and active chart
   const generateChartData = () => {

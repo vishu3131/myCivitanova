@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface PhotoGallery3DProps {
   images: string[];
@@ -168,9 +169,10 @@ export const PhotoGallery3D: React.FC<PhotoGallery3DProps> = ({
                     ? `border-${color}-400 shadow-${color}-500/30` 
                     : 'border-gray-600 shadow-gray-900/50'
                 }`}>
-                  <img
+                  <Image
                     src={image}
                     alt={`Foto ${index + 1}`}
+                    fill
                     className="w-full h-full object-cover transition-transform duration-700"
                     style={{ transform: isActive ? 'scale(1.1)' : 'scale(1)' }}
                   />
@@ -224,9 +226,11 @@ export const PhotoGallery3D: React.FC<PhotoGallery3DProps> = ({
                     : 'border-gray-600 hover:border-gray-500'
                 }`}
               >
-                <img
+                <Image
                   src={image}
                   alt={`Thumbnail ${index + 1}`}
+                  width={48}
+                  height={48}
                   className="w-full h-full object-cover"
                 />
               </button>
@@ -249,9 +253,11 @@ export const PhotoGallery3D: React.FC<PhotoGallery3DProps> = ({
             
             {/* Main image */}
             <div className="relative max-w-4xl max-h-full">
-              <img
+              <Image
                 src={images[currentIndex]}
                 alt={`Foto ${currentIndex + 1}`}
+                width={1600}
+                height={900}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
               />
               

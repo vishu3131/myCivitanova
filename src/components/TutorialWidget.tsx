@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useXPSystem } from '@/hooks/useXPSystem';
 
 interface TutorialWidgetProps {
@@ -46,11 +46,13 @@ export function TutorialWidget({ userId, onStartTutorial, className = '' }: Tuto
     }
   }, []);
 
-  const saveTutorialState = (newState: Partial<TutorialState>) => {
-    const updated = { ...tutorialState, ...newState };
-    setTutorialState(updated);
-    try { localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(updated)); } catch {}
-  };
+  const saveTutorialState = useCallback((newState: Partial<TutorialState>) => {
+    setTutorialState(prev => {
+      const updated = { ...prev, ...newState };
+      try { localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, []);
 
   const handleStartTutorial = async () => {
     saveTutorialState({ totalViews: tutorialState.totalViews + 1 });
@@ -73,18 +75,18 @@ export function TutorialWidget({ userId, onStartTutorial, className = '' }: Tuto
     onStartTutorial();
   };
 
-  const markAsCompleted = async () => {
+  const markAsCompleted = useCallback(async () => {
     saveTutorialState({ isCompleted: true, completionDate: new Date().toISOString() });
     if (userId) {
       await addXP('tutorial_completed', TUTORIAL_XP_REWARD, { source: 'tutorial_widget', completion_date: new Date().toISOString() });
     }
-  };
+  }, [userId, addXP, saveTutorialState]);
 
   useEffect(() => {
     (window as any).markTutorialCompleted = markAsCompleted;
     return () => { delete (window as any).markTutorialCompleted; };
-  }, [userId]);
-
+  }, [markAsCompleted]);
+  
   const content = (() => {
     if (tutorialState.isCompleted) return {
       icon: '🎓', title: 'Tutorial', subtitle: 'Completato!', description: 'Rivedi il tutorial',

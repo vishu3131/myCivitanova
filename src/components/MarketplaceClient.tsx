@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchListingsWithImages, searchListings, AdvancedSearchFilters } from "@/services/marketplace";
@@ -41,13 +42,16 @@ type ActiveView = "marketplace" | "add-listing" | "my-listings" | "favorites";
 
 function SafeImage({ src, alt, className = "" }: { src?: string; alt: string; className?: string }) {
   const [error, setError] = React.useState(false);
-  // eslint-disable-next-line @next/next/no-img-element
+  const finalSrc = !src || error ? "/marketplace/placeholder.svg" : src;
   return (
-    <img
-      src={!src || error ? "/marketplace/placeholder.svg" : src}
+    <Image
+      src={finalSrc}
       alt={alt}
+      fill
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       className={className}
       onError={() => setError(true)}
+      unoptimized
     />
   );
 }
@@ -94,11 +98,10 @@ export default function MarketplaceClient() {
       params.set("tab", activeTab);
       router.replace(`/marketplace?${params.toString()}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, searchParams]); // Add searchParams to dependency array
+  }, [activeTab, searchParams, router]);
 
   // Load listings
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -138,11 +141,11 @@ export default function MarketplaceClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, query, category, onlyAvailable, onlyVerified, sort, advancedFilters]);
 
   useEffect(() => {
     loadListings();
-  }, [activeTab, query, category, onlyAvailable, onlyVerified, sort, advancedFilters]);
+  }, [loadListings]);
 
   const categories = activeTab === "beni" ? BENI_CATEGORIES : SERVIZI_CATEGORIES;
 

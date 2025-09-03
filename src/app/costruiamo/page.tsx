@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from 'next/image';
 
 export default function CostruiamoPage() {
   // Trasparenza: progress bar stato locale (editabile)
@@ -146,14 +147,16 @@ export default function CostruiamoPage() {
           <div>
             <h2 className="h2 mb-3">📖 La Nostra Storia: Passione e Innovazione</h2>
             <p className="text-white/80 leading-relaxed">
-              Dietro MyCivitanova c'è una storia di passione e autodidattismo. Ho imparato a programmare da zero, spinto dall'amore per la mia città e dal desiderio di renderla più connessa e accessibile a tutti. Ogni linea di codice, ogni funzionalità, è frutto di curiosità, sperimentazione e un impegno costante per migliorare la vita a Civitanova.
+              Dietro MyCivitanova c&apos;è una storia di passione e autodidattismo. Ho imparato a programmare da zero, spinto dall&apos;amore per la mia città e dal desiderio di renderla più connessa e accessibile a tutti. Ogni linea di codice, ogni funzionalità, è frutto di curiosità, sperimentazione e un impegno costante per migliorare la vita a Civitanova.
             </p>
             <p className="mt-3 text-white/70">– Il team di MyCivitanova</p>
           </div>
-          <div className="rounded-xl overflow-hidden border border-white/10" data-animate>
-            <img
+          <div className="rounded-xl overflow-hidden border border-white/10 relative" data-animate>
+            <Image
               src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=1200&auto=format&fit=crop"
               alt="Laptop con sfondo Civitanova"
+              layout="fill"
+              objectFit="cover"
               className="w-full h-56 object-cover md:h-full hover:scale-[1.02] transition-transform duration-500"
             />
           </div>
@@ -186,9 +189,9 @@ export default function CostruiamoPage() {
           <h2 className="h2 mb-3">🚀 Il Tuo Ruolo è Fondamentale: Perché Abbiamo Bisogno di Te</h2>
           <p className="text-white/80 leading-relaxed mb-4">MyCivitanova è un progetto ambizioso che cresce grazie al supporto della sua comunità. Il tuo aiuto è cruciale per:</p>
           <ul className="list-disc list-inside space-y-2 text-white/80">
-            <li>**Sostenere i Costi Operativi:** Server, manutenzione e infrastruttura richiedono risorse. Ogni contributo economico ci permette di mantenere l'app attiva e performante.</li>
-            <li>**Espandere il Team:** Cerchiamo talenti in programmazione, design, marketing e copywriting per accelerare lo sviluppo di nuove funzionalità e migliorare l'esperienza utente.</li>
-            <li>**Amplificare il Messaggio:** Condividere MyCivitanova con amici, familiari e attività locali è un gesto semplice ma potente che ci aiuta a crescere e a raggiungere più persone.</li>
+            <li><strong>Sostenere i Costi Operativi:</strong> Server, manutenzione e infrastruttura richiedono risorse. Ogni contributo economico ci permette di mantenere l&apos;app attiva e performante.</li>
+            <li><strong>Espandere il Team:</strong> Cerchiamo talenti in programmazione, design, marketing e copywriting per accelerare lo sviluppo di nuove funzionalità e migliorare l&apos;esperienza utente.</li>
+            <li><strong>Amplificare il Messaggio:</strong> Condividere MyCivitanova con amici, familiari e attività locali è un gesto semplice ma potente che ci aiuta a crescere e a raggiungere più persone.</li>
           </ul>
         </section>
 
@@ -255,10 +258,10 @@ export default function CostruiamoPage() {
                 {submitting ? "Invio..." : "Invia la tua Proposta"}
               </button>
               {submitted === "ok" && (
-                <p className="text-green-400 text-xs">Bozza email aperta nell'app di posta. Grazie per il tuo interesse!</p>
+                <p className="text-green-400 text-xs">Bozza email aperta nell&apos;app di posta. Grazie per il tuo interesse!</p>
               )}
               {submitted === "error" && (
-                <p className="text-red-400 text-xs">Si è verificato un errore durante la preparazione dell'email. Riprova più tardi.</p>
+                <p className="text-red-400 text-xs">Si è verificato un errore durante la preparazione dell&apos;email. Riprova più tardi.</p>
               )}
             </form>
           </div>
@@ -314,7 +317,7 @@ export default function CostruiamoPage() {
         <section className="glass-card border border-white/10 rounded-2xl p-5 card-glow" data-animate>
           <h2 className="h2 mb-3">Transparency Report: Il Tuo Supporto, il Nostro Impegno</h2>
           <p className="text-white/80">
-            Ogni singolo euro donato a MyCivitanova viene interamente reinvestito nello sviluppo di nuove funzionalità, nel miglioramento dell'esperienza utente e nel mantenimento dell'infrastruttura. Questo è un progetto indipendente, nato per la città e senza fini di lucro personale. La tua fiducia è la nostra priorità.
+            Ogni singolo euro donato a MyCivitanova viene interamente reinvestito nello sviluppo di nuove funzionalità, nel miglioramento dell&apos;esperienza utente e nel mantenimento dell&apos;infrastruttura. Questo è un progetto indipendente, nato per la città e senza fini di lucro personale. La tua fiducia è la nostra priorità.
           </p>
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-white/70 mb-2">
@@ -337,7 +340,7 @@ export default function CostruiamoPage() {
         <section className="glass-card border border-white/10 rounded-2xl p-6 card-glow" data-animate>
           <h2 className="h2 mb-3">🌟 La Nostra Visione: Un Futuro Digitale per Civitanova</h2>
           <p className="text-white/80 leading-relaxed">
-            Questo è solo l'inizio di un viaggio entusiasmante. Immaginiamo MyCivitanova come il cuore pulsante digitale della città, un punto di riferimento indispensabile per residenti, visitatori e attività commerciali. Con il tuo prezioso supporto, possiamo trasformare questa visione in una realtà duratura, creando un impatto positivo che si estenderà per anni a venire.
+            Questo è solo l&apos;inizio di un viaggio entusiasmante. Immaginiamo MyCivitanova come il cuore pulsante digitale della città, un punto di riferimento indispensabile per residenti, visitatori e attività commerciali. Con il tuo prezioso supporto, possiamo trasformare questa visione in una realtà duratura, creando un impatto positivo che si estenderà per anni a venire.
           </p>
         </section>
 
@@ -349,11 +352,15 @@ export default function CostruiamoPage() {
           </div>
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow overflow-hidden">
             <h3 className="h3 mb-2">📷 Uno sguardo</h3>
-            <img
-              src="https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=1200&auto=format&fit=crop"
-              alt="Civitanova – mare e città"
-              className="rounded-lg border border-white/10 hover:scale-[1.02] transition-transform duration-500"
-            />
+            <div className="relative h-40 mt-2">
+              <Image
+                src="https://images.unsplash.com/photo-1521295121783-8a321d551ad2?q=80&w=1200&auto=format&fit=crop"
+                alt="Civitanova – mare e città"
+                layout="fill"
+                objectFit="cover"
+                className="rounded-lg border border-white/10 hover:scale-[1.02] transition-transform duration-500"
+              />
+            </div>
           </div>
           <div className="glass-card border border-white/10 rounded-2xl p-5 card-glow">
             <h3 className="h3 mb-2">🗒️ Changelog</h3>

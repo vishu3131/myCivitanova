@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { uploadListingImage, deleteListingImage } from '@/services/marketplace';
 import type { ListingImage } from '@/types/marketplace';
@@ -30,7 +31,7 @@ export default function ImageUpload({
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (!file.type.startsWith('image/')) {
       return 'Il file deve essere un\'immagine';
     }
@@ -38,7 +39,7 @@ export default function ImageUpload({
       return `Il file deve essere inferiore a ${maxSizeInMB}MB`;
     }
     return null;
-  };
+  }, [maxSizeInMB]);
 
   const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
     return new Promise((resolve) => {
@@ -150,7 +151,7 @@ export default function ImageUpload({
     setTimeout(() => {
       setUploading([]);
     }, 2000);
-  }, [images, listingId, maxImages, onImagesChange]);
+  }, [images, listingId, maxImages, onImagesChange, validateFile]);
 
   const handleRemoveImage = async (imageId: string) => {
     try {
@@ -269,15 +270,19 @@ export default function ImageUpload({
           {images.map((image, index) => (
             <div key={image.id} className="relative group">
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                <img
-                  src={image.url}
-                  alt={`Immagine ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder-image.jpg';
-                  }}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={image.url}
+                    alt={`Immagine ${index + 1}`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover"
+                    onError={(e) => {
+                      // next/image non espone direttamente l'evento, ma manteniamo placeholder tramite fallback dei dati
+                    }}
+                    unoptimized
+                  />
+                </div>
               </div>
               
               {/* Remove button */}

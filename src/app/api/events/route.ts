@@ -7,6 +7,16 @@ interface Event {
   description: string;
   date: string; // ISO format YYYY-MM-DD
   location: string;
+  imageUrl?: string;
+  category: string;
+  status: 'draft' | 'published' | 'cancelled';
+  isFeatured: boolean;
+  organizer: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  maxAttendees?: number;
+  price?: number;
 }
 
 let events: Event[] = [
@@ -147,56 +157,225 @@ let events: Event[] = [
 
 // GET ALL
 export async function GET() {
-  return NextResponse.json(events);
+  try {
+    return NextResponse.json(events);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    return new NextResponse(
+      JSON.stringify({ 
+        message: 'Internal server error', 
+        error: 'Failed to fetch events' 
+      }), 
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
 }
 
 // POST
 export async function POST(request: Request) {
-  const { title, description, date, location } = await request.json();
+  try {
+    const { 
+      title, 
+      description, 
+      date, 
+      location, 
+      imageUrl, 
+      category, 
+      status, 
+      isFeatured, 
+      organizer, 
+      endDate, 
+      startTime, 
+      endTime, 
+      maxAttendees, 
+      price 
+    } = await request.json();
 
-  const newEvent: Event = {
-    id: uuidv4(),
-    title,
-    description,
-    date,
-    location
-  };
+    // Validazione dei campi obbligatori
+    if (!title || !description || !date || !location || !category || !organizer) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          error: 'All fields are required' 
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-  events.push(newEvent);
-  return NextResponse.json(newEvent, { status: 201 });
+    // Validazione formato data
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          error: 'Date must be in YYYY-MM-DD format' 
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const newEvent: Event = {
+      id: uuidv4(),
+      title: title.trim(),
+      description: description.trim(),
+      date,
+      location: location.trim(),
+      imageUrl: imageUrl?.trim(),
+      category: category.trim(),
+      status: status || 'draft',
+      isFeatured: Boolean(isFeatured),
+      organizer: organizer.trim(),
+      endDate: endDate?.trim(),
+      startTime: startTime?.trim(),
+      endTime: endTime?.trim(),
+      maxAttendees: maxAttendees ? parseInt(maxAttendees) : undefined,
+      price: price ? parseFloat(price) : undefined
+    };
+
+    events.push(newEvent);
+    return NextResponse.json(newEvent, { status: 201 });
+  } catch (error) {
+    console.error('Error creating event:', error);
+    return new NextResponse(
+      JSON.stringify({ 
+        message: 'Internal server error', 
+        error: 'Failed to create event' 
+      }), 
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
 }
 
 // PUT
 export async function PUT(request: Request) {
-  const { id, title, description, date, location } = await request.json();
+  try {
+    const { 
+      id, 
+      title, 
+      description, 
+      date, 
+      location, 
+      imageUrl, 
+      category, 
+      status, 
+      isFeatured, 
+      organizer, 
+      endDate, 
+      startTime, 
+      endTime, 
+      maxAttendees, 
+      price 
+    } = await request.json();
 
-  const eventIndex = events.findIndex(event => event.id === id);
+    // Validazione dei campi obbligatori
+    if (!id || !title || !description || !date || !location || !category || !organizer) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          error: 'All fields including ID are required' 
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-  if (eventIndex === -1) {
-    return new NextResponse(JSON.stringify({ message: "Event not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Validazione formato data
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          error: 'Date must be in YYYY-MM-DD format' 
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const eventIndex = events.findIndex(event => event.id === id);
+
+    if (eventIndex === -1) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Not found', 
+          error: 'Event not found' 
+        }), 
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    events[eventIndex] = { 
+      id, 
+      title: title.trim(), 
+      description: description.trim(), 
+      date, 
+      location: location.trim(),
+      imageUrl: imageUrl?.trim(),
+      category: category.trim(),
+      status: status || 'draft',
+      isFeatured: Boolean(isFeatured),
+      organizer: organizer.trim(),
+      endDate: endDate?.trim(),
+      startTime: startTime?.trim(),
+      endTime: endTime?.trim(),
+      maxAttendees: maxAttendees ? parseInt(maxAttendees) : undefined,
+      price: price ? parseFloat(price) : undefined
+    };
+    
+    return NextResponse.json({ 
+      message: 'Event updated successfully',
+      event: events[eventIndex] 
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Error updating event:', error);
+    return new NextResponse(
+      JSON.stringify({ 
+        message: 'Internal server error', 
+        error: 'Failed to update event' 
+      }), 
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
-
-  events[eventIndex] = { id, title, description, date, location };
-  return NextResponse.json({ message: "Event updated successfully" }, { status: 200 });
 }
-
 
 // DELETE
 export async function DELETE(request: Request) {
-  const { id } = await request.json();
+  try {
+    const { id } = await request.json();
 
-  const eventIndex = events.findIndex(event => event.id === id);
+    if (!id) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          error: 'Event ID is required' 
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-  if (eventIndex === -1) {
-    return new NextResponse(JSON.stringify({ message: "Event not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    const eventIndex = events.findIndex(event => event.id === id);
+
+    if (eventIndex === -1) {
+      return new NextResponse(
+        JSON.stringify({ 
+          message: 'Not found', 
+          error: 'Event not found' 
+        }), 
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    events = events.filter(event => event.id !== id);
+    return NextResponse.json({ 
+      message: 'Event deleted successfully',
+      deletedId: id 
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    return new NextResponse(
+      JSON.stringify({ 
+        message: 'Internal server error', 
+        error: 'Failed to delete event' 
+      }), 
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
-
-  events = events.filter(event => event.id !== id);
-  return NextResponse.json({ message: "Event deleted successfully" }, { status: 200 });
 }

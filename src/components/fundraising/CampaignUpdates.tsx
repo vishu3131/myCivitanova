@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, User, Bell, MessageCircle } from 'lucide-react';
 import { FundraisingAPI } from '@/lib/fundraisingApi';
@@ -34,11 +34,7 @@ export default function CampaignUpdates({ campaignId, isOwner = false }: Campaig
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuthWithRole();
 
-  useEffect(() => {
-    loadUpdates();
-  }, [campaignId]);
-
-  const loadUpdates = async () => {
+  const loadUpdates = useCallback(async () => {
     try {
       setLoading(true);
       const updatesData = await FundraisingAPI.getCampaignUpdates(campaignId);
@@ -49,7 +45,11 @@ export default function CampaignUpdates({ campaignId, isOwner = false }: Campaig
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    loadUpdates();
+  }, [loadUpdates]);
 
   const handleCreateUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

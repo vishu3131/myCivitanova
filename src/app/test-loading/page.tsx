@@ -13,7 +13,7 @@ export default function TestLoadingPage() {
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
             Questa pagina dimostra il funzionamento del nuovo sistema di caricamento 
-            che previene i clic multipli e fornisce feedback immediato all'utente.
+            che previene i clic multipli e fornisce feedback immediato all&apos;utente.
           </p>
         </div>
         

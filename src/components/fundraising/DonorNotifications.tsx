@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, Calendar, Heart, TrendingUp, Gift } from 'lucide-react';
 import Link from 'next/link';
@@ -29,13 +29,7 @@ export default function DonorNotifications({ className = '' }: DonorNotification
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuthWithRole();
 
-  useEffect(() => {
-    if (user) {
-      loadNotifications();
-    }
-  }, [user]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -48,7 +42,13 @@ export default function DonorNotifications({ className = '' }: DonorNotification
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadNotifications();
+    }
+  }, [user, loadNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

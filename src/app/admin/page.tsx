@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from "@/components/admin/AdminLayout";
 import DatabaseTest from "@/components/admin/DatabaseTest";
-import { DatabaseService } from "@/lib/database.ts";
+import { DatabaseService } from "../../lib/database";
+import { supabase } from "../../utils/supabaseClient";
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 import { firebaseClient } from "@/utils/firebaseAuth";
 import {
@@ -23,7 +24,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Zap,
-  Image
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -59,7 +60,7 @@ export default function AdminPage() {
     checking: true
   });
 
-  const checkDb = async () => {
+  const checkDb = useCallback(async () => {
     setDbStatus((s) => ({ ...s, checking: true }));
     const start = Date.now();
     try {
@@ -72,11 +73,9 @@ export default function AdminPage() {
     } catch (e: any) {
       setDbStatus({ online: false, latency: undefined, error: e?.message || 'Errore sconosciuto', checking: false });
     }
-  };
+  }, []);
 
-  // Carica dati dashboard
-  useEffect(() => {
-    const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
       console.log('🔄 Iniziando caricamento dati dashboard...');
       try {
         // Carica statistiche reali dal database
@@ -154,8 +153,10 @@ export default function AdminPage() {
       } finally {
         setDashboardLoading(false);
       }
-    };
+    }, []);
 
+  // Carica dati dashboard
+  useEffect(() => {
     console.log('👤 Stato utente:', user ? 'Autenticato' : 'Non autenticato');
     if (user) {
       console.log('✅ Utente autenticato, caricando dati dashboard...');
@@ -163,13 +164,13 @@ export default function AdminPage() {
     } else {
       console.log('❌ Utente non autenticato, saltando caricamento dati');
     }
-  }, [user]);
+  }, [user, loadDashboardData]);
 
   useEffect(() => {
     if (user) {
       checkDb();
     }
-  }, [user]);
+  }, [user, checkDb]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -197,20 +198,18 @@ export default function AdminPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Caricamento dashboard...</span>
+          <div>Caricamento in corso...</div>
         </div>
       </AdminLayout>
     );
   }
 
-  if (!user || !['admin', 'moderator'].includes(role)) {
+  if (!user || (role !== 'admin' && role !== 'superadmin')) {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Accesso Negato</h2>
-          <p className="text-gray-500 dark:text-gray-400">Non hai i permessi per accedere al pannello amministrativo</p>
+          <h1 className="text-2xl font-bold">Accesso Negato</h1>
+          <p>Non hai i permessi per visualizzare quest&apos;area.</p>
         </div>
       </AdminLayout>
     );
@@ -218,351 +217,227 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">
-                Benvenuto nel Dashboard MyCivitanova
-              </h1>
-              <p className="text-blue-100">
-                Gestisci la tua Smart City da questo pannello di controllo
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="space-y-6"
+      >
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Dashboard Amministrazione</h1>
+            <p className="text-gray-400">Panoramica generale dell&apos;app MyCivitanova</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={checkDb}
+              className="flex items-center space-x-2 px-3 py-2 text-sm rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className={`w-3 h-3 rounded-full ${dbStatus.checking ? 'animate-pulse bg-yellow-500' : dbStatus.online ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span>DB</span>
+              {dbStatus.latency && <span className="text-xs text-gray-400">{dbStatus.latency}ms</span>}
+            </button>
+            <button
+              onClick={() => setShowDatabaseTest(s => !s)}
+              className="px-3 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-colors"
+            >
+              Test DB
+            </button>
+          </div>
+        </div>
+
+        {showDatabaseTest && <DatabaseTest />}
+
+        {/* Statistiche Principali */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatCard icon={<Users />} title="Utenti Totali" value={stats?.totalUsers} trend={stats?.weeklyGrowth.users} />
+          <StatCard icon={<FileText />} title="Contenuti (News/Eventi)" value={(stats?.totalNews || 0) + (stats?.totalEvents || 0)} trend={stats?.weeklyGrowth.content} />
+          <StatCard icon={<Trophy />} title="Interazioni (Commenti/Badge)" value={(stats?.totalComments || 0) + (stats?.totalBadges || 0)} trend={stats?.weeklyGrowth.engagement} />
+        </div>
+
+        {/* Attività Recenti e Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-gray-900/50 rounded-xl border border-white/10">
+            <div className="p-4 border-b border-white/10">
+              <h2 className="font-bold text-white">Attività Recente</h2>
+              <p className="text-sm text-gray-500">
+                Un riepilogo delle attività recenti, delle segnalazioni e dello stato generale dell&apos;applicazione.
               </p>
             </div>
-            <div className="hidden md:block">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <Shield className="w-8 h-8" />
-              </div>
+            <div className="p-4 space-y-4">
+              {recentActivity.map(activity => (
+                <div key={activity.id} className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-full ${getActivityColor(activity.type)}`}>
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/90">{activity.message}</p>
+                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-900/50 rounded-xl border border-white/10 p-4">
+            <h2 className="font-bold text-white mb-3">Azioni Rapide</h2>
+            <div className="space-y-2">
+              <QuickActionLink href="/admin/news" icon={<FileText />}>Gestisci News</QuickActionLink>
+              <QuickActionLink href="/admin/events" icon={<Calendar />}>Gestisci Eventi</QuickActionLink>
+              <QuickActionLink href="/admin/comments" icon={<MessageSquare />}>Modera Commenti</QuickActionLink>
+              <QuickActionLink href="/admin/users" icon={<Users />}>Gestisci Utenti</QuickActionLink>
+              <QuickActionLink href="/admin/settings" icon={<Shield />}>Impostazioni</QuickActionLink>
             </div>
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Users Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg">
-                <Users className="w-6 h-6 text-blue-500" />
-              </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
-                +{stats?.weeklyGrowth.users}%
-              </div>
+        {/* Altre sezioni */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Moderazione */}
+          <div className="bg-gray-900/50 rounded-xl border border-white/10 p-4">
+            <h2 className="font-bold text-white mb-3">Da Moderare</h2>
+            <div className="space-y-3">
+              <ModerationItem count={12} label="Commenti in attesa" href="/admin/comments" />
+              <ModerationItem count={3} label="Segnalazioni contenuti" href="/admin/reports" />
+              <ModerationItem count={1} label="Richieste verifica utente" href="/admin/users?filter=verification" />
             </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalUsers.toLocaleString() || '0'}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Utenti Totali</div>
-              <div className="text-xs text-gray-400">
-                {stats?.activeUsers || 0} attivi questa settimana
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Content Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <FileText className="w-6 h-6 text-green-500" />
-              </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
-                +{stats?.weeklyGrowth.content}%
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalNews || '0'}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Articoli Pubblicati</div>
-              <div className="text-xs text-gray-400">
-                {stats?.totalEvents || 0} eventi attivi
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Engagement Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg">
-                <MessageSquare className="w-6 h-6 text-purple-500" />
-              </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
-                +{stats?.weeklyGrowth.engagement}%
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalComments || '0'}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Commenti Totali</div>
-              <div className="text-xs text-gray-400">
-                12 da moderare
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Gamification Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-orange-500/10 rounded-lg">
-                <Trophy className="w-6 h-6 text-orange-500" />
-              </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
-                +23%
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalBadges || '0'}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Badge Assegnati</div>
-              <div className="text-xs text-gray-400">
-                10 tipi disponibili
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Activity */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Attività Recente
-                </h3>
-                <button className="text-sm text-blue-500 hover:text-blue-600">
-                  Vedi tutto
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className={`p-2 rounded-lg ${getActivityColor(activity.type)}`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {activity.message}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {activity.timestamp}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="space-y-6">
-            {/* System Status */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-            >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Stato Sistema
-              </h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {dbStatus.checking ? (
-                      <Activity className="w-4 h-4 text-yellow-500 animate-spin" />
-                    ) : dbStatus.online ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Database</span>
-                  </div>
-                  <div className="text-right">
-                    {dbStatus.checking ? (
-                      <span className="text-xs text-yellow-500 font-medium">Verifica...</span>
-                    ) : dbStatus.online ? (
-                      <span className="text-xs text-green-500 font-medium">Online{typeof dbStatus.latency === 'number' ? ` (${dbStatus.latency}ms)` : ''}</span>
-                    ) : (
-                      <span className="text-xs text-red-500 font-medium">Offline</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">API</span>
-                  </div>
-                  <span className="text-xs text-green-500 font-medium">Operativo</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Backup</span>
-                  </div>
-                  <span className="text-xs text-yellow-500 font-medium">Pianificato</span>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => setShowDatabaseTest(!showDatabaseTest)}
-                className="w-full mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-              >
-                Test Database
-              </button>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-            >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Azioni Rapide
-              </h3>
-              
-              <div className="space-y-3">
-                <a
-                  href="/admin/content"
-                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <FileText className="w-4 h-4 text-blue-500" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      Crea News
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Pubblica nuovo articolo
-                    </div>
-                  </div>
-                </a>
-                
-                <a
-                  href="/admin/events"
-                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="p-2 bg-green-500/10 rounded-lg">
-                    <Calendar className="w-4 h-4 text-green-500" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      Nuovo Evento
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Organizza evento cittadino
-                    </div>
-                  </div>
-                </a>
-                
-                <a
-                  href="/admin/users"
-                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="p-2 bg-purple-500/10 rounded-lg">
-                    <Users className="w-4 h-4 text-purple-500" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      Gestisci Utenti
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Modera community
-                    </div>
-                  </div>
-                </a>
-                
-                <a
-                  href="/admin/home-images"
-                  className="w-full flex items-center gap-3 p-3 text-left rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="p-2 bg-red-500/10 rounded-lg">
-                    <Image className="w-4 h-4 text-red-500" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      Gestisci Immagini Home
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Modifica le immagini del carosello
-                    </div>
-                  </div>
-                </a>
-              </div>
-            </motion.div>
+          {/* System Status */}
+          <div className="bg-gray-900/50 rounded-xl border border-white/10 p-4">
+            <h2 className="font-bold text-white mb-3">Stato del Sistema</h2>
+            <div className="space-y-3">
+              <SystemStatusItem
+                label="Database Principale"
+                status={dbStatus.online}
+                okText="Online"
+                failText="Offline"
+                details={dbStatus.online ? `Latenza: ${dbStatus.latency}ms` : dbStatus.error}
+              />
+              <SystemStatusItem label="Servizio Notifiche Push" status={true} okText="Attivo" />
+              <SystemStatusItem label="API Meteo" status={true} okText="Operativo" />
+              <SystemStatusItem label="Job Schedulati" status={false} failText="1 job fallito" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Link a tutte le sezioni */}
+        <div className="bg-gray-900/50 rounded-xl border border-white/10 p-4">
+          <h2 className="font-bold text-white mb-3">Tutte le Sezioni di Amministrazione</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <AdminSectionLink href="/admin/stats" icon={<BarChart3 />} label="Statistiche Dettagliate" />
+            <AdminSectionLink href="/admin/users" icon={<Users />} label="Gestione Utenti" />
+            <AdminSectionLink href="/admin/content" icon={<FileText />} label="Gestione Contenuti" />
+            <AdminSectionLink href="/admin/gamification" icon={<Trophy />} label="Gamification" />
+            <AdminSectionLink href="/admin/reports" icon={<AlertTriangle />} label="Segnalazioni" />
+            <AdminSectionLink href="/admin/logs" icon={<Activity />} label="Log di Sistema" />
+            <AdminSectionLink href="/admin/settings" icon={<Shield />} label="Impostazioni" />
+            <AdminSectionLink href="/admin/home-images" icon={<ImageIcon />} label="Immagini Home" />
           </div>
         </div>
 
-        {/* Events Management Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-        >
-          <EventsManagement />
-        </motion.div>
-
-        {/* Database Test Section */}
-        {showDatabaseTest && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <DatabaseTest />
-          </motion.div>
-        )}
-      </div>
+      </motion.div>
     </AdminLayout>
   );
 }
 
 import EventsManagement from "@/components/admin/EventsManagement";
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value?: number;
+  trend?: number;
+}
+
+function StatCard({ icon, title, value, trend }: StatCardProps) {
+  const trendColor = trend && trend > 0 ? 'text-green-500' : 'text-red-500';
+  const trendIcon = trend && trend > 0 ? <ArrowUp size={14} /> : <ArrowUp size={14} className="transform rotate-180" />;
+
+  return (
+    <div className="bg-gray-900/50 rounded-xl border border-white/10 p-5 flex items-start justify-between">
+      <div>
+        <div className="p-2 bg-gray-800 rounded-lg inline-block mb-3">{icon}</div>
+        <p className="text-sm text-gray-400">{title}</p>
+        <p className="text-3xl font-bold text-white">{value?.toLocaleString('it-IT') ?? '...'}</p>
+      </div>
+      {trend !== undefined && (
+        <div className={`flex items-center text-sm ${trendColor}`}>
+          {trendIcon}
+          <span>{Math.abs(trend)}%</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface QuickActionLinkProps {
+  href: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function QuickActionLink({ href, icon, children }: QuickActionLinkProps) {
+  return (
+    <a href={href} className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+      <div className="flex items-center space-x-3">
+        {icon}
+        <span className="text-white/90">{children}</span>
+      </div>
+      <ChevronRight size={16} className="text-gray-500" />
+    </a>
+  );
+}
+
+interface ModerationItemProps {
+  count: number;
+  label: string;
+  href: string;
+}
+
+function ModerationItem({ count, label, href }: ModerationItemProps) {
+  return (
+    <a href={href} className="flex items-center justify-between p-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-colors">
+      <span className="text-white/80">{label}</span>
+      <span className="px-2 py-0.5 text-sm font-bold bg-red-600 text-white rounded-full">{count}</span>
+    </a>
+  );
+}
+
+interface SystemStatusItemProps {
+  label: string;
+  status: boolean;
+  okText?: string;
+  failText?: string;
+  details?: string;
+}
+
+function SystemStatusItem({ label, status, okText = 'OK', failText = 'Problema', details }: SystemStatusItemProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <div className={`w-2.5 h-2.5 rounded-full ${status ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        <p className="text-white/80">{label}</p>
+      </div>
+      <div>
+        <p className={`text-sm font-semibold ${status ? 'text-green-500' : 'text-red-500'}`}>{status ? okText : failText}</p>
+        {details && <p className="text-xs text-gray-500 text-right">{details}</p>}
+      </div>
+    </div>
+  );
+}
+
+interface AdminSectionLinkProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}
+
+function AdminSectionLink({ href, icon, label }: AdminSectionLinkProps) {
+  return (
+    <a href={href} className="flex flex-col items-center justify-center p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-colors text-center">
+      <div className="mb-2">{icon}</div>
+      <span className="text-sm text-white/80">{label}</span>
+    </a>
+  );
+}

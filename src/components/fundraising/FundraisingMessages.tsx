@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Send, User, Clock, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { FundraisingAPI, FundraisingMessage } from '@/lib/fundraisingApi';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,7 +32,7 @@ export function FundraisingMessages({
     isCreator ? 'all' : 'approved'
   );
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
       const data = await FundraisingAPI.getCampaignMessages(
@@ -46,11 +46,11 @@ export function FundraisingMessages({
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId, statusFilter]);
 
   useEffect(() => {
     loadMessages();
-  }, [campaignId, statusFilter]);
+  }, [loadMessages]);
 
   const handleSendMessage = async () => {
     if (!user) {

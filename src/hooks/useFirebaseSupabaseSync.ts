@@ -49,8 +49,21 @@ export function useFirebaseSupabaseSync(options?: {
   });
 
   /**
+   * Aggiorna le statistiche di sincronizzazione
+   */
+  const refreshStats = useCallback(async (): Promise<void> => {
+    try {
+      const stats = await firebaseSupabaseSync.getSyncStats();
+      setSyncState(prev => ({ ...prev, stats }));
+    } catch (error) {
+      console.error('Errore nel recupero delle statistiche:', error);
+    }
+  }, []);
+
+  /**
    * Sincronizza un utente specifico
    */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const syncUser = useCallback(async (targetUser?: User): Promise<SyncResult | null> => {
     const userToSync = targetUser || user;
     
@@ -58,9 +71,9 @@ export function useFirebaseSupabaseSync(options?: {
       console.warn('Nessun utente da sincronizzare');
       return null;
     }
-
+  
     setSyncState(prev => ({ ...prev, isLoading: true, error: null }));
-
+  
     try {
       console.log(`🔄 Inizio sincronizzazione utente: ${userToSync.email}`);
       const result = await firebaseSupabaseSync.syncUser(userToSync);
@@ -71,7 +84,7 @@ export function useFirebaseSupabaseSync(options?: {
         lastSyncResult: result,
         error: result.success ? null : result.error || 'Errore sconosciuto'
       }));
-
+  
       if (result.success) {
         console.log(`✅ Sincronizzazione completata: ${result.syncType}`);
         // Aggiorna le statistiche dopo una sincronizzazione riuscita
@@ -79,7 +92,7 @@ export function useFirebaseSupabaseSync(options?: {
       } else {
         console.error(`❌ Errore sincronizzazione: ${result.error}`);
       }
-
+  
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
@@ -90,22 +103,23 @@ export function useFirebaseSupabaseSync(options?: {
         isLoading: false,
         error: errorMessage
       }));
-
+  
       return null;
     }
-  }, [user]);
+  }, [user, refreshStats]);
 
   /**
    * Sincronizza tutti gli utenti (operazione batch)
    */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const syncAllUsers = useCallback(async (): Promise<{ success: number; errors: number; total: number } | null> => {
     if (firebaseSupabaseSync.isSyncInProgress()) {
       setSyncState(prev => ({ ...prev, error: 'Sincronizzazione già in corso' }));
       return null;
     }
-
+  
     setSyncState(prev => ({ ...prev, isLoading: true, error: null }));
-
+  
     try {
       console.log('🔄 Inizio sincronizzazione batch di tutti gli utenti');
       const result = await firebaseSupabaseSync.syncAllUsers();
@@ -120,7 +134,7 @@ export function useFirebaseSupabaseSync(options?: {
           error: result.errors > 0 ? `${result.errors} errori su ${result.total} utenti` : undefined
         }
       }));
-
+  
       console.log(`✅ Sincronizzazione batch completata: ${result.success}/${result.total} utenti`);
       
       // Aggiorna le statistiche
@@ -136,22 +150,10 @@ export function useFirebaseSupabaseSync(options?: {
         isLoading: false,
         error: errorMessage
       }));
-
+  
       return null;
     }
-  }, []);
-
-  /**
-   * Aggiorna le statistiche di sincronizzazione
-   */
-  const refreshStats = useCallback(async (): Promise<void> => {
-    try {
-      const stats = await firebaseSupabaseSync.getSyncStats();
-      setSyncState(prev => ({ ...prev, stats }));
-    } catch (error) {
-      console.error('Errore nel recupero delle statistiche:', error);
-    }
-  }, []);
+  }, [refreshStats]);
 
   /**
    * Pulisce l'errore corrente

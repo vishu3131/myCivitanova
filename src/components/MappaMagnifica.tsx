@@ -131,12 +131,13 @@ const MappaMagnifica = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapInstance, userPosition]);
 
+  // Montaggio componente
   useEffect(() => {
     setIsMounted(true);
-    fetchPois();
   }, []);
 
-  const fetchPois = async () => {
+  // Fetch POIs
+  const fetchPois = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/pois${demoMode ? '?demo=1' : ''}`);
@@ -150,7 +151,11 @@ const MappaMagnifica = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [demoMode]);
+
+  useEffect(() => {
+    fetchPois();
+  }, [fetchPois]);
 
   const handleRefresh = () => {
     // Filters and selection
@@ -179,8 +184,7 @@ const MappaMagnifica = () => {
     // Force MapContainer re-mount (resets center/zoom and all leaflet internals)
     setMapKey(Date.now());
 
-    // Reload data fresh
-    fetchPois();
+    // Reload data will be triggered by demoMode change effect
   };
 
   const handleCategoryChange = (category: string) => {
@@ -416,7 +420,7 @@ const MappaMagnifica = () => {
 
         {/* Demo Mode Toggle */}
         <motion.button
-          onClick={() => { setDemoMode((d) => !d); fetchPois(); }}
+          onClick={() => { setDemoMode((d) => !d); }}
           whileTap={{ scale: 0.9 }}
           className={`p-4 rounded-full shadow-lg ${demoMode ? 'bg-black text-white' : 'bg-white text-gray-800'}`}
           aria-label="Attiva/Disattiva Demo Mode"

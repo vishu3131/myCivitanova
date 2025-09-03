@@ -26,6 +26,7 @@ import { CreateCampaignForm } from '@/components/fundraising/CreateCampaignForm'
 import DonationModal from '@/components/fundraising/DonationModal';
 import LoginPromptModal from '@/components/ui/LoginPromptModal';
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
+import Image from 'next/image';
 
 export default function RaccoltaFondiPage() {
   const { user, role, loading: authLoading } = useAuthWithRole();
@@ -306,10 +307,13 @@ export default function RaccoltaFondiPage() {
                     {/* Campaign Image */}
                     <div className="relative h-48 bg-gradient-to-br from-blue-600/30 to-emerald-500/20">
                       {campaign.image_url ? (
-                        <img 
-                          src={campaign.image_url} 
+                        <Image 
+                          src={campaign.image_url}
                           alt={campaign.title}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          unoptimized
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

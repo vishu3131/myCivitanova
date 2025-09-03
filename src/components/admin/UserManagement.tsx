@@ -18,7 +18,9 @@ import {
   XCircle,
   Edit3,
   Trash2,
-  X
+  X,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 // import { supabase } from '@/utils/supabaseClient.ts';
 
@@ -50,6 +52,8 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'banned'>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStats, setSyncStats] = useState<any>(null);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -93,7 +97,7 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [searchTerm, roleFilter]);
 
   useEffect(() => {
     if (isOpen && currentUser) {
@@ -124,6 +128,35 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
 
   const deleteUser = async (userId: string) => {
     alert('Eliminazione utente non supportata in questa versione');
+  };
+
+  const syncFirebaseUsers = async () => {
+    try {
+      setSyncing(true);
+      const response = await fetch('/api/admin/sync-firebase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser?.token || ''}`
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setSyncStats(result.stats);
+        alert(`Sincronizzazione completata! ${result.stats.successful}/${result.stats.total} utenti sincronizzati.`);
+        // Ricarica la lista utenti
+        await loadUsers();
+      } else {
+        throw new Error(result.error || 'Errore durante la sincronizzazione');
+      }
+    } catch (error) {
+      console.error('Errore sincronizzazione:', error);
+      alert(`Errore durante la sincronizzazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const getRoleColor = (role: string) => {
@@ -280,7 +313,53 @@ export function UserManagement({ isOpen, onClose, currentUser }: UserManagementP
                 <option value="banned">Bannati</option>
               </select>
             </div>
+            
+            {/* Sync Button */}
+            <div className="flex gap-2">
+              <button
+                onClick={syncFirebaseUsers}
+                disabled={syncing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+              >
+                {syncing ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Database className="w-4 h-4" />
+                )}
+                {syncing ? 'Sincronizzazione...' : 'Sincronizza Firebase'}
+              </button>
+            </div>
           </div>
+          
+          {/* Sync Stats */}
+          {syncStats && (
+            <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <h4 className="text-blue-400 font-medium mb-2">Ultima Sincronizzazione</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Totale:</span>
+                  <span className="text-white ml-2 font-medium">{syncStats.total}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Successo:</span>
+                  <span className="text-green-400 ml-2 font-medium">{syncStats.successful}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Creati:</span>
+                  <span className="text-blue-400 ml-2 font-medium">{syncStats.created}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Aggiornati:</span>
+                  <span className="text-yellow-400 ml-2 font-medium">{syncStats.updated}</span>
+                </div>
+              </div>
+              {syncStats.failed > 0 && (
+                <div className="mt-2">
+                  <span className="text-red-400">Errori: {syncStats.failed}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Users List */}

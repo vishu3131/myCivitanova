@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Quartiere, QuartiereEvent, QuartierePark } from '@/data/quartieriData';
 import { MagnifyingGlassIcon, XMarkIcon, MapPinIcon, CalendarIcon, TagIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface SearchResult {
   type: 'quartiere' | 'event' | 'park';
@@ -233,9 +234,11 @@ export const QuartiereSearchWidget: React.FC<QuartiereSearchWidgetProps> = ({
                         {/* Result image or icon */}
                         <div className="flex-shrink-0">
                           {result.image ? (
-                            <img
+                            <Image
                               src={result.image}
                               alt={result.title}
+                              width={48}
+                              height={48}
                               className="w-12 h-12 rounded-lg object-cover"
                             />
                           ) : (

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/utils/supabaseClient';
+import { BadgeSystem } from './BadgeSystem';
 
 interface UserStats {
   total_xp: number;
@@ -45,6 +46,8 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
   const [loading, setLoading] = useState(true);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   
+  const badgeSystem = useMemo(() => userId ? new BadgeSystem(userId) : null, [userId]);
+
   const loadUserStats = useCallback(async () => {
     if (!userId) return;
     
@@ -164,7 +167,7 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     }
   }, [userId, loadUserStats, loadRecentBadges, simulateDailyLogin, setUserStats, setRecentBadges, setLoading]);
 
-  const handleQuickAction = async (action: string) => {
+  const handleQuickAction = useCallback(async (action: string) => {
     if (!userId || !badgeSystem) return;
     
     try {
@@ -192,7 +195,7 @@ export function GamificationWidgetNew({ userId, onViewAllBadges }: GamificationW
     } catch (error) {
       console.error('Errore azione rapida:', error);
     }
-  };
+  }, [userId, badgeSystem, loadUserStats, loadRecentBadges]);
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {

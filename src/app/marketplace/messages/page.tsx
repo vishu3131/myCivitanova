@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -22,15 +23,56 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<ConversationWithListing[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadConversations = React.useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const conversationsData = await fetchUserConversations(user.id);
+      
+      // Load listing details for each conversation
+      const conversationsWithDetails = await Promise.all(
+        conversationsData.map(async (conversation) => {
+          try {
+            const listing = await fetchListingById(conversation.listing_id);
+            const otherUserId = conversation.buyer_id === user.id ? conversation.seller_id : conversation.buyer_id;
+            
+            return {
+              ...conversation,
+              listing,
+              otherUserName: listing?.author?.full_name || 'Utente Sconosciuto',
+            };
+          } catch (error) {
+            console.error(`Failed to load details for conversation ${conversation.id}`, error);
+            return { 
+              ...conversation, 
+              listing: undefined,
+              otherUserName: 'Dati non disponibili' 
+            };
+          }
+        })
+      );
+      
+      setConversations(conversationsWithDetails);
+    } catch (error) {
+      toast.error("Errore nel caricamento delle conversazioni.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       router.push('/auth/login');
       return;
     }
     loadConversations();
-  }, [user]);
+  }, [user, router, loadConversations]);
 
-  const loadConversations = async () => {
+
+
+  const handleConversationClick = (conversationId: string) => {
     if (!user) return;
     
     try {
@@ -167,14 +209,17 @@ export default function MessagesPage() {
                   {/* Listing image */}
                   <div className="w-16 h-16 bg-white/10 rounded-lg overflow-hidden flex-shrink-0">
                     {conversation.listing?.listing_images?.[0]?.url ? (
-                      <img
+                      <Image
                         src={conversation.listing.listing_images[0].url}
-                        alt={conversation.listing.title}
+                        alt={conversation.listing.title || 'Immagine annuncio'}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
+                          const nextEl = target.nextElementSibling;
+                          if(nextEl) nextEl.classList.remove('hidden');
                         }}
                       />
                     ) : null}

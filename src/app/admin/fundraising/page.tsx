@@ -107,7 +107,7 @@ export default function FundraisingAdminPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    Nuova campagna "Parco Giochi Inclusivo" creata da Mario Rossi
+                    Nuova campagna &quot;Parco Giochi Inclusivo&quot; creata da Mario Rossi
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">2 ore fa</p>
                 </div>
@@ -122,7 +122,7 @@ export default function FundraisingAdminPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    Donazione di €50 ricevuta per "Biblioteca Digitale"
+                    Donazione di €50 ricevuta per &quot;Biblioteca Digitale&quot;
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">4 ore fa</p>
                 </div>
@@ -137,7 +137,7 @@ export default function FundraisingAdminPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    Campagna "Pulizia Spiagge" ha raggiunto il 75% dell'obiettivo
+                    Campagna &quot;Pulizia Spiagge&quot; ha raggiunto il 75% dell&apos;obiettivo
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">1 giorno fa</p>
                 </div>

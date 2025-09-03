@@ -429,7 +429,7 @@ export function CreateCampaignForm({ isOpen, onClose, onSuccess, currentUser }: 
                           className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                         />
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          Aggiungi un'immagine rappresentativa per la tua campagna
+                          Aggiungi un&apos;immagine rappresentativa per la tua campagna
                         </p>
                       </div>
                     </motion.div>

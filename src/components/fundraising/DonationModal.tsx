@@ -164,7 +164,7 @@ export default function DonationModal({ isOpen, onClose, campaign, onDonationSuc
                 {/* Amount Selection */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Seleziona l'importo
+                    Seleziona l&apos;importo
                   </label>
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {PRESET_AMOUNTS.map((presetAmount) => (

@@ -187,7 +187,7 @@ const SyncTestPage: React.FC = () => {
             🧪 Test Sistema Sincronizzazione
           </h1>
           <p className="text-gray-600">
-            Verifica il funzionamento dell'integrazione Firebase ↔ Supabase
+            Verifica il funzionamento dell&apos;integrazione Firebase ↔ Supabase
           </p>
         </div>
 

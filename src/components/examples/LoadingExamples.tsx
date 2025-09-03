@@ -118,11 +118,11 @@ export function LoadingExamples() {
         <div className="bg-gray-800 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-white mb-3">Come Funziona</h3>
           <ul className="text-gray-300 space-y-2 text-sm">
-            <li>• <strong>Feedback Immediato:</strong> L'animazione di caricamento appare immediatamente al clic</li>
-            <li>• <strong>Prevenzione Clic Multipli:</strong> I bottoni si disabilitano durante l'elaborazione</li>
+            <li>• <strong>Feedback Immediato:</strong> L&apos;animazione di caricamento appare immediatamente al clic</li>
+            <li>• <strong>Prevenzione Clic Multipli:</strong> I bottoni si disabilitano durante l&apos;elaborazione</li>
             <li>• <strong>Messaggi Personalizzati:</strong> Ogni azione può avere un messaggio di caricamento specifico</li>
             <li>• <strong>Navigazione Ottimizzata:</strong> Le transizioni tra pagine sono fluide e immediate</li>
-            <li>• <strong>Gestione Globale:</strong> Un unico sistema gestisce tutti i caricamenti dell'app</li>
+            <li>• <strong>Gestione Globale:</strong> Un unico sistema gestisce tutti i caricamenti dell&apos;app</li>
           </ul>
         </div>
       </div>

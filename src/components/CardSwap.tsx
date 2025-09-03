@@ -105,7 +105,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
   );
   const refs = useMemo(
     () => childArr.map(() => React.createRef<HTMLDivElement>()),
-    [childArr.length]
+    [childArr]
   );
 
   const order = useRef(

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Calendar, Euro, User, Eye, EyeOff } from 'lucide-react';
 import { getPublicDonations, getCampaignDonationStats } from '@/lib/donationsApi';
 import type { Donation } from '@/lib/donationsApi';
+import { useCallback } from 'react';
 
 interface DonationsListProps {
   campaignId: string;
@@ -25,11 +26,7 @@ export default function DonationsList({ campaignId, className = '', refreshTrigg
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => {
-    loadDonations();
-  }, [campaignId, refreshTrigger]);
-
-  const loadDonations = async () => {
+  const loadDonations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -47,7 +44,11 @@ export default function DonationsList({ campaignId, className = '', refreshTrigg
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId, showAll]);
+
+  useEffect(() => {
+    loadDonations();
+  }, [campaignId, refreshTrigger, loadDonations]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('it-IT', {
@@ -214,7 +215,7 @@ export default function DonationsList({ campaignId, className = '', refreshTrigg
                     <div className="flex items-start gap-2">
                       <MessageCircle className="w-4 h-4 text-white/60 mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-white/80 leading-relaxed italic">
-                        "{donation.message}"
+                        &quot;{donation.message}&quot;
                       </p>
                     </div>
                   </div>

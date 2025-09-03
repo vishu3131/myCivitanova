@@ -293,7 +293,7 @@ export default function TreasureHuntPage() {
               <span className="text-amber-300">GPS: {geoError}</span>
             ) : distance !== null ? (
               <span>
-                Sei a <span className="text-emerald-300 font-semibold">~{distance} m</span> dall'obiettivo — raggio utile {currentStep.radiusM} m
+                Sei a <span className="text-emerald-300 font-semibold">~{distance} m</span> dall&apos;obiettivo — raggio utile {currentStep.radiusM} m
               </span>
             ) : (
               <span>Acquisizione posizione in corso…</span>
@@ -318,9 +318,9 @@ export default function TreasureHuntPage() {
               {/* Stato distanza */}
               <div className="mt-3 text-xs">
                 {canAttemptRiddle ? (
-                  <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-200 border border-emerald-300/20">Sei nel raggio utile. Risolvi l'indovinello!</span>
+                  <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-200 border border-emerald-300/20">Sei nel raggio utile. Risolvi l&apos;indovinello!</span>
                 ) : (
-                  <span className="px-2 py-1 rounded bg-white/10 text-white/80 border border-white/15">Avvicinati alla posizione per sbloccare l'indovinello.</span>
+                  <span className="px-2 py-1 rounded bg-white/10 text-white/80 border border-white/15">Avvicinati alla posizione per sbloccare l&apos;indovinello.</span>
                 )}
               </div>
 

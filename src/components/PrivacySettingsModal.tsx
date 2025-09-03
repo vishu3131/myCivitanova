@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Shield, Eye, MapPin, Bell, Save } from 'lucide-react';
 import { SettingsStorage } from '@/utils/profileStorage';
 
@@ -44,13 +44,7 @@ export function PrivacySettingsModal({ user, isOpen, onClose }: PrivacySettingsM
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (isOpen && user?.id) {
-      fetchSettings();
-    }
-  }, [isOpen, user?.id]);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -61,7 +55,13 @@ export function PrivacySettingsModal({ user, isOpen, onClose }: PrivacySettingsM
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      fetchSettings();
+    }
+  }, [isOpen, user?.id, fetchSettings]);
 
   if (!isOpen) return null;
 
@@ -119,7 +119,7 @@ export function PrivacySettingsModal({ user, isOpen, onClose }: PrivacySettingsM
         {
           key: 'location_sharing',
           label: 'Condivisione Posizione',
-          description: 'Permetti all\'app di accedere alla tua posizione',
+          description: "Permetti all'app di accedere alla tua posizione",
           type: 'toggle'
         },
         {
@@ -137,7 +137,7 @@ export function PrivacySettingsModal({ user, isOpen, onClose }: PrivacySettingsM
         {
           key: 'notifications_enabled',
           label: 'Notifiche Attive',
-          description: 'Ricevi notifiche dall\'app',
+          description: "Ricevi notifiche dall'app",
           type: 'toggle'
         },
         {

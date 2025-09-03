@@ -13,6 +13,7 @@ import {
   fetchListingById
 } from "@/services/marketplace";
 import { MarketplaceConversation, MarketplaceMessage, ListingExpanded } from "@/types/marketplace";
+import Image from "next/image";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -31,6 +32,39 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  const loadConversationData = React.useCallback(async () => {
+    if (!user || !conversationId) return;
+
+    try {
+      setLoading(true);
+      const conversationData = await getConversation(conversationId);
+      if (conversationData.buyer_id !== user.id && conversationData.seller_id !== user.id) {
+        toast.error("Non sei autorizzato a vedere questa conversazione.");
+        router.push('/marketplace/messages');
+        return;
+      }
+      setConversation(conversationData);
+
+      const [messagesData, listingData] = await Promise.all([
+        fetchConversationMessages(conversationId),
+        fetchListingById(conversationData.listing_id)
+      ]);
+      
+      setMessages(messagesData);
+      setListing(listingData);
+
+      // Mark messages as read
+      markMessagesAsRead(conversationId, user.id);
+
+    } catch (error) {
+      toast.error("Errore nel caricamento della conversazione.");
+      console.error(error);
+      router.push('/marketplace/messages');
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, user, router]);
+
   useEffect(() => {
     if (!user) {
       router.push('/auth/login');
@@ -39,7 +73,7 @@ export default function ConversationPage() {
     if (conversationId) {
       loadConversationData();
     }
-  }, [conversationId, user]);
+  }, [conversationId, user, router, loadConversationData]);
 
   useEffect(() => {
     scrollToBottom();
@@ -197,12 +231,13 @@ export default function ConversationPage() {
                 href={`/marketplace/${listing.id}`}
                 className="flex items-center gap-3 flex-1 min-w-0 hover:bg-white/5 rounded-lg p-2 -m-2"
               >
-                <div className="w-10 h-10 bg-white/10 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-10 h-10 bg-white/10 rounded-lg overflow-hidden flex-shrink-0 relative">
                   {listing.listing_images?.[0]?.url ? (
-                    <img
+                    <Image
                       src={listing.listing_images[0].url}
                       alt={listing.title}
-                      className="w-full h-full object-cover"
+                      layout="fill"
+                      objectFit="cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';

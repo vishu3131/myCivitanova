@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DatabaseService } from '@/lib/database';
-import { supabase } from '@/utils/supabaseClient';
+import { DatabaseService } from '../../lib/database';
+import { supabase } from '../../utils/supabaseClient';
 
 interface TestResult {
   name: string;

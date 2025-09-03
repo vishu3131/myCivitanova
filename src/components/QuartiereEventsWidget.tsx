@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { QuartiereEvent } from '@/data/quartieriData';
 import { CalendarIcon, ClockIcon, MapPinIcon, TagIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface QuartiereEventsWidgetProps {
   events: QuartiereEvent[];
@@ -182,9 +183,11 @@ export const QuartiereEventsWidget: React.FC<QuartiereEventsWidgetProps> = ({
                   {/* Event image */}
                   {event.image && isExpanded && (
                     <div className="mt-4 rounded-lg overflow-hidden">
-                      <img
+                      <Image
                         src={event.image}
                         alt={event.title}
+                        width={800}
+                        height={200}
                         className="w-full h-32 object-cover"
                       />
                     </div>

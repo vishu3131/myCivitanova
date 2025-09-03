@@ -192,12 +192,12 @@ export function BadgeSystem({ userId, showNotifications = true }: BadgeSystemPro
     console.log(`+${xpEarned} XP!`, levelUp ? 'LEVEL UP!' : '');
   };
 
-  const getBadgeProgress = (badge: Badge) => {
+  const getBadgeProgress = useCallback((badge: Badge) => {
     // Calcola progresso verso il badge basato sui requisiti
     // Questa è una versione semplificata - espandibile
     const userBadge = userBadges.find(b => b.id === badge.id);
     return userBadge ? 100 : 0;
-  };
+  }, [userBadges]);
 
   if (loading) {
     return (

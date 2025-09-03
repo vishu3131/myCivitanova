@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import './ProfileCard.css';
+import SafeImage from './SafeImage';
 
 interface ProfileCardProps {
   avatar: string;
@@ -376,7 +377,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         cancelAnimationFrame(updateCall.current);
       }
     };
-  }, [onPointerMove, onPointerEnter, onPointerLeave, onTouchStart, onTouchMove, onTouchEnd, onDeviceOrientation, debouncedOrientationChange, debouncedResize, isVisible]);
+  }, [onPointerMove, onPointerEnter, onPointerLeave, onTouchStart, onTouchMove, onTouchEnd, onDeviceOrientation, handleOrientationChange, debouncedOrientationChange, debouncedResize, isVisible]);
 
   const cardStyle = useMemo(() => ({
     '--grain': grain || 'none',
@@ -407,7 +408,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         <div className="pc-shine"></div>
         <div className="pc-glare"></div>
         <div className="pc-avatar-content">
-          <img className="avatar" data-src={avatar} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3C/svg%3E" alt={name} loading="lazy" />
+            <SafeImage 
+              className="avatar"
+              src={avatar}
+              alt={name}
+              width={100}
+              height={100}
+              placeholderSrc={"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3C/svg%3E"}
+            />
         </div>
         <div className="pc-content">
           <div className="pc-details">
@@ -418,7 +426,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         <div className="pc-user-info">
           <div className="pc-user-details">
             <div className="pc-mini-avatar">
-              <img data-src={avatar} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23f0f0f0'/%3E%3C/svg%3E" alt={name} loading="lazy" />
+                <SafeImage 
+                  src={avatar}
+                  alt={name}
+                  width={40}
+                  height={40}
+                  placeholderSrc={"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23f0f0f0'/%3E%3C/svg%3E"}
+                />
             </div>
             <div className="pc-user-text">
               <div className="pc-handle">{name}</div>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { DatabaseService } from '@/lib/database.ts';
@@ -42,13 +43,7 @@ export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  useEffect(() => {
-    if (user) {
-      loadEvents();
-    }
-  }, [user]);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const eventsData = await DatabaseService.getEvents();
       setEvents(eventsData);
@@ -74,7 +69,7 @@ export default function EventsPage() {
         {
           id: '2',
           title: 'Mercatino Antiquariato',
-          description: 'Mercatino mensile dell\'antiquariato nel centro storico',
+          description: "Mercatino mensile dell'antiquariato nel centro storico",
           start_date: '2024-03-10T08:00:00Z',
           end_date: '2024-03-10T19:00:00Z',
           location: 'Piazza XX Settembre',
@@ -86,7 +81,7 @@ export default function EventsPage() {
         {
           id: '3',
           title: 'Concerto Estate',
-          description: 'Concerto all\'aperto con artisti locali',
+          description: "Concerto all'aperto con artisti locali",
           start_date: '2024-01-20T21:00:00Z',
           end_date: '2024-01-20T23:30:00Z',
           location: 'Parco della Pace',
@@ -101,7 +96,13 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadEvents();
+    }
+  }, [user, loadEvents]);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -298,9 +299,14 @@ export default function EventsPage() {
               className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
             >
               {event.image_url && (
-                <div className="h-48 bg-gray-200 dark:bg-gray-700 bg-cover bg-center" 
-                     style={{ backgroundImage: `url(${event.image_url})` }}>
-                </div>
+                  <div className="relative h-48">
+                    <Image
+                      src={event.image_url}
+                      alt={event.title}
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  </div>
               )}
               
               <div className="p-6">

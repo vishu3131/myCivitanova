@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { PlusCircle, Trash2, Image as ImageIcon, Link as LinkIcon, UploadCloud } from 'lucide-react';
 
 interface HomeImage {
@@ -31,7 +32,7 @@ const HomeImageManagementPage = () => {
     fetchImages();
   }, [fetchImages]);
 
-  const addImage = async (url: string, source: 'link' | 'upload') => {
+  const addImage = useCallback(async (url: string, source: 'link' | 'upload') => {
     try {
       await fetch('/api/home-images', {
         method: 'POST',
@@ -42,7 +43,7 @@ const HomeImageManagementPage = () => {
     } catch (error) {
       console.error("Error adding image:", error);
     }
-  };
+  }, [fetchImages]);
 
   const updateImage = async (id: number, updates: Partial<Omit<HomeImage, 'id' | 'url' | 'source'>>) => {
     try {
@@ -73,7 +74,6 @@ const HomeImageManagementPage = () => {
     setImageUrl('');
   };
 
-  const addImageCallback = useCallback(addImage, []);
   const handleFileDrop = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
     const file = files[0];
@@ -89,9 +89,9 @@ const HomeImageManagementPage = () => {
     // const response = await fetch('/api/upload', { method: 'POST', body: formData });
     // const { url: uploadedUrl } = await response.json();
 
-    addImageCallback(uploadedUrl, 'upload');
+    addImage(uploadedUrl, 'upload');
     setIsUploading(false);
-  }, [addImageCallback]);
+  }, [addImage]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -171,7 +171,7 @@ const HomeImageManagementPage = () => {
             {images.map((image) => (
               <div key={image.id} className="card bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden transition-transform hover:scale-105">
                 <figure className="relative h-48">
-                  <img src={image.url} alt={`Immagine ${image.id}`} className="w-full h-full object-cover" />
+                  <Image src={image.url} alt={`Immagine ${image.id}`} fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" />
                   <div className="absolute top-2 right-2 badge badge-primary">{image.source}</div>
                 </figure>
                 <div className="card-body p-4">

@@ -409,7 +409,7 @@ function AltParkingView({ onToggle, isAlt }: { onToggle: () => void; isAlt: bool
 
       {/* Nota licenze */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-[11px] text-white/60">
-        Dati di esempio basati su Open Data/OSM. Verificare licenze e condizioni d'uso prima della pubblicazione.
+        Dati di esempio basati su Open Data/OSM. Verificare licenze e condizioni d&apos;uso prima della pubblicazione.
       </div>
     </div>
   );

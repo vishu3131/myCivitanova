@@ -28,8 +28,11 @@ export default function TreasureHuntTutorialPage() {
         </div>
 
         <div className="text-white/70 text-sm">
-          Suggerimento: attiva la geolocalizzazione dal tuo dispositivo per un'esperienza migliore.
+          Suggerimento: attiva la geolocalizzazione dal tuo dispositivo per un&apos;esperienza migliore.
         </div>
+        <p className="mt-2 text-white/80">
+          Una volta trovato il luogo, scansiona il QR code con l&apos;app MyCivitanova per sbloccare la tappa successiva e ottenere punti.
+        </p>
       </div>
 
       <TreasureHuntTutorial isOpen={open} onClose={() => setOpen(false)} onStart={() => (window.location.href = '/caccia-al-tesoro')} />

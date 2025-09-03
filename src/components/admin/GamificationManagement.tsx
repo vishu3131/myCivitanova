@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, 
@@ -79,65 +79,7 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [showMissionDetails, setShowMissionDetails] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && currentUser) {
-      loadData();
-    }
-  }, [isOpen, currentUser]);
-
-  const loadData = async () => {
-    setLoading(true);
-    await Promise.all([
-      loadBadges(),
-      loadXPActivities(),
-      loadMissions(),
-      loadStats()
-    ]);
-    setLoading(false);
-  };
-
-  const loadMissions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('missions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setMissions(data || []);
-    } catch (error) {
-      console.error('Errore nel caricamento delle missioni:', error);
-      // Fallback con dati demo
-      setMissions([
-        {
-          id: 'm1',
-          name: 'daily_explorer',
-          title: 'Esploratore Quotidiano',
-          description: 'Visita un POI ogni giorno per 3 giorni consecutivi.',
-          xp_reward: 75,
-          is_active: true,
-          activity_type_required: 'poi_visit',
-          activity_value_required: 1,
-          completion_count: 3,
-          created_at: '2024-01-01T00:00:00Z',
-        },
-        {
-          id: 'm2',
-          name: 'community_contributor',
-          title: 'Contributore della Community',
-          description: 'Crea 5 post o commenti nella sezione Community.',
-          xp_reward: 120,
-          is_active: true,
-          activity_type_required: 'community_interaction',
-          activity_value_required: 5,
-          completion_count: undefined,
-          created_at: '2024-01-05T00:00:00Z',
-        },
-      ]);
-    }
-  };
-
-  const loadBadges = async () => {
+  const loadBadges = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('badges')
@@ -194,9 +136,9 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
         }
       ]);
     }
-  };
+  }, []);
 
-  const loadXPActivities = async () => {
+  const loadXPActivities = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('xp_activities')
@@ -239,9 +181,50 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
         }
       ]);
     }
-  };
+  }, []);
 
-  const loadStats = async () => {
+  const loadMissions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('missions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMissions(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento delle missioni:', error);
+      // Fallback con dati demo
+      setMissions([
+        {
+          id: 'm1',
+          name: 'daily_explorer',
+          title: 'Esploratore Quotidiano',
+          description: 'Visita un POI ogni giorno per 3 giorni consecutivi.',
+          xp_reward: 75,
+          is_active: true,
+          activity_type_required: 'poi_visit',
+          activity_value_required: 1,
+          completion_count: 3,
+          created_at: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 'm2',
+          name: 'community_contributor',
+          title: 'Contributore della Community',
+          description: 'Crea 5 post o commenti nella sezione Community.',
+          xp_reward: 120,
+          is_active: true,
+          activity_type_required: 'community_interaction',
+          activity_value_required: 5,
+          completion_count: undefined,
+          created_at: '2024-01-05T00:00:00Z',
+        },
+      ]);
+    }
+  }, []);
+
+  const loadStats = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc('get_gamification_stats');
       if (error) throw error;
@@ -258,7 +241,24 @@ export function GamificationManagement({ isOpen, onClose, currentUser }: Gamific
         average_user_level: 6.8
       });
     }
-  };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([
+      loadBadges(),
+      loadXPActivities(),
+      loadMissions(),
+      loadStats()
+    ]);
+    setLoading(false);
+  }, [loadBadges, loadXPActivities, loadMissions, loadStats]);
+
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      loadData();
+    }
+  }, [isOpen, currentUser, loadData]);
 
   const createBadge = async (badgeData: Partial<Badge>) => {
     try {

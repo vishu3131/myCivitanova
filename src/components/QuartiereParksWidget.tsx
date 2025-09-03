@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { QuartierePark } from '@/data/quartieriData';
 import { MapPinIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 
 interface QuartiereParksWidgetProps {
   parks: QuartierePark[];
@@ -92,9 +93,11 @@ export const QuartiereParksWidget: React.FC<QuartiereParksWidgetProps> = ({
             >
               {/* Park image */}
               <div className="relative h-32 rounded-t-lg overflow-hidden">
-                <img
+                <Image
                   src={park.image}
                   alt={park.name}
+                  width={640}
+                  height={128}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -33,14 +33,7 @@ export function NewsManagement({ isOpen, onClose, currentUser }: NewsManagementP
   const [filterType, setFilterType] = useState<'all' | 'urgent' | 'news' | 'event'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
 
-  useEffect(() => {
-    if (isOpen && currentUser) {
-      loadNews();
-      loadStats();
-    }
-  }, [isOpen, currentUser, filterType, filterStatus, searchTerm]);
-
-  const loadNews = async () => {
+  const loadNews = useCallback(async () => {
     try {
       setLoading(true);
       const filters: any = {};
@@ -56,16 +49,23 @@ export function NewsManagement({ isOpen, onClose, currentUser }: NewsManagementP
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType, filterStatus, searchTerm]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await newsService.getStats();
       setStats(statsData);
     } catch (error) {
       console.error('Errore nel caricamento delle statistiche:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      loadNews();
+      loadStats();
+    }
+  }, [isOpen, currentUser, loadNews, loadStats]);
 
   const handleCreateNews = async (data: CreateNewsData) => {
     try {

@@ -15,6 +15,7 @@ import {
   SparklesIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface QuartierePageProps {
   quartiereData: Quartiere[];
@@ -228,9 +229,11 @@ const QuartierePage: React.FC<QuartierePageProps> = ({ quartiereData }) => {
                   </div>
                   
                   <div className="relative">
-                    <img
+                    <Image
                       src={selectedQuartiere.image}
                       alt={selectedQuartiere.name}
+                      width={500}
+                      height={256}
                       className="w-full h-64 object-cover rounded-xl shadow-lg"
                     />
                     <div className={`absolute inset-0 bg-gradient-to-t from-${selectedQuartiere.color}-900/50 to-transparent rounded-xl`} />

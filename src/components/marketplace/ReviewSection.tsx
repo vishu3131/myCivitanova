@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Star, MessageCircle, Edit2, Trash2 } from 'lucide-react';
 import { fetchListingReviews, createReview, updateReview, deleteReview } from '@/services/marketplace';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,11 +35,7 @@ export default function ReviewSection({
   });
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadReviews();
-  }, [listingId]);
-
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     setLoading(true);
     try {
       const reviewsData = await fetchListingReviews(listingId);
@@ -50,7 +46,11 @@ export default function ReviewSection({
     } finally {
       setLoading(false);
     }
-  };
+  }, [listingId]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();

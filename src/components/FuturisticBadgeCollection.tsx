@@ -68,12 +68,7 @@ function FuturisticBadgeCollection({ userId }: FuturisticBadgeCollectionProps) {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [filter, setFilter] = useState<'all' | 'earned' | 'unearned'>('all');
 
-  useEffect(() => {
-    loadBadges();
-    loadBadgeProgress();
-  }, [userId]);
-
-  const loadBadges = async () => {
+  const loadBadges = useCallback(async () => {
     try {
       // Load all badges with user's earned status
       const { data: badgesData, error: badgesError } = await supabase
@@ -94,9 +89,9 @@ function FuturisticBadgeCollection({ userId }: FuturisticBadgeCollectionProps) {
     } catch (error) {
       console.error('Error loading badges:', error);
     }
-  };
+  }, [userId]);
 
-  const loadBadgeProgress = async () => {
+  const loadBadgeProgress = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .rpc('get_badge_progress', { user_id: userId });
@@ -111,7 +106,12 @@ function FuturisticBadgeCollection({ userId }: FuturisticBadgeCollectionProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadBadges();
+    loadBadgeProgress();
+  }, [userId, loadBadges, loadBadgeProgress]);
 
   const categories = ['all', ...Array.from(new Set(badges.map(badge => badge.category)))];
 

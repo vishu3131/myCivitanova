@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSidebar } from "./SidebarContext";
 import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 import { User, Settings, LogOut, Shield } from "lucide-react";
@@ -99,15 +100,19 @@ const AppHeader: React.FC = () => {
           </button>
 
           <Link href="/" className="lg:hidden">
-            <img
+            <Image
               className="dark:hidden"
-              src="./images/logo/logo.svg"
+              src="/images/logo/logo.svg"
               alt="Logo"
+              width={100}
+              height={32}
             />
-            <img
+            <Image
               className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
+              src="/images/logo/logo-dark.svg"
               alt="Logo"
+              width={100}
+              height={32}
             />
           </Link>
 

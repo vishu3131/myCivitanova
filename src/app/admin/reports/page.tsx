@@ -1,25 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/utils/supabase/client';
 import { motion } from 'framer-motion';
-import {
-  Search,
-  Filter,
-  Eye,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  MapPin,
-  User,
-  Calendar,
-  MessageSquare,
-  Phone,
-  Mail,
-  ExternalLink,
-  Download,
-  RefreshCw
-} from 'lucide-react';
+import { Clock, RefreshCw, CheckCircle, AlertTriangle, Search, ChevronDown, X, Download, MapPin, Eye, ExternalLink } from 'lucide-react';
 
 interface CityReport {
   id: string;
@@ -90,12 +74,7 @@ const AdminReportsPage = () => {
     rejected: { label: 'Rifiutato', color: 'bg-red-100 text-red-800', icon: AlertTriangle }
   };
 
-  useEffect(() => {
-    loadReports();
-    loadStats();
-  }, [filters]);
-
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -122,43 +101,46 @@ const AdminReportsPage = () => {
         query = query.eq('urgency', filters.urgency);
       }
       if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%`);
+        query = query.ilike('title', `%${filters.search}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
       setReports(data || []);
     } catch (error) {
-      console.error('Errore caricamento segnalazioni:', error);
+      console.error('Errore nel caricamento delle segnalazioni:', error);
+      setReports([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('city_reports')
-        .select('status');
+        .select('*', { count: 'exact', head: true });
 
       if (error) throw error;
+      setTotalReports(count || 0);
 
-      const stats = {
-        total: data?.length || 0,
-        pending: data?.filter(r => r.status === 'pending').length || 0,
-        in_progress: data?.filter(r => r.status === 'in_progress').length || 0,
-        resolved: data?.filter(r => r.status === 'resolved').length || 0,
-        rejected: data?.filter(r => r.status === 'rejected').length || 0
-      };
+      // Calcola le altre statistiche
+      const { data: statsData, error: statsError } = await supabase.rpc('get_reports_stats');
+      if (statsError) throw statsError;
+      setStats(statsData);
 
-      setStats(stats);
     } catch (error) {
-      console.error('Errore caricamento statistiche:', error);
+      console.error('Errore nel caricamento delle statistiche:', error);
     }
-  };
+  }, []);
 
-  const updateReportStatus = async (reportId: string, newStatus: string, notes?: string) => {
+  useEffect(() => {
+    loadReports();
+    loadStats();
+  }, [loadReports, loadStats]);
+
+  const handleFilterChange = (filterName: string, value: string) => {
     try {
       const updateData: any = {
         status: newStatus,

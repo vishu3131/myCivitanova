@@ -15,22 +15,23 @@ import {
 import { ListingExpanded, ListingReview, MarketplaceConversation } from "@/types/marketplace";
 import FavoriteButton from "@/components/marketplace/FavoriteButton";
 import ReviewSection from "@/components/marketplace/ReviewSection";
+import Image from "next/image";
 
 function SafeImage({ src, alt, className = "" }: { src?: string; alt: string; className?: string }) {
   const [error, setError] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
 
   if (error || !src) {
     return <div className={`bg-white/10 flex items-center justify-center ${className}`}>📷</div>;
   }
 
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
+      layout="fill"
+      objectFit="cover"
       className={className}
       onError={() => setError(true)}
-      onLoad={() => setLoading(false)}
     />
   );
 }
@@ -49,13 +50,7 @@ export default function ListingDetailPage() {
   const [contactMessage, setContactMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  useEffect(() => {
-    if (listingId) {
-      loadListingData();
-    }
-  }, [listingId]);
-
-  const loadListingData = async () => {
+  const loadListingData = React.useCallback(async () => {
     try {
       setLoading(true);
       const [listingData, reviewsData] = await Promise.all([
@@ -67,19 +62,18 @@ export default function ListingDetailPage() {
       setReviews(reviewsData);
     } catch (error) {
       console.error('Error loading listing:', error);
-      toast.error('Errore nel caricamento dell\'annuncio');
+      toast.error("Impossibile caricare i dettagli dell'annuncio.");
       router.push('/marketplace');
     } finally {
       setLoading(false);
     }
-  };
+  }, [listingId, router]);
 
-  const formatPrice = (listing: ListingExpanded) => {
-    if (!listing.price_amount) return listing.price_type === 'free' ? 'Gratis' : 'Su richiesta';
-    const currency = listing.price_currency === 'EUR' ? '€' : listing.price_currency || '€';
-    const suffix = listing.price_type === 'hourly' ? '/h' : '';
-    return `${listing.price_amount}${currency}${suffix}`;
-  };
+  useEffect(() => {
+    if (listingId) {
+      loadListingData();
+    }
+  }, [listingId, loadListingData]);
 
   const handleContactSeller = async () => {
     if (!user) {
@@ -220,7 +214,7 @@ export default function ListingDetailPage() {
                     <button
                       key={image.id}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
+                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
                         index === selectedImageIndex ? 'border-accent' : 'border-white/20'
                       }`}
                     >

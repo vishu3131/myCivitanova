@@ -77,7 +77,7 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
       );
     }, SLIDE_MS);
     return () => clearInterval(id);
-  }, [isPaused]);
+  }, [isPaused, muralImages.length]);
 
   // Pause autoplay when tab is hidden
   useEffect(() => {

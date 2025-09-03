@@ -101,7 +101,7 @@ export default function DonationForm({
   const renderAmountStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-xl font-bold text-white mb-2">Scegli l'importo</h3>
+        <h3 className="text-xl font-bold text-white mb-2">Scegli l&apos;importo</h3>
         <p className="text-white/70">Quanto vuoi donare per {campaignTitle}?</p>
       </div>
 
@@ -253,7 +253,7 @@ export default function DonationForm({
             <div className="text-white font-medium">{donorName}</div>
             <div className="text-white/60">{donorEmail}</div>
             {message && (
-              <div className="text-white/70 text-sm mt-2 italic">"{message}"</div>
+              <div className="text-white/70 text-sm mt-2 italic">&quot;{message}&quot;</div>
             )}
           </div>
         </div>

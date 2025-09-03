@@ -56,22 +56,12 @@ const PoiManagement = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this POI?')) {
-      try {
-        const response = await fetch('/api/pois', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete POI');
-        }
-        fetchPois(); // Refresh list
-      } catch (err: any) {
-        setError(err.message);
-      }
-    }
+    showConfirmationModal({
+      title: 'Conferma Eliminazione',
+      content: 'Sei sicuro di voler eliminare questo POI? L\'azione è irreversibile.',
+      confirmText: 'Elimina',
+      cancelText: 'Annulla',
+    });
   };
 
   const handleSave = async (formData: Omit<Poi, 'id' | 'position' | 'latitude' | 'longitude'> & { id?: string, latitude: number, longitude: number }) => {
@@ -240,7 +230,7 @@ const PoiFormModal: React.FC<PoiFormModalProps> = ({ poi, onClose, onSave }) => 
             <h3 className="text-lg font-semibold mb-3 text-gray-700">Configurazione AR</h3>
             <input name="audio_url" value={formData.audio_url} onChange={handleChange} placeholder="URL Audio per AR (opzionale)" className="w-full p-2 border rounded mb-2" />
             <input name="icon_3d_url" value={formData.icon_3d_url} onChange={handleChange} placeholder="URL Icona 3D per AR (opzionale)" className="w-full p-2 border rounded" />
-            <p className="text-sm text-gray-500 mt-2">Questi campi sono utilizzati per l'esperienza AR. L'audio verrà riprodotto quando l'utente interagisce con il POI in AR.</p>
+                        <p className="text-sm text-gray-500 mt-2">Questi campi sono utilizzati per l&apos;esperienza AR. L&apos;audio verrà riprodotto quando l&apos;utente interagisce con il POI in AR.</p>
           </div>
           
           <div className="flex space-x-4">

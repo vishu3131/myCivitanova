@@ -9,8 +9,6 @@ import { TouristSpotWidget } from './TouristSpotWidget';
 import { BeachWidget } from './BeachWidget';
 import { XPWidget } from './XPWidget';
 import DailyXPClaim from './DailyXPClaim';
-import ReportModal from './CommunityReportModal';
-import CityReportModal from './CityReportModal';
 import { FullScreenLoader } from './LoadingSpinner';
 import { WasteCollectionWidget } from './WasteCollectionWidget';
 import PureNeonMobileWidget from './PureNeonMobileWidget';
@@ -21,14 +19,12 @@ import TreasureHuntWidget from './TreasureHuntWidget';
 import FundraisingWidget from './FundraisingWidget';
 import dynamic from 'next/dynamic';
 import HomeTutorial, { isHomeTutorialHidden } from './HomeTutorial'; // Import HomeTutorial
-import { SearchModal } from './SearchModal';
 import { PullToRefresh } from './PullToRefresh';
 import { NewsCarousel } from './NewsCarousel';
 import { WeatherWidget } from './WeatherWidget';
 import EventsCarousel from './EventsCarousel';
 import LazyRender from './LazyRender';
 import TutorialDebugOverlay from './TutorialDebugOverlay';
-import LeaderboardWidget from './LeaderboardWidget';
 
 // Lazy-loaded components for performance
 const DynamicMarketplaceWidget = dynamic(() => import('./MarketplaceWidget'), {
@@ -54,6 +50,26 @@ const DynamicSimpleBadgeSystem = dynamic(() => import('./SimpleBadgeSystem').the
   loading: () => (
     <div className="h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
   ),
+});
+
+// Aggiunta: import dinamici per alleggerire il bundle iniziale
+const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[180px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
+  ),
+});
+
+const DynamicSearchModal = dynamic(() => import('./SearchModal').then(m => m.SearchModal), {
+  ssr: false,
+});
+
+const DynamicReportModal = dynamic(() => import('./CommunityReportModal'), {
+  ssr: false,
+});
+
+const DynamicCityReportModal = dynamic(() => import('./CityReportModal'), {
+  ssr: false,
 });
 
 // Reusable Section component with optional collapsible behavior
@@ -538,7 +554,7 @@ export function MobileHomeScreen() {
                 <Link href="/classifica" className="text-xs text-white/70 hover:text-white underline">Vedi tutto</Link>
               </div>
               <LazyRender fallback={<div className="h-[180px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
-                <LeaderboardWidget 
+                <DynamicLeaderboardWidget 
                   userId={currentUserId || undefined}
                   limit={5}
                   showTitle={false}
@@ -616,8 +632,10 @@ export function MobileHomeScreen() {
           </div>
         </Section>
 
-        {/* Modals */}
-        <ReportModal isOpen={showReport} onClose={() => setShowReport(false)} onSubmit={() => setShowReport(false)} />
+        {/* Modals - Rendering condizionale */}
+        {showReport && (
+          <DynamicReportModal isOpen={showReport} onClose={() => setShowReport(false)} onSubmit={() => setShowReport(false)} />
+        )}
 
         {/* Badge System Modal */}
         {showBadges && (
@@ -1700,16 +1718,18 @@ export function MobileHomeScreen() {
       />
 
       {/* Search Modal */}
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onSearch={(q) => {
-          setIsSearchOpen(false);
-          if (typeof window !== 'undefined') {
-            window.location.href = `/explore?query=${encodeURIComponent(q)}`;
-          }
-        }}
-      />
+      {isSearchOpen ? (
+        <DynamicSearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          onSearch={(q) => {
+            setIsSearchOpen(false);
+            if (typeof window !== 'undefined') {
+              window.location.href = `/explore?query=${encodeURIComponent(q)}`;
+            }
+          }}
+        />
+      ) : null}
 
       {/* Debug Overlay */}
       <TutorialDebugOverlay
@@ -1718,15 +1738,19 @@ export function MobileHomeScreen() {
       />
 
       {/* Report Modals */}
-      <ReportModal
-        isOpen={showReport}
-        onClose={() => setShowReport(false)}
-      />
+      {showReport ? (
+        <DynamicReportModal
+          isOpen={showReport}
+          onClose={() => setShowReport(false)}
+        />
+      ) : null}
       
-      <CityReportModal
-        isOpen={showCityReport}
-        onClose={() => setShowCityReport(false)}
-      />
+      {showCityReport ? (
+        <DynamicCityReportModal
+          isOpen={showCityReport}
+          onClose={() => setShowCityReport(false)}
+        />
+      ) : null}
     </div>
   );
 }

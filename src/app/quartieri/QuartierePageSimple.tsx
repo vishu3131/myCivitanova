@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Quartiere } from '../../data/quartieriData';
+import Image from 'next/image';
 
 interface QuartierePageSimpleProps {
   quartiereData: Quartiere[];
@@ -46,9 +47,11 @@ const QuartierePageSimple: React.FC<QuartierePageSimpleProps> = ({ quartiereData
                   : 'border-gray-600 hover:border-gray-500'
               }`}
             >
-              <img
+              <Image
                 src={quartiere.image}
                 alt={quartiere.name}
+                width={500} // Aggiungi una larghezza appropriata
+                height={300} // Aggiungi un'altezza appropriata
                 className="w-full h-32 object-cover"
               />
               <div className="p-4">

@@ -23,6 +23,8 @@ import {
   Star,
 } from 'lucide-react';
 
+import { artworks as artworksData } from '@/data/artworks';
+
 interface ArtworkData {
   id: number;
   title: string;
@@ -42,206 +44,9 @@ const SLIDE_MS = 5000; // leggermente più lento per migliore leggibilità
 const SWIPE_THRESHOLD = 40; // px
 
 export default function ArtePage() {
-  // Dataset esistente (ottimizzato per UI)
-  const artworks: ArtworkData[] = [
-    {
-      id: 1,
-      title: "Onde del Mare Adriatico",
-      artist: "Marco Rossi",
-      year: "2023",
-      location: "Via del Porto, 15",
-      description:
-        "Un murale che cattura l'essenza del mare Adriatico con onde dinamiche e colori vivaci che cambiano con la luce del giorno.",
-      image: "/murales/mural-1.jpg",
-      category: "murale",
-      likes: 142,
-      views: 1205,
-      coordinates: [43.3102, 13.7343],
-      tags: ["mare", "onde", "blu", "dinamico"],
-    },
-    {
-      id: 2,
-      title: "Memoria Storica",
-      artist: "Elena Bianchi",
-      year: "2022",
-      location: "Piazza XX Settembre",
-      description:
-        "Un'opera che racconta la storia di Civitanova attraverso simboli e figure che rappresentano le diverse epoche della città.",
-      image: "/murales/mural-2.jpg",
-      category: "murale",
-      likes: 98,
-      views: 856,
-      coordinates: [43.3089, 13.7356],
-      tags: ["storia", "memoria", "tradizione", "cultura"],
-    },
-    {
-      id: 3,
-      title: "Giardino Urbano",
-      artist: "Luca Verdi",
-      year: "2023",
-      location: "Via Roma, 42",
-      description:
-        "Una celebrazione della natura urbana con fiori, piante e animali che convivono armoniosamente nell'ambiente cittadino.",
-      image: "/murales/mural-3.jpg",
-      category: "murale",
-      likes: 167,
-      views: 1432,
-      coordinates: [43.3095, 13.7340],
-      tags: ["natura", "fiori", "verde", "armonia"],
-    },
-    {
-      id: 4,
-      title: "Ritmi della Città",
-      artist: "Sofia Neri",
-      year: "2024",
-      location: "Corso Umberto I, 28",
-      description:
-        "Un'interpretazione moderna della vita quotidiana civitanovese attraverso forme geometriche e colori contemporanei.",
-      image: "/murales/mural-4.jpg",
-      category: "murale",
-      likes: 203,
-      views: 1678,
-      coordinates: [43.3087, 13.7349],
-      tags: ["moderno", "geometrico", "vita", "contemporaneo"],
-    },
-    {
-      id: 5,
-      title: "Pescatori al Tramonto",
-      artist: "Antonio Blu",
-      year: "2022",
-      location: "Lungomare Sud, 8",
-      description:
-        "Un omaggio alla tradizione marinara di Civitanova con scene di pesca al tramonto sul mare Adriatico.",
-      image: "/murales/mural-5.jpg",
-      category: "murale",
-      likes: 189,
-      views: 1543,
-      coordinates: [43.3078, 13.7365],
-      tags: ["pesca", "tramonto", "tradizione", "mare"],
-    },
-    {
-      id: 6,
-      title: "Danza delle Stagioni",
-      artist: "Giulia Rosa",
-      year: "2023",
-      location: "Via Garibaldi, 33",
-      description:
-        "Un ciclo che rappresenta le quattro stagioni attraverso figure danzanti e elementi naturali in continua trasformazione.",
-      image: "/murales/mural-6.jpg",
-      category: "murale",
-      likes: 156,
-      views: 1289,
-      coordinates: [43.3092, 13.7352],
-      tags: ["stagioni", "danza", "trasformazione", "natura"],
-    },
-    {
-      id: 7,
-      title: "Futuro Sostenibile",
-      artist: "Marco Verde",
-      year: "2024",
-      location: "Via della Pace, 19",
-      description:
-        "Una visione del futuro sostenibile di Civitanova con energie rinnovabili e tecnologie eco-compatibili.",
-      image: "/murales/mural-7.jpg",
-      category: "murale",
-      likes: 234,
-      views: 1876,
-      coordinates: [43.3101, 13.7338],
-      tags: ["futuro", "sostenibile", "tecnologia", "eco"],
-    },
-    {
-      id: 8,
-      title: "Musica nelle Strade",
-      artist: "Davide Suono",
-      year: "2023",
-      location: "Via Mazzini, 7",
-      description:
-        "Un tributo alla musica di strada con strumenti, note musicali e figure di musicisti che animano la città.",
-      image: "/murales/mural-8.jpg",
-      category: "murale",
-      likes: 178,
-      views: 1367,
-      coordinates: [43.3088, 13.7344],
-      tags: ["musica", "strada", "strumenti", "arte"],
-    },
-    {
-      id: 9,
-      title: "Connessioni Digitali",
-      artist: "Anna Tech",
-      year: "2024",
-      location: "Via Cavour, 51",
-      description:
-        "Un'opera che esplora il tema della connettività digitale e delle relazioni umane nell'era moderna.",
-      image: "/murales/mural-9.jpg",
-      category: "murale",
-      likes: 145,
-      views: 1198,
-      coordinates: [43.3094, 13.7347],
-      tags: ["digitale", "connessioni", "moderno", "tecnologia"],
-    },
-    {
-      id: 10,
-      title: "Mercato dei Colori",
-      artist: "Carla Vivace",
-      year: "2022",
-      location: "Piazza del Mercato, 2",
-      description:
-        "Una celebrazione del mercato locale con frutta, verdura e prodotti tipici rappresentati in colori vivaci.",
-      image: "/murales/mural-10.jpg",
-      category: "murale",
-      likes: 167,
-      views: 1423,
-      coordinates: [43.3086, 13.7341],
-      tags: ["mercato", "colori", "prodotti", "locale"],
-    },
-    {
-      id: 11,
-      title: "Volo di Libertà",
-      artist: "Roberto Cielo",
-      year: "2023",
-      location: "Via Leopardi, 14",
-      description:
-        "Uccelli in volo che simboleggiano la libertà e l'aspirazione verso nuovi orizzonti per la città.",
-      image: "/murales/mural-11.jpg",
-      category: "murale",
-      likes: 192,
-      views: 1567,
-      coordinates: [43.3097, 13.7355],
-      tags: ["libertà", "volo", "uccelli", "orizzonti"],
-    },
-    {
-      id: 12,
-      title: "Radici e Crescita",
-      artist: "Francesca Terra",
-      year: "2024",
-      location: "Via Dante, 26",
-      description:
-        "Un albero maestoso che rappresenta le radici storiche di Civitanova e la sua crescita verso il futuro.",
-      image: "/murales/mural-12.jpg",
-      category: "murale",
-      likes: 211,
-      views: 1734,
-      coordinates: [43.3091, 13.7348],
-      tags: ["radici", "crescita", "albero", "futuro"],
-    },
-    {
-      id: 13,
-      title: "Riflessi Urbani",
-      artist: "Matteo Specchio",
-      year: "2023",
-      location: "Via Verdi, 39",
-      description:
-        "Giochi di riflessi e prospettive che mostrano la città da angolazioni inaspettate e suggestive.",
-      image: "/murales/mural-13.jpg",
-      category: "murale",
-      likes: 158,
-      views: 1312,
-      coordinates: [43.3093, 13.7351],
-      tags: ["riflessi", "prospettive", "urbano", "suggestivo"],
-    },
-  ];
+  const artworks = useMemo(() => artworksData, []);
 
-  // UI State
+  const [isClient, setIsClient] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [viewMode, setViewMode] = useState<'carousel' | 'grid'>(() => (typeof window !== 'undefined' ? (localStorage.getItem('arte_view_mode') as 'carousel' | 'grid') || 'carousel' : 'carousel'));
   const [selectedCategory, setSelectedCategory] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('arte_category') || 'all' : 'all'));
@@ -289,7 +94,7 @@ export default function ArtePage() {
       counts[c] = artworks.filter((a) => a.category === (c as ArtworkData['category'])).length;
     }
     return counts;
-  }, [artworks.length]);
+  }, [artworks]);
 
   // Filtro opere (memoizzato per performance)
   const filteredArtworks = useMemo(() => {
@@ -309,8 +114,11 @@ export default function ArtePage() {
       setCurrentSlide(0);
       return;
     }
-    setCurrentSlide((prev) => Math.min(prev, filteredArtworks.length - 1));
-  }, [filteredArtworks.length]);
+    setCurrentSlide((prev) => Math.max(0, Math.min(prev, filteredArtworks.length - 1)));
+    if (filteredArtworks.length > 0 && currentSlide >= filteredArtworks.length) {
+      setCurrentSlide(0);
+    }
+  }, [currentSlide, filteredArtworks.length]);
 
   // Auto-play: preferenze "reduce motion" e tab visibility
   useEffect(() => {
@@ -364,7 +172,7 @@ export default function ArtePage() {
       const found = artworks.find((a) => a.id === id);
       if (found) setSelectedArtwork(found);
     }
-  }, []);
+  }, [artworks]);
 
   // Keyboard navigation (solo carousel attivo)
   useEffect(() => {
@@ -383,6 +191,7 @@ export default function ArtePage() {
         setIsAutoPlaying((p) => !p);
       }
     };
+
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [viewMode, filteredArtworks.length]);

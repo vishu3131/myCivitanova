@@ -30,7 +30,7 @@ export default function SponsoredActivitiesWidget({
           <div className="text-white/80 text-xs leading-snug">
             <div className="font-semibold text-white text-sm mb-1">Attività Sponsorizzate</div>
             <p className="opacity-80">
-              Qui verrà visualizzata un'anteprima delle attività sponsorizzate di Civitanova.
+              Qui verrà visualizzata un&apos;anteprima delle attività sponsorizzate di Civitanova.
             </p>
           </div>
         )}

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Image, Film, PlusSquare, Trash2, Edit, Loader } from 'lucide-react';
+import { Image as ImageIcon, Film, PlusSquare, Trash2, Edit, Loader } from 'lucide-react';
 import { SiteImage, SiteImageSection } from '@/lib/database.ts';
+import Image from 'next/image';
 
 interface SiteImageSectionWithImages extends SiteImageSection {
   images: SiteImage[];
@@ -92,7 +93,7 @@ const SiteImageManagementPage = () => {
                 <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">{section.name}</h2>
                 <div className="flex items-center gap-2">
                   <span className={`badge ${section.type === 'carousel' ? 'badge-info' : 'badge-success'}`}>
-                    {section.type === 'carousel' ? <Film size={14} className="mr-1" /> : <Image size={14} className="mr-1" />}
+                    {section.type === 'carousel' ? <Film size={14} className="mr-1" /> : <ImageIcon size={14} className="mr-1" />}
                     {section.type}
                   </span>
                   <button className="btn btn-sm btn-ghost"><Edit size={14} /></button>
@@ -102,7 +103,7 @@ const SiteImageManagementPage = () => {
               <div className={`grid gap-4 ${section.type === 'carousel' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1'}`}>
                 {section.images.map(image => (
                   <div key={image.id} className="relative group">
-                    <img src={image.image_url} alt={image.alt_text || ''} className="w-full h-48 object-cover rounded-md" />
+                    <Image src={image.image_url} alt={image.alt_text || ''} width={800} height={600} className="w-full h-48 object-cover rounded-md" />
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button className="btn btn-sm btn-outline text-white"><Edit size={14} /> Cambia</button>
                       <button onClick={() => handleDeleteImage(image.id)} className="btn btn-sm btn-error"><Trash2 size={14} /></button>

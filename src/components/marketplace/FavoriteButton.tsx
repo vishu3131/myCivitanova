@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { toggleFavorite, checkIsFavorite } from '@/services/marketplace';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,20 +23,22 @@ export default function FavoriteButton({
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      checkFavoriteStatus();
-    }
-  }, [listingId, user]);
-
-  const checkFavoriteStatus = async () => {
+  const checkFavoriteStatus = useCallback(async () => {
     try {
       const favorite = await checkIsFavorite(listingId);
       setIsFavorite(favorite);
     } catch (error) {
       console.error('Error checking favorite status:', error);
     }
-  };
+  }, [listingId]);
+
+  useEffect(() => {
+    if (user) {
+      checkFavoriteStatus();
+    } else {
+      setIsFavorite(false);
+    }
+  }, [user, checkFavoriteStatus]);
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();

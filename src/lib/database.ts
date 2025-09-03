@@ -1,5 +1,5 @@
 // MyCivitanova - Database utilities and types
-import { supabase } from '@/utils/supabaseClient';
+import { supabase } from '../utils/supabaseClient';
 
 // Types per il database
 export interface Profile {
@@ -490,6 +490,60 @@ export class DatabaseService {
 
     if (error) throw error;
     return data as Event;
+  }
+
+  static async createEvent(event: Partial<Event>) {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .insert([event])
+        .select(`
+          *,
+          organizer:profiles(id, full_name, avatar_url)
+        `)
+        .single();
+
+      if (error) throw error;
+      return data as Event;
+    } catch (error) {
+      console.error('Error creating event:', error);
+      throw error;
+    }
+  }
+
+  static async updateEvent(id: string, updates: Partial<Event>) {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          organizer:profiles(id, full_name, avatar_url)
+        `)
+        .single();
+
+      if (error) throw error;
+      return data as Event;
+    } catch (error) {
+      console.error('Error updating event:', error);
+      throw error;
+    }
+  }
+
+  static async deleteEvent(id: string) {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      throw error;
+    }
   }
 
   // Users functions

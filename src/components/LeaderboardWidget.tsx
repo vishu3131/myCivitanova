@@ -56,11 +56,7 @@ export default function LeaderboardWidget({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadLeaderboard();
-  }, [limit]);
-
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -112,7 +108,11 @@ export default function LeaderboardWidget({
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit]);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

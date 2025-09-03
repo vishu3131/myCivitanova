@@ -96,7 +96,6 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     }
   }, [userId]);
 
-  // Aggiungi XP
   const addXP = useCallback(async (
     activityType: string, 
     amount: number, 
@@ -161,7 +160,7 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     return null;
   }, [userId, loadUserStats]);
 
-  // Login giornaliero
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const dailyLogin = useCallback(async () => {
     if (!userId) return null;
     
@@ -218,6 +217,15 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     return null;
   }, [userId, loadUserStats]);
 
+  useEffect(() => {
+    if (userId) {
+      loadUserStats();
+      if (options?.autoDailyLogin !== false) {
+        dailyLogin(); // Automatico al caricamento
+      }
+    }
+  }, [userId, loadUserStats, dailyLogin, options?.autoDailyLogin]);
+
   // Azioni rapide predefinite
   const quickActions = {
     share: () => addXP('share_content', 5, { source: 'quick_action' }),
@@ -228,15 +236,6 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     survey: () => addXP('survey_complete', 40, { source: 'quick_action' })
   };
 
-  // Carica statistiche all'inizializzazione
-  useEffect(() => {
-    if (userId) {
-      loadUserStats();
-      if (options?.autoDailyLogin !== false) {
-        dailyLogin(); // Automatico al caricamento
-      }
-    }
-  }, [userId, loadUserStats, dailyLogin]);
 
   return {
     userStats,
