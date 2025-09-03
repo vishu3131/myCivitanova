@@ -5,7 +5,16 @@ const nextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  
+  // Ottimizzazioni per le performance
+  compress: true, // Abilita la compressione gzip
+  
+  // Ottimizzazioni per le immagini
   images: {
+    formats: ['image/webp', 'image/avif'], // Formati moderni per immagini più leggere
+    minimumCacheTTL: 60 * 60 * 24 * 30, // Cache delle immagini per 30 giorni
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -117,6 +126,62 @@ const nextConfig = {
     // Evita che errori di type-checking blocchino la build per ora
     ignoreBuildErrors: true,
   },
+  
+  // Ottimizzazioni per il bundle
+  experimental: {
+    optimizeCss: true, // Ottimizza il CSS
+    optimizePackageImports: ['lucide-react', '@heroicons/react'], // Ottimizza le importazioni
+  },
+  
+  // Configurazione per il caching
+  onDemandEntries: {
+    // Periodo di mantenimento delle pagine in memoria (in ms)
+    maxInactiveAge: 25 * 1000,
+    // Numero di pagine da mantenere simultaneamente
+    pagesBufferLength: 2,
+  },
+  
+  // Headers per il caching
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+  
   // Rimossa configurazione webpack personalizzata per CSS
   // Next.js gestisce automaticamente CSS e PostCSS
 };

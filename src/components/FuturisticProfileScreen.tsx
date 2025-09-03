@@ -2,10 +2,31 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+// Hook per rilevazione mobile dinamica
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Controllo iniziale
+    checkIsMobile();
+    
+    // Listener per ridimensionamento
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+  
+  return isMobile;
+};
 import {
   User,
   Settings,
@@ -61,7 +82,6 @@ import { FuturisticUserStats } from './FuturisticUserStats';
 import FuturisticBadgeCollection from './FuturisticBadgeCollection';
 import FuturisticAdvancedSettings from './FuturisticAdvancedSettings';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'react-hot-toast'; // Added
 
 
 // Interfaces
@@ -126,14 +146,16 @@ interface FuturisticProfileScreenProps {
 
 export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProps) {
   const { user, loading, isAuthenticated } = useAuth();
+  const isMobile = useIsMobile();
+  
   // State management
   const [profileUser, setProfileUser] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentBadges, setRecentBadges] = useState<Badge[]>([]);
-  const [badges, setBadges] = useState<Badge[]>([]); // Added
-  const [xpHistory, setXpHistory] = useState<any[]>([]); // Added
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [xpHistory, setXpHistory] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true); // Added
+  const [profileLoading, setProfileLoading] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'badges' | 'settings'>('overview');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -141,6 +163,70 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [xpAnimation, setXpAnimation] = useState<number | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+
+  // Validation functions
+  const validateUserData = (userData: any) => {
+    if (!userData) return null;
+    
+    return {
+      ...userData,
+      full_name: userData.full_name || 'Utente',
+      username: userData.username || '',
+      bio: userData.bio || '',
+      phone: userData.phone || '',
+      address: userData.address || '',
+      date_of_birth: userData.date_of_birth || '',
+      role: userData.role || 'user',
+      is_verified: Boolean(userData.is_verified),
+      is_active: Boolean(userData.is_active),
+      privacy_settings: {
+        profile_public: Boolean(userData.privacy_settings?.profile_public ?? true),
+        email_public: Boolean(userData.privacy_settings?.email_public ?? false),
+        phone_public: Boolean(userData.privacy_settings?.phone_public ?? false)
+      },
+      notification_settings: {
+        email_notifications: Boolean(userData.notification_settings?.email_notifications ?? true),
+        push_notifications: Boolean(userData.notification_settings?.push_notifications ?? true),
+        sms_notifications: Boolean(userData.notification_settings?.sms_notifications ?? false)
+      }
+    };
+  };
+
+  const validateUserStats = (statsData: any) => {
+    if (!statsData) return null;
+    
+    return {
+      total_xp: Math.max(0, Number(statsData.total_xp) || 0),
+      current_level: Math.max(1, Number(statsData.current_level) || 1),
+      level_progress: Math.min(100, Math.max(0, Number(statsData.level_progress) || 0)),
+      level_title: statsData.level_title || 'Principiante',
+      badges_count: Math.max(0, Number(statsData.badges_count) || 0),
+      xp_to_next_level: Math.max(0, Number(statsData.xp_to_next_level) || 100),
+      weekly_xp: Math.max(0, Number(statsData.weekly_xp) || 0),
+      monthly_xp: Math.max(0, Number(statsData.monthly_xp) || 0),
+      rank_position: Math.max(1, Number(statsData.rank_position) || 1),
+      activities_completed: Math.max(0, Number(statsData.activities_completed) || 0),
+      streak_days: Math.max(0, Number(statsData.streak_days) || 0)
+    };
+  };
+
+  const validateBadges = (badgesData: any[]) => {
+    if (!Array.isArray(badgesData)) return [];
+    
+    return badgesData.filter(badge => 
+      badge && 
+      typeof badge.id === 'string' && 
+      typeof badge.name === 'string' && 
+      typeof badge.title === 'string'
+    ).map(badge => ({
+      ...badge,
+      description: badge.description || '',
+      icon: badge.icon || '🏆',
+      color: badge.color || '#3B82F6',
+      rarity: ['common', 'rare', 'epic', 'legendary'].includes(badge.rarity) ? badge.rarity : 'common'
+    }));
+  };
+
   const formatBirthDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -173,22 +259,38 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   // Load user statistics
   const loadUserStats = useCallback(async () => {
     if (!user?.id) return;
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.direct
         .from('user_stats')
         .select('*')
         .eq('user_id', user.id)
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading user stats:', error);
+        // Create default stats if none exist
+        const defaultStats: UserStats = {
+          total_xp: 0,
+          current_level: 1,
+          level_progress: 0,
+          level_title: 'Principiante',
+          badges_count: 0,
+          xp_to_next_level: 100,
+          weekly_xp: 0,
+          monthly_xp: 0,
+          rank_position: 999,
+          activities_completed: 0,
+          streak_days: 0
+        };
+        setUserStats(defaultStats);
+        return;
+      }
       if (data) {
-        setUserStats(data);
+        const validatedStats = validateUserStats(data);
+        setUserStats(validatedStats);
       }
     } catch (error) {
       console.error('Error loading user stats:', error);
       toast.error('Errore nel caricamento delle statistiche utente.');
-    } finally {
-      setIsLoading(false);
     }
   }, [user?.id]);
 
@@ -201,17 +303,34 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
         .eq('user_id', user.id)
         .order('earned_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading badges:', error);
+        toast.error('Errore nel caricamento dei badge.');
+        setBadges([]);
+        setRecentBadges([]);
+        return;
+      }
 
-      const earnedBadges = data.map(ub => ({
-        ...ub.badges,
-        earned_at: ub.earned_at,
-      }));
+      if (data && Array.isArray(data)) {
+        const earnedBadges = data
+          .filter(ub => ub.badges) // Filter out badges that don't exist
+          .map(ub => ({
+            ...ub.badges,
+            earned_at: ub.earned_at,
+          }));
 
-      setBadges(earnedBadges);
-      setRecentBadges(earnedBadges.slice(0, 3));
+        const validatedBadges = validateBadges(earnedBadges);
+        setBadges(validatedBadges);
+        setRecentBadges(validatedBadges.slice(0, 3));
+      } else {
+        setBadges([]);
+        setRecentBadges([]);
+      }
     } catch (error) {
-      console.error('Error loading badges:', error);
+      console.error('Unexpected error loading badges:', error);
+      toast.error('Errore imprevisto nel caricamento dei badge.');
+      setBadges([]);
+      setRecentBadges([]);
     }
   }, [user?.id]);
 
@@ -219,57 +338,100 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   const loadUserProfile = useCallback(async () => {
     if (!user?.id) return;
     
+    setProfileLoading(true);
     try {
       // Check local cache first
       const cachedProfile = localStorage.getItem(`profile_${user.id}`);
       
       if (cachedProfile) {
-        const parsedProfile = JSON.parse(cachedProfile);
-        setProfileUser(parsedProfile.data);
-        setLastUpdated(new Date(parsedProfile.timestamp).toLocaleString());
-        
-        // Update in background
-        setTimeout(loadFreshProfile, 0);
-        return;
+        try {
+          const parsedProfile = JSON.parse(cachedProfile);
+          const cacheTimestamp = new Date(parsedProfile.timestamp);
+          const now = new Date();
+          const cacheAge = (now.getTime() - cacheTimestamp.getTime()) / 1000 / 60; // in minutes
+
+          if (cacheAge < 60 && parsedProfile.data) { // Cache is valid for 60 minutes
+            setProfileUser(parsedProfile.data);
+            setLastUpdated(new Date(parsedProfile.timestamp).toLocaleString());
+            
+            // Load additional data
+            await Promise.all([
+              loadUserStats(),
+              loadBadges()
+            ]);
+            
+            // Update in background if cache is older than 5 minutes
+            if (cacheAge > 5) {
+              setTimeout(loadFreshProfile, 0);
+            }
+            setProfileLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to parse cached profile:', e);
+          localStorage.removeItem(`profile_${user.id}`);
+        }
       }
       
       await loadFreshProfile();
     } catch (error) {
       console.error('Error loading user data:', error);
+      toast.error('Errore nel caricamento del profilo.');
+    } finally {
+      setProfileLoading(false);
     }
     
     async function loadFreshProfile() {
-      // Get profile data from database
-      const { data: profileData, error } = await supabase.direct
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      try {
+        // Get profile data from database
+        const { data: profileData, error } = await supabase.direct
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-      if (error) {
-        console.error('Error loading profile:', error);
-        return;
-      }
-      
-      // Save to cache with timestamp
-      const profileCache = {
-        data: profileData,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileCache));
-      
-      setProfileUser(profileData);
-      setLastUpdated(new Date().toLocaleString());
-      await loadUserStats();
-      await loadBadges();
-      
-      // Daily login XP
-      if (dailyLogin) {
-        const result = await dailyLogin();
-        if (result?.xp_earned > 0) {
-          setXpAnimation(result.xp_earned);
-          setTimeout(() => setXpAnimation(null), 3000);
+        if (error) {
+          console.error('Error loading profile:', error);
+          toast.error('Impossibile caricare il profilo dal database.');
+          return;
         }
+        
+        if (profileData) {
+          // Validate profile data using dedicated function
+          const validatedProfile = validateUserData(profileData);
+          
+          // Save to cache with timestamp
+          const profileCache = {
+            data: validatedProfile,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileCache));
+          
+          setProfileUser(validatedProfile);
+          setLastUpdated(new Date().toLocaleString());
+          
+          // Load additional data
+          await Promise.all([
+            loadUserStats(),
+            loadBadges()
+          ]);
+          
+          // Daily login XP
+          if (dailyLogin) {
+            try {
+              const result = await dailyLogin();
+              if (result?.xp_earned > 0) {
+                setXpAnimation(result.xp_earned);
+                setTimeout(() => setXpAnimation(null), 3000);
+              }
+            } catch (error) {
+              console.error('Error with daily login:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in loadFreshProfile:', error);
+        toast.error('Errore nel caricamento dei dati del profilo.');
       }
     }
   }, [user?.id, dailyLogin, loadUserStats, loadBadges]);
@@ -292,58 +454,11 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   }, [user?.id]);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const session = await supabase.auth.getSession();
-      if (session.data.session) {
-        const userId = session.data.session.user.id;
-        const cachedProfile = localStorage.getItem(`profile_${userId}`);
-        
-        if (cachedProfile) {
-          try {
-            const parsed = JSON.parse(cachedProfile);
-            const cacheTimestamp = new Date(parsed.timestamp);
-            const now = new Date();
-            const cacheAge = (now.getTime() - cacheTimestamp.getTime()) / 1000 / 60; // in minutes
-
-            if (cacheAge < 60) { // Cache is valid for 60 minutes
-              setProfileUser(parsed.data);
-              setLastUpdated(new Date(parsed.timestamp).toLocaleString());
-              return;
-            }
-          } catch (e) {
-            console.error("Failed to parse cached profile", e);
-            localStorage.removeItem(`profile_${userId}`);
-          }
-        }
-        
-        // If no valid cache, fetch from DB
-        const { data: userProfile, error } = await supabase.direct
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        if (error) {
-          console.error('Error fetching profile:', error);
-          toast.error('Impossibile caricare il profilo.');
-        } else if (userProfile) {
-          const profileCache = {
-            data: userProfile,
-            timestamp: new Date().toISOString()
-          };
-          localStorage.setItem(`profile_${userId}`, JSON.stringify(profileCache));
-          setProfileUser(userProfile);
-          setLastUpdated(new Date().toLocaleString());
-        }
-      }
-    };
-
-    checkUser();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (_event === 'SIGNED_IN' && session?.user) {
-          checkUser();
+          // Use the centralized loadUserProfile function
+          loadUserProfile();
         }
         if (_event === 'SIGNED_OUT') {
           setProfileUser(null);
@@ -361,15 +476,21 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [user?.id]);
+  }, [loadUserProfile, user?.id]);
 
   useEffect(() => {
     if (user?.id) {
-      loadUserStats();
-      loadBadges();
+      loadUserProfile();
       loadXPHistory();
     }
-  }, [user?.id, loadUserStats, loadBadges, loadXPHistory]);
+  }, [user?.id, loadUserProfile, loadXPHistory]);
+
+  // Load profile when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      loadUserProfile();
+    }
+  }, [user?.id, loadUserProfile]);
 
   const handleLogout = async () => {
     try {
@@ -462,24 +583,24 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
               >
                 <button
                   onClick={() => setTheme('dark')}
-                  className={`p-2 rounded-full transition-all ${
-                    theme === 'dark' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white'
+                  className={`p-2 rounded-full transition-all touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 ${
+                    theme === 'dark' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:text-white active:bg-white/10'
                   }`}
                 >
                   <Moon className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setTheme('light')}
-                  className={`p-2 rounded-full transition-all ${
-                    theme === 'light' ? 'bg-yellow-500 text-white' : 'text-gray-400 hover:text-white'
+                  className={`p-2 rounded-full transition-all touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 ${
+                    theme === 'light' ? 'bg-yellow-500 text-white' : 'text-gray-400 hover:text-white active:bg-white/10'
                   }`}
                 >
                   <Sun className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setTheme('neon')}
-                  className={`p-2 rounded-full transition-all ${
-                    theme === 'neon' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'
+                  className={`p-2 rounded-full transition-all touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 ${
+                    theme === 'neon' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white active:bg-white/10'
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -792,7 +913,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.92 }}
                   onClick={() => setShowEditModal(true)}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] active:brightness-110"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] min-w-[44px] active:brightness-110 active:scale-95"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="text-sm sm:text-base">Modifica</span>
@@ -802,7 +923,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.92 }}
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] active:brightness-110"
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] min-w-[44px] active:brightness-110 active:scale-95"
                 >
                   <LogOut className="w-4 h-4" />
                   <span className="text-sm sm:text-base">Logout</span>
@@ -834,7 +955,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 min-w-0 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all touch-manipulation min-h-[44px] active:bg-white/10 ${
+                    className={`flex-1 min-w-0 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all touch-manipulation min-h-[44px] min-w-[44px] active:bg-white/10 active:scale-95 ${
                       activeTab === tab.id
                         ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1076,7 +1197,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
             >
               <h3 className="text-xl font-bold text-white mb-4">Cambia Avatar</h3>
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-cyan-400 transition-all cursor-pointer"
+                <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-cyan-400 transition-all cursor-pointer touch-manipulation min-h-[120px] active:bg-white/5"
                      onClick={() => document.getElementById('avatar-upload')?.click()}>
                   <Camera className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-gray-300 mb-2">Clicca per selezionare un&apos;immagine</p>
@@ -1136,7 +1257,7 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                   <button
                     onClick={() => setShowAvatarModal(false)}
                     disabled={avatarUploading}
-                    className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-medium hover:from-gray-500 hover:to-gray-600 transition-all disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-medium hover:from-gray-500 hover:to-gray-600 transition-all disabled:opacity-50 touch-manipulation min-h-[44px] active:scale-95"
                   >
                     Annulla
                   </button>
