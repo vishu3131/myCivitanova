@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/utils/supabaseClient'; // Ora utilizza Firebase tramite il wrapper
 
 export interface AuthUser {
@@ -9,10 +9,25 @@ export interface AuthUser {
 
 export type UserRole = 'user' | 'moderator' | 'admin' | 'staff' | 'guest';
 
-export function useAuthWithRole() {
+export function useAuthWithRole(allowedRoles?: UserRole | UserRole[]) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [role, setRole] = useState<UserRole>('guest');
   const [loading, setLoading] = useState(true);
+
+  // Helper per verificare i ruoli
+  const hasRole = useCallback(
+    (roles: UserRole | UserRole[]) => {
+      const list = Array.isArray(roles) ? roles : [roles];
+      return list.includes(role);
+    },
+    [role]
+  );
+
+  // Comodo flag di autorizzazione in base ai ruoli richiesti (se forniti)
+  const isAuthorized = useMemo(() => {
+    if (!allowedRoles) return true;
+    return hasRole(allowedRoles);
+  }, [allowedRoles, hasRole]);
 
   useEffect(() => {
     let subscription: any;
@@ -108,5 +123,5 @@ export function useAuthWithRole() {
     };
   }, []);
 
-  return { user, role, loading };
+  return { user, role, loading, hasRole, isAuthorized };
 }

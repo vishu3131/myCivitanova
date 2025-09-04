@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from './supabase';
+import { supabase } from '@/utils/supabaseClient';
 import { DatabaseService } from './database';
 import type { Profile, News, Event, Comment, SystemLog, CityReport } from './database';
 

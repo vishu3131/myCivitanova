@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { DatabaseService } from './database';
 
 // Interfaccia per gli elementi della cache

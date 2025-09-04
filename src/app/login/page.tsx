@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/utils/supabaseClient';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,11 +14,16 @@ export default function LoginPage() {
     username: '',
     phoneNumber: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
-  const { user } = useAuth();
+  const { 
+    user, 
+    loading, 
+    error, 
+    login, 
+    register, 
+    clearError 
+  } = useUnifiedAuth();
 
   // Redirect se già autenticato
   useEffect(() => {
@@ -34,104 +38,38 @@ export default function LoginPage() {
       ...prev,
       [name]: value
     }));
-    setError('');
-  };
-
-  const validateForm = () => {
-    if (!formData.email || !formData.password) {
-      setError('Email e password sono obbligatori');
-      return false;
+    if (error) {
+      clearError();
     }
-
-    if (!isLogin) {
-      if (formData.password.trim() !== formData.confirmPassword.trim()) {
-        setError('Le password non coincidono');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setError('La password deve essere di almeno 6 caratteri');
-        return false;
-      }
-      if (!formData.fullName.trim()) {
-        setError('Il nome completo è obbligatorio');
-        return false;
-      }
-      if (!formData.phoneNumber.trim()) {
-        setError('Il numero di telefono è obbligatorio');
-        return false;
-      }
-    }
-
-    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setError('');
     setSuccess('');
 
-    try {
-      if (isLogin) {
-        // Login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (error) throw error;
-
+    if (isLogin) {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
         setSuccess('Login effettuato con successo!');
-
-        // Wait for the auth session to be available before redirecting to home.
-        // This avoids a race where the app redirects before auth hooks have initialized.
-        const waitForSession = async (timeoutMs = 4000) => {
-          const start = Date.now();
-          while (Date.now() - start < timeoutMs) {
-            try {
-              const res = await supabase.auth.getSession();
-              if (res && res.data && res.data.session && res.data.session.user) {
-                return res.data.session;
-              }
-            } catch (e) {
-              // ignore and retry
-            }
-            await new Promise((r) => setTimeout(r, 200));
-          }
-          return null;
-        };
-
-        await waitForSession(4000);
         router.push('/');
-      } else {
-        // Registrazione
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName,
-              username: formData.username || formData.email.split('@')[0],
-              name: formData.fullName.split(' ')[0],
-              surname: formData.fullName.split(' ').slice(1).join(' '),
-              phone: formData.phoneNumber // Pass phone number within data
-            }
-          }
-        });
-
-        if (error) throw error;
-
-        setSuccess('Registrazione completata con successo! Controlla la tua email per la conferma.');
-        router.push('/auth/confirm-email'); // Reindirizza a una pagina di conferma email
       }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      setError(error.message || 'Si è verificato un errore');
-    } finally {
-      setLoading(false);
+    } else {
+      if (formData.password !== formData.confirmPassword) {
+        // Idealmente questo errore verrebbe dall'hook, ma per ora lo gestiamo qui
+        // per coerenza con la UI precedente.
+        return; 
+      }
+      const result = await register({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        username: formData.username,
+        phoneNumber: formData.phoneNumber
+      });
+      if (result.success) {
+        setSuccess('Registrazione completata! Controlla la tua email per la conferma.');
+        router.push('/auth/confirm-email');
+      }
     }
   };
 
@@ -145,7 +83,7 @@ export default function LoginPage() {
       username: '',
       phoneNumber: ''
     });
-    setError('');
+    clearError();
     setSuccess('');
   };
 

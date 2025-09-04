@@ -86,7 +86,7 @@ export default function AdminPage() {
   );
 
   // Hook ottimizzato per metriche admin
-  const { metrics, performance } = useOptimizedAdmin();
+  const { metrics, performance } = useOptimizedAdmin(['admin', 'moderator']);
 
   const checkDb = useCallback(async () => {
     setDbStatus((s) => ({ ...s, checking: true }));
@@ -153,16 +153,20 @@ export default function AdminPage() {
     }
   }, []);
 
-  const handleRefreshData = useCallback(() => {
-    refreshStats();
-    loadRecentActivity();
-    CacheHelpers.invalidateRelatedCache(['admin', 'statistics']);
-          }
-        });
-      } finally {
-        setDashboardLoading(false);
-      }
-    }, []);
+  const handleRefreshData = useCallback(async () => {
+    await Promise.all([
+      refreshStats(),
+      loadRecentActivity()
+    ]);
+  }, [refreshStats, loadRecentActivity]);
+
+  // Wrapper di caricamento dashboard richiamato dagli useEffect
+  const loadDashboardData = useCallback(async () => {
+    await Promise.all([
+      refreshStats(),
+      loadRecentActivity()
+    ]);
+  }, [refreshStats, loadRecentActivity]);
 
   // Carica dati dashboard
   useEffect(() => {

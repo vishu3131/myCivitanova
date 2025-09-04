@@ -187,30 +187,23 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         return result;
       }
     } catch (error) {
-      // Verifica se l'errore è effettivamente vuoto
-      const isEmptyError = !error || (typeof error === 'object' && Object.keys(error).length === 0);
-      
-      const errorInfo = {
-        errorType: typeof error,
-        errorString: error ? String(error) : 'Error is null/undefined',
-        errorMessage: error?.message || 'Nessun messaggio di errore',
-        errorCode: error?.code || 'Nessun codice errore',
-        errorDetails: error?.details || 'Nessun dettaglio',
-        isEmptyError: isEmptyError,
-        errorKeys: error && typeof error === 'object' ? Object.keys(error) : [],
-        userId: userId,
-        rpcFunction: 'daily_login_xp',
-        timestamp: new Date().toISOString(),
-        hasUserId: !!userId,
-        supabaseConnected: !!supabase,
-        directSupabaseClientConnected: !!supabase.direct
-      };
-      
-      // Log solo se l'errore non è vuoto
-      if (!isEmptyError) {
+      // Log solo se l'errore ha contenuto significativo (allineato con addXP)
+      if (error && (error.message || error.code || error.details)) {
+        const errorInfo = {
+          errorType: typeof error,
+          errorString: error ? String(error) : 'Error is null/undefined',
+          errorMessage: error?.message || 'Nessun messaggio di errore',
+          errorCode: error?.code || 'Nessun codice errore',
+          errorDetails: error?.details || 'Nessun dettaglio',
+          errorKeys: error && typeof error === 'object' ? Object.keys(error) : [],
+          userId: userId,
+          rpcFunction: 'daily_login_xp',
+          timestamp: new Date().toISOString(),
+          hasUserId: !!userId,
+          supabaseConnected: !!supabase,
+        };
         console.error('Errore login giornaliero - Info dettagliate:', errorInfo);
         console.error('Errore login giornaliero - Oggetto originale:', error);
-        console.error('Errore login giornaliero - JSON stringify:', JSON.stringify(error, null, 2));
       }
     }
     

@@ -8,9 +8,8 @@ import { useCache, CACHE_KEYS, CacheHelpers } from '@/lib/cache';
 import { OptimizedDatabaseService } from '@/lib/optimized-database';
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import { DatabaseTest } from '@/components/admin/DatabaseTest';
-import { supabase } from '@/lib/supabase';
-import { DatabaseService } from '@/lib/database';
-import { firebaseClient } from '@/lib/firebase-client';
+import { supabase } from '@/utils/supabaseClient';
+import { firebaseClient } from '@/utils/firebaseClient';
 
 // Lazy load dei componenti non critici
 const LazyAppStats = lazy(() => import('@/components/admin/AppStats'));

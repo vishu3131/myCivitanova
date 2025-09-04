@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/utils/supabaseServer';
 import admin from 'firebase-admin';
+import { verifyFirebaseIdToken } from '@/utils/firebaseAdmin';
+
+// Rate limiting semplice per IP (endpoint admin pesante)
+const ADMIN_RATE_LIMIT = 5;
+const ADMIN_WINDOW_MS = 60_000; // 1 minuto
+const adminIpHits: Map<string, { count: number; windowStart: number }> = new Map();
 
 // Inizializza Firebase Admin se non già fatto
 if (!admin.apps.length) {
@@ -210,14 +216,45 @@ async function syncAllUsers(): Promise<SyncStats> {
 
 export async function POST(request: Request) {
   try {
+    // Rate limit per IP
+    const ipHeader = request.headers.get('x-forwarded-for') || '';
+    const clientIp = ipHeader.split(',')[0]?.trim() || 'unknown';
+    const nowMs = Date.now();
+    const rec = adminIpHits.get(clientIp);
+    if (!rec || nowMs - rec.windowStart > ADMIN_WINDOW_MS) {
+      adminIpHits.set(clientIp, { count: 1, windowStart: nowMs });
+    } else {
+      rec.count += 1;
+      adminIpHits.set(clientIp, rec);
+      if (rec.count > ADMIN_RATE_LIMIT) {
+        const res = NextResponse.json({ error: 'Troppi tentativi, riprova più tardi' }, { status: 429 });
+        res.headers.set('Retry-After', '60');
+        return res;
+      }
+    }
+
     // Verifica che l'utente sia autenticato e abbia i permessi admin
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
       return NextResponse.json({ error: 'Token di autorizzazione mancante' }, { status: 401 });
     }
-    
-    // TODO: Aggiungere verifica del ruolo admin
-    
+    const idToken = authHeader.split(' ')[1];
+    const decoded = await verifyFirebaseIdToken(idToken);
+
+    const supabase = getSupabaseAdmin();
+    const { data: requesterProfile, error: requesterError } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('firebase_uid', decoded.uid)
+      .single();
+
+    if (requesterError || !requesterProfile) {
+      return NextResponse.json({ error: 'Accesso negato' }, { status: 403 });
+    }
+    if (requesterProfile.role !== 'admin') {
+      return NextResponse.json({ error: 'Permessi insufficienti' }, { status: 403 });
+    }
+
     console.log('🔄 Avvio sincronizzazione Firebase -> Supabase...');
     
     const startTime = Date.now();
@@ -243,10 +280,47 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Rate limit per IP (più permissivo per GET)
+    const ipHeader = request.headers.get('x-forwarded-for') || '';
+    const clientIp = ipHeader.split(',')[0]?.trim() || 'unknown';
+    const nowMs = Date.now();
+    const rec = adminIpHits.get(clientIp);
+    if (!rec || nowMs - rec.windowStart > ADMIN_WINDOW_MS) {
+      adminIpHits.set(clientIp, { count: 1, windowStart: nowMs });
+    } else {
+      rec.count += 1;
+      adminIpHits.set(clientIp, rec);
+      if (rec.count > ADMIN_RATE_LIMIT) {
+        const res = NextResponse.json({ error: 'Troppi tentativi, riprova più tardi' }, { status: 429 });
+        res.headers.set('Retry-After', '60');
+        return res;
+      }
+    }
+
+    // Verifica autenticazione e ruolo admin
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+      return NextResponse.json({ error: 'Token di autorizzazione mancante' }, { status: 401 });
+    }
+    const idToken = authHeader.split(' ')[1];
+    const decoded = await verifyFirebaseIdToken(idToken);
+
     const supabase = getSupabaseAdmin();
-    
+    const { data: requesterProfile, error: requesterError } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('firebase_uid', decoded.uid)
+      .single();
+
+    if (requesterError || !requesterProfile) {
+      return NextResponse.json({ error: 'Accesso negato' }, { status: 403 });
+    }
+    if (requesterProfile.role !== 'admin') {
+      return NextResponse.json({ error: 'Permessi insufficienti' }, { status: 403 });
+    }
+
     // Ottieni statistiche di sincronizzazione
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')

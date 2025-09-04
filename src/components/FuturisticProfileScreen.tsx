@@ -81,7 +81,7 @@ import { FuturisticEditProfileModal } from './FuturisticEditProfileModal';
 import { FuturisticUserStats } from './FuturisticUserStats';
 import FuturisticBadgeCollection from './FuturisticBadgeCollection';
 import FuturisticAdvancedSettings from './FuturisticAdvancedSettings';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 
 // Interfaces
@@ -145,7 +145,7 @@ interface FuturisticProfileScreenProps {
 }
 
 export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProps) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useUnifiedAuth();
   const isMobile = useIsMobile();
   
   // State management
@@ -494,26 +494,14 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      localStorage.removeItem('currentUser');
+      await logout();
       window.location.href = '/';
     } catch (error) {
       console.error('Error logging out:', error);
+      toast.error('Errore durante il logout.');
     }
   };
 
-  // Handle login/logout button click
-  const handleLoginLogoutClick = () => {
-    if (user) {
-      handleLogout();
-    } else {
-      window.location.href = '/login';
-    }
-  };
-
-
-
-  // Get role color
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'from-red-500 to-pink-500';
@@ -609,7 +597,13 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
 
               {/* Login/Logout Button */}
               <motion.button
-                onClick={handleLoginLogoutClick}
+                onClick={() => {
+                  if (user) {
+                    handleLogout();
+                  } else {
+                    window.location.href = '/login';
+                  }
+                }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`p-2 rounded-full transition-all ${
@@ -910,23 +904,23 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
               {/* Quick Actions */}
               <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowEditModal(true)}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] min-w-[44px] active:brightness-110 active:scale-95"
+                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all touch-manipulation min-h-[44px] active:scale-95"
                 >
                   <Edit3 className="w-4 h-4" />
-                  <span className="text-sm sm:text-base">Modifica</span>
+                  <span>Modifica Profilo</span>
                 </motion.button>
                 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg transition-all touch-manipulation min-h-[44px] min-w-[44px] active:brightness-110 active:scale-95"
+                  className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-red-500/50 transition-all touch-manipulation min-h-[44px] active:scale-95"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="text-sm sm:text-base">Logout</span>
+                  <span>Logout</span>
                 </motion.button>
               </div>
             </div>

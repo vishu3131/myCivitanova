@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/utils/supabaseServer';
 import { verifyFirebaseIdToken, adminFirestore, adminAuth } from '@/utils/firebaseAdmin';
+// Simple in-memory rate limiting per IP (best-effort, per runtime instance)
+const RATE_LIMIT = 20;
+const WINDOW_MS = 60_000; // 1 minuto
+const ipHits: Map<string, { count: number; windowStart: number }> = new Map();
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting per IP
+    const ipHeader = req.headers.get('x-forwarded-for') || '';
+    const clientIp = ipHeader.split(',')[0]?.trim() || 'unknown';
+    const nowMs = Date.now();
+    const rec = ipHits.get(clientIp);
+    if (!rec || nowMs - rec.windowStart > WINDOW_MS) {
+      ipHits.set(clientIp, { count: 1, windowStart: nowMs });
+    } else {
+      rec.count += 1;
+      ipHits.set(clientIp, rec);
+      if (rec.count > RATE_LIMIT) {
+        const res = NextResponse.json({ error: 'Troppi tentativi, riprova più tardi' }, { status: 429 });
+        res.headers.set('Retry-After', '60');
+        return res;
+      }
+    }
+
     const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
     if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
       return NextResponse.json({ error: 'Token mancante' }, { status: 401 });
@@ -51,7 +72,8 @@ export async function POST(req: Request) {
       full_name: firestoreProfile.fullName || name || '',
       username: firestoreProfile.username || undefined,
       phone: firestoreProfile.phone || phoneNumber || undefined,
-      role: firestoreProfile.role || 'user',
+      // Non consentire escalation del ruolo da Firestore: mantieni il ruolo esistente o default 'user'
+      role: existingProfile?.role || 'user',
       avatar_url: firestoreProfile.avatarUrl || picture || undefined,
       is_active: firestoreProfile.isActive ?? true,
       is_verified: emailVerified,

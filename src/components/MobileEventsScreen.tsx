@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, Users, Heart, Share2, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Heart, Share2, MapPin, ArrowRight } from 'lucide-react';
 import { BottomNavbar } from './BottomNavbar';
 import { PullToRefresh } from './PullToRefresh';
 import { useToast } from './Toast';
-
+import EventPopup from './EventPopup';
 
 // Eventi aggiornati: Settembre, Ottobre, Novembre 2025
 export const events = [
@@ -253,6 +253,18 @@ export function MobileEventsScreen() {
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const { showToast, ToastContainer } = useToast();
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isPopupOpen, setPopupOpen] = useState(false);
+
+  const openPopup = (event: any) => {
+    setSelectedEvent(event);
+    setPopupOpen(true);
+  };
+
+  const closePopup = () => {
+    setPopupOpen(false);
+    setSelectedEvent(null);
+  };
 
   // Calcolo dinamico contatori filtri (oggi, settimana, mese, tutti)
   const parseISODateLocal = (s: string) => {
@@ -473,19 +485,24 @@ export function MobileEventsScreen() {
                       </span>
                     </div>
                     <h3 className="text-white text-xl font-bold mb-2">{featured.title}</h3>
-                    <div className="flex items-center gap-4 text-white/80 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(featured.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{featured.time}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        <span>{featured.attendees}</span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-white/80 text-sm">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>{formatDate(featured.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            <span>{featured.time}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span>{featured.attendees}</span>
+                          </div>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); openPopup(featured); }} className="text-accent text-sm font-medium flex items-center hover:underline">
+                            <span>Scopri di più</span>
+                        </button>
                     </div>
                   </div>
                 </div>
@@ -612,6 +629,9 @@ export function MobileEventsScreen() {
                                   <span>{event.time}</span>
                                 </div>
                               </div>
+                                <button onClick={(e) => { e.stopPropagation(); openPopup(event); }} className="text-accent text-xs font-medium flex items-center hover:underline mt-2">
+                                    <span>Scopri di più</span>
+                                </button>
                             </div>
                             <button
                               onClick={(e) => toggleLike(event.id, e)}
@@ -693,6 +713,12 @@ export function MobileEventsScreen() {
       </PullToRefresh>
 
       <BottomNavbar />
+
+      {isPopupOpen && selectedEvent && (
+        <EventPopup event={selectedEvent} onClose={closePopup} />
+      )}
+      
+      <ToastContainer />
     </div>
   );
 }

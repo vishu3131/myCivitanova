@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCache, CACHE_KEYS, CacheHelpers } from '@/lib/cache';
 import { OptimizedDatabaseService } from '@/lib/optimized-database';
 import { useAuthWithRole } from '@/hooks/useAuthWithRole';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/utils/supabaseClient';
 
 // Interfacce per il tipo di dati ottimizzati
 interface AdminMetrics {
@@ -23,6 +23,14 @@ interface AdminFilters {
   status: 'all' | 'active' | 'pending' | 'suspended';
 }
 
+// Aggiungo il tipo per le performance di sistema
+interface SystemPerformance {
+  memoryUsage: number;
+  loadTime: number;
+  apiResponseTime: number;
+  cacheHitRate: number;
+}
+
 interface UseOptimizedAdminReturn {
   // Dati
   metrics: AdminMetrics | null;
@@ -39,11 +47,14 @@ interface UseOptimizedAdminReturn {
   isAuthorized: boolean;
   hasAdminRole: boolean;
   hasModerationRole: boolean;
+  
+  // Performance
+  performance: SystemPerformance;
 }
 
 // Hook principale per l'ottimizzazione admin
-export const useOptimizedAdmin = (): UseOptimizedAdminReturn => {
-  const { user, hasRole } = useAuthWithRole(['admin', 'moderator']);
+export const useOptimizedAdmin = (allowedRoles?: string | string[]): UseOptimizedAdminReturn => {
+  const { user, role, isAuthorized: authIsAuthorized } = useAuthWithRole(allowedRoles);
   const [filters, setFilters] = useState<AdminFilters>({
     dateRange: 'week',
     contentType: 'all',
@@ -52,18 +63,16 @@ export const useOptimizedAdmin = (): UseOptimizedAdminReturn => {
   });
   const [error, setError] = useState<Error | null>(null);
 
-  // Autorizzazioni
-  const isAuthorized = useMemo(() => {
-    return user && hasRole(['admin', 'moderator']);
-  }, [user, hasRole]);
+  // Le autorizzazioni ora usano i valori diretti da useAuthWithRole
+  const isAuthorized = authIsAuthorized;
 
   const hasAdminRole = useMemo(() => {
-    return user && hasRole(['admin']);
-  }, [user, hasRole]);
+    return role === 'admin';
+  }, [role]);
 
   const hasModerationRole = useMemo(() => {
-    return user && hasRole(['admin', 'moderator']);
-  }, [user, hasRole]);
+    return ['admin', 'moderator'].includes(role);
+  }, [role]);
 
   // Cache key dinamica basata sui filtri
   const cacheKey = useMemo(() => {
@@ -128,6 +137,9 @@ export const useOptimizedAdmin = (): UseOptimizedAdminReturn => {
     CacheHelpers.invalidateRelatedCache(['admin', 'statistics', 'users', 'content']);
   }, []);
 
+  // Integra monitoraggio performance del sistema
+  const performance = useSystemPerformance();
+
   return {
     metrics,
     filters,
@@ -139,12 +151,13 @@ export const useOptimizedAdmin = (): UseOptimizedAdminReturn => {
     isAuthorized,
     hasAdminRole,
     hasModerationRole,
+    performance,
   };
 };
 
 // Hook per le performance del sistema
 export const useSystemPerformance = () => {
-  const [performance, setPerformance] = useState({
+  const [perf, setPerf] = useState({
     memoryUsage: 0,
     loadTime: 0,
     apiResponseTime: 0,
@@ -154,25 +167,26 @@ export const useSystemPerformance = () => {
   useEffect(() => {
     // Monitora le performance del browser
     if (typeof window !== 'undefined' && 'performance' in window) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const perfAPI = window.performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } };
+      const navigation = perfAPI.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       
-      setPerformance(prev => ({
+      setPerf(prev => ({
         ...prev,
-        loadTime: navigation.loadEventEnd - navigation.loadEventStart,
+        loadTime: navigation ? navigation.loadEventEnd - navigation.loadEventStart : 0,
       }));
 
       // Monitora l'uso della memoria (se disponibile)
-      if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        setPerformance(prev => ({
+      if (perfAPI && perfAPI.memory) {
+        const memory = perfAPI.memory;
+        setPerf(prev => ({
           ...prev,
-          memoryUsage: memory.usedJSHeapSize / memory.totalJSHeapSize,
+          memoryUsage: memory.totalJSHeapSize ? memory.usedJSHeapSize / memory.totalJSHeapSize : 0,
         }));
       }
     }
   }, []);
 
-  return performance;
+  return perf;
 };
 
 // Hook per il monitoraggio real-time
