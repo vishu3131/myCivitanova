@@ -5,7 +5,7 @@
  * per i profili utente, con sincronizzazione automatica e gestione unificata.
  */
 
-import { User, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { User, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db as firestore } from '../utils/firebaseClient';
 import { supabase, SyncedUserProfile } from '../utils/supabaseClient';
@@ -228,6 +228,89 @@ class UnifiedAuthService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Errore durante il login'
+      };
+    }
+  }
+
+  /**
+   * Effettua il login con Google
+   */
+  async loginWithGoogle(): Promise<AuthResult> {
+    try {
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      if (!firestore) throw new Error('Firestore not initialized');
+      console.log('🚀 Tentativo di login con Google...');
+
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+
+      console.log(`✅ Login con Google riuscito per ${firebaseUser.email}`);
+
+      // Controlla se l'utente esiste già in Firestore
+      const userDocRef = doc(firestore, 'profiles', firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // Utente nuovo, crea profilo
+        console.log(`✨ Utente nuovo da Google. Creazione profilo per ${firebaseUser.email}`);
+        const firebaseProfileData = {
+          email: firebaseUser.email,
+          fullName: firebaseUser.displayName,
+          username: firebaseUser.email?.split('@')[0] || '',
+          phone: firebaseUser.phoneNumber || '',
+          avatarUrl: firebaseUser.photoURL || '',
+          role: 'user',
+          isActive: true,
+          isVerified: firebaseUser.emailVerified,
+          totalXp: 0,
+          currentLevel: 1,
+          levelProgress: 0,
+          badgesCount: 0,
+          badgesList: [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+        };
+        await setDoc(userDocRef, firebaseProfileData);
+      } else {
+        // Utente esistente, aggiorna l'ultimo login
+        console.log(`👋 Bentornato ${firebaseUser.email}. Aggiorno ultimo accesso.`);
+        await updateDoc(userDocRef, {
+          lastLoginAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          // Potremmo voler aggiornare anche avatar e nome se cambiati su Google
+          avatarUrl: firebaseUser.photoURL || userDoc.data().avatarUrl,
+          fullName: firebaseUser.displayName || userDoc.data().fullName,
+        });
+      }
+      
+      // Sincronizza con Supabase (server-side via API con service_role)
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        await fetch('/api/sync/user', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        });
+      } catch (syncApiErr) {
+        console.warn('⚠️ Errore chiamata API di sincronizzazione server-side:', syncApiErr);
+      }
+
+      const supabaseProfile = await supabase.sync.getCurrentUserProfile();
+
+      return {
+        success: true,
+        user: supabaseProfile || undefined,
+        firebaseUser,
+      };
+
+    } catch (error) {
+      console.error('❌ Errore login con Google:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Errore durante il login con Google',
       };
     }
   }

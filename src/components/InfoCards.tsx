@@ -491,43 +491,27 @@ export function InfoCards({ onReportClick, userId }: InfoCardsProps) {
               className="h-[100px]"
             />
             
-            {/* Prossimamente Widget - stesso stile del Tutorial Widget */}
-            <div
+            {/* Sconti Widget - sostituisce 'Prossimamente' */}
+            <Link
+              href="/sconti"
               className="relative h-[100px] rounded-[20px] overflow-visible cursor-pointer group 
-                bg-gradient-to-br from-gray-500/20 to-slate-500/20 backdrop-blur-sm 
-                border border-gray-400/30 card-glow 
-                hover:scale-105 transition-all duration-300"
-              role="button"
-              aria-label="Widget vuoto - Prossimamente"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); } }}
+                bg-gradient-to-br from-purple-600/15 via-cyan-500/10 to-indigo-600/15 backdrop-blur-sm 
+                border border-white/10 card-glow 
+                hover:scale-105 transition-all duration-300 p-4"
+              aria-label="Sconti - Offerte in città"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[20px]" />
-
-              <div className="relative z-10 p-4 h-full flex flex-col justify-between overflow-hidden rounded-[20px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-lg">🚀</div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm leading-tight">Prossimamente</h3>
-                      <p className="text-white/70 text-xs">Nuovo widget</p>
-                    </div>
-                  </div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse shadow-lg shadow-gray-400/50" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-white/80 text-xs font-medium">In arrivo...</span>
-                  <div className="text-white/60 group-hover:text-white transition-colors duration-200">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="9,18 15,12 9,6"></polyline>
-                    </svg>
+              <div className="flex items-center justify-between h-full">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-lg">🏷️</div>
+                  <div>
+                    <h3 className="text-white font-semibold text-sm leading-tight">Sconti</h3>
+                    <p className="text-white/70 text-xs">Offerte in città</p>
                   </div>
                 </div>
+                <div className="text-white/60 group-hover:text-white transition-colors duration-200">→</div>
               </div>
-
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out rounded-[20px]" />
-            </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[20px]" />
+            </Link>
           </div>
         </div>
 

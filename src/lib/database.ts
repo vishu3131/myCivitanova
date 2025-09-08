@@ -446,7 +446,10 @@ export class DatabaseService {
     limit?: number;
     offset?: number;
   }) {
-    let query = supabase
+    // Preferisci il client Supabase diretto se disponibile (server-side), fallback al wrapper
+    const client: any = (supabase as any).direct ?? supabase;
+
+    let query = client
       .from('events')
       .select(`
         *,

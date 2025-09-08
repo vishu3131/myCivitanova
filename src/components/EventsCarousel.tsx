@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays } from 'lucide-react';
 import Link from 'next/link';
-import { events as allEvents } from './MobileEventsScreen';
 
 const eventStyles = {
   icon: '📅',
@@ -26,7 +25,7 @@ function formatEventDate(date?: string, time?: string) {
 }
 
 type CarouselEvent = {
-  id: number;
+  id: string;
   title: string;
   description: string;
   date: string;
@@ -48,22 +47,40 @@ export function EventsCarousel() {
   const [activeItem, setActiveItem] = useState<CarouselEvent | null>(null);
 
   useEffect(() => {
-    try {
-      setLoading(true);
-      setError(null);
-      const ordered = [...allEvents].sort((a, b) => {
-        const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
-        const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
-        return aDate.getTime() - bDate.getTime();
-      });
-      setEvents(ordered);
-      setIndex(0);
-    } catch (e) {
-      console.error('Errore nel caricamento eventi:', e);
-      setError('Errore nel caricamento degli eventi');
-    } finally {
-      setLoading(false);
-    }
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch('/api/events?upcoming=true', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Errore nel caricamento degli eventi');
+        const data = await res.json();
+        const mapped: CarouselEvent[] = (Array.isArray(data) ? data : []).map((e: any) => ({
+          id: String(e.id),
+          title: e.title,
+          description: e.description,
+          date: e.date,
+          time: e.startTime || '',
+          location: typeof e.location === 'string' ? e.location : e.location?.name || '',
+          image: e.imageUrl,
+          category: e.category,
+          price: e.price === undefined ? '—' : e.price === 0 ? 'Gratuito' : `€ ${e.price}`,
+          attendees: e.maxAttendees ?? 0,
+        }));
+        const ordered = mapped.sort((a, b) => {
+          const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
+          const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
+          return aDate.getTime() - bDate.getTime();
+        });
+        setEvents(ordered);
+        setIndex(0);
+      } catch (e) {
+        console.error('Errore nel caricamento eventi:', e);
+        setError('Errore nel caricamento degli eventi');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
   }, []);
 
   useEffect(() => {

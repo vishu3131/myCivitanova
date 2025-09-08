@@ -9,8 +9,9 @@ import { PullToRefresh } from './PullToRefresh';
 import { useToast } from './Toast';
 import EventPopup from './EventPopup';
 
+/*
 // Eventi aggiornati: Settembre, Ottobre, Novembre 2025
-export const events = [
+const events = [
   {
     id: 1,
     title: 'Bim Bum Bam Festival - Giorno 1',
@@ -246,15 +247,82 @@ export const events = [
     description: 'Focus su Monte Rinaldo, Barocco ascolano e opere salvate dal terremoto.'
   }
 ];
+*/
 
 export function MobileEventsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('today');
-  const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
-  const [flipped, setFlipped] = useState<Set<number>>(new Set());
+  const [likedEvents, setLikedEvents] = useState<Set<string>>(new Set());
+  const [flipped, setFlipped] = useState<Set<string>>(new Set());
   const { showToast, ToastContainer } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isPopupOpen, setPopupOpen] = useState(false);
+
+  // Stato e fetch eventi da API
+  const [eventsData, setEventsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const mapEvent = (e: any) => ({
+    id: String(e.id),
+    title: e.title,
+    description: e.description,
+    date: e.date || (e.startTime && typeof e.startTime === 'string' && e.startTime.includes('T') ? e.startTime.split('T')[0] : ''),
+    time: (e.startTime && typeof e.startTime === 'string' && !e.startTime.includes('T')) ? e.startTime : (e.time || ''),
+    location: e.location,
+    position: e.position || e.location,
+    image: e.imageUrl || 'https://images.unsplash.com/photo-1515168833906-d2a3b82b302a?auto=format&fit=crop&w=800&q=80',
+    category: e.category || 'Evento',
+    price: e.price === undefined ? '—' : e.price === 0 ? 'Gratuito' : `€ ${e.price}`,
+    attendees: e.maxAttendees ?? 0,
+    participants: e.maxAttendees ?? 0,
+    isFeatured: !!e.isFeatured,
+  });
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/events?upcoming=true', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Errore nel recupero degli eventi');
+      const data = await res.json();
+      const mapped = Array.isArray(data) ? data.map(mapEvent) : [];
+      mapped.sort((a, b) => {
+        const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
+        const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
+        return aDate.getTime() - bDate.getTime();
+      });
+      setEventsData(mapped);
+    } catch (e) {
+      console.error(e);
+      setError('Impossibile caricare gli eventi. Riprova più tardi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2 text-white/80">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+            <span>Caricamento eventi...</span>
+          </div>
+        </div>
+        <BottomNavbar />
+      </div>
+    );
+  }
 
   const openPopup = (event: any) => {
     setSelectedEvent(event);
@@ -295,8 +363,8 @@ export function MobileEventsScreen() {
   const startW = getStartOfWeek(now);
   const endW = getEndOfWeek(now);
 
-  const counts = events.reduce(
-    (acc: { today: number; week: number; month: number; all: number }, e) => {
+  const counts = eventsData.reduce(
+    (acc: { today: number; week: number; month: number; all: number }, e: any) => {
       const ed = parseISODateLocal(e.date);
       if (isSameDay(ed, now)) acc.today++;
       if (ed >= startW && ed <= endW) acc.week++;
@@ -314,7 +382,7 @@ export function MobileEventsScreen() {
     { id: 'all', label: 'Tutti', count: counts.all },
   ];
 
-  const toggleLike = (eventId: number, e?: React.MouseEvent) => {
+  const toggleLike = (eventId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const newLiked = new Set(likedEvents);
     if (newLiked.has(eventId)) {
@@ -327,7 +395,7 @@ export function MobileEventsScreen() {
     setLikedEvents(newLiked);
   };
 
-  const toggleFlip = (eventId: number) => {
+  const toggleFlip = (eventId: string) => {
     const newSet = new Set(flipped);
     if (newSet.has(eventId)) newSet.delete(eventId);
     else newSet.add(eventId);
@@ -335,9 +403,10 @@ export function MobileEventsScreen() {
   };
 
   const handleRefresh = async () => {
-    // Simula il caricamento di nuovi eventi
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    showToast('Eventi aggiornati', 'success');
+    await fetchEvents();
+    if (!error) {
+      showToast('Eventi aggiornati', 'success');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -349,8 +418,51 @@ export function MobileEventsScreen() {
     });
   };
 
-  const featured = events[0];
-  const isFeaturedFlipped = flipped.has(featured.id);
+  const featured = eventsData.find((e: any) => e.isFeatured) || eventsData[0];
+  const isFeaturedFlipped = featured ? flipped.has(featured.id) : false;
+  const restEvents = featured ? eventsData.filter((e: any) => e.id !== featured.id) : eventsData;
+
+  // Loading / Error / Empty states
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2 text-white/80">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+            <span>Caricamento eventi...</span>
+          </div>
+        </div>
+        <BottomNavbar />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center">
+            <p className="text-white/80 mb-2">{error}</p>
+            <button onClick={fetchEvents} className="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20">Riprova</button>
+          </div>
+        </div>
+        <BottomNavbar />
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  if (!featured) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center px-6">
+          <p className="text-white/70">Nessun evento disponibile</p>
+        </div>
+        <BottomNavbar />
+        <ToastContainer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -568,7 +680,7 @@ export function MobileEventsScreen() {
         <div className="px-6">
           <h2 className="text-white text-lg font-bold mb-4">Prossimi Eventi</h2>
           <div className="space-y-4">
-            {events.slice(1).map((event, index) => {
+            {restEvents.map((event, index) => {
               const isFlipped = flipped.has(event.id);
               return (
                 <div

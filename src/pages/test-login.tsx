@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { firebaseClient } from '@/utils/firebaseAuth';
-import { User } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import app from '@/utils/firebaseClient';
 
 export default function TestLogin() {
   const [email, setEmail] = useState('');
@@ -11,90 +12,72 @@ export default function TestLogin() {
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    // Controlla se l'utente è già loggato
-    const checkUser = async () => {
-      const user = firebaseClient.auth.currentUser;
+  const auth = getAuth(app || undefined);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
       if (user) {
-        // Carica il profilo Firebase
-        const profileData = await firebaseClient.from('profiles').select('*').eq('id', user.uid).single();
-        setProfile(profileData);
-      }
-    };
-    
-    checkUser();
-
-    // Ascolta i cambiamenti di autenticazione Firebase
-    const unsubscribe = firebaseClient.auth.onAuthStateChanged(
-      (user) => {
-        setUser(user);
-        if (user) {
-          // Carica il profilo quando l'utente si logga
-          firebaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', user.uid)
-            .single()
-            .then((data) => setProfile(data));
-        } else {
+        // Carica il profilo da Firestore (collezione 'profiles', id = user.uid)
+        try {
+          const db = app ? getFirestore(app) : getFirestore();
+          const docRef = doc(db, 'profiles', user.uid);
+          const docSnap = await getDoc(docRef);
+          setProfile(docSnap.exists() ? docSnap.data() : null);
+        } catch (err) {
           setProfile(null);
         }
+      } else {
+        setProfile(null);
       }
-    );
-
+    });
     return () => unsubscribe();
   }, []);
 
   const testLogin = async () => {
     setLoading(true);
     setResult('Avvio test login...');
-
+  const auth = getAuth(app || undefined);
     try {
-      const userCredential = await firebaseClient.auth.signInWithEmailAndPassword(email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
       setResult('✅ Login riuscito! Utente: ' + user.email);
       setUser(user);
-
-      // Carica il profilo Firebase
+      // Carica il profilo da Firestore
       try {
-        const profileData = await firebaseClient.from('profiles').select('*').eq('id', user.uid).single();
-        setResult(prev => prev + '\n✅ Profilo caricato: ' + JSON.stringify(profileData, null, 2));
-        setProfile(profileData);
+  const db = app ? getFirestore(app) : getFirestore();
+        const docRef = doc(db, 'profiles', user.uid);
+        const docSnap = await getDoc(docRef);
+        setResult(prev => prev + '\n✅ Profilo caricato: ' + JSON.stringify(docSnap.data(), null, 2));
+        setProfile(docSnap.exists() ? docSnap.data() : null);
       } catch (profileError) {
         setResult(prev => prev + '\n⚠️ Profilo non trovato: ' + (profileError as Error).message);
       }
     } catch (err) {
       setResult('💥 Errore login: ' + (err as Error).message);
     }
-
     setLoading(false);
   };
 
   const testLogout = async () => {
     setLoading(true);
     setResult('Logout in corso...');
-
+  const auth = getAuth(app || undefined);
     try {
-      await firebaseClient.auth.signOut();
+      await signOut(auth);
       setResult('✅ Logout riuscito!');
       setUser(null);
       setProfile(null);
     } catch (err) {
       setResult('💥 Errore logout: ' + (err as Error).message);
     }
-
     setLoading(false);
   };
 
   const testSession = async () => {
     setLoading(true);
     setResult('Controllo sessione...');
-
+  const auth = getAuth(app || undefined);
     try {
-      const user = firebaseClient.auth.currentUser;
-      
+      const user = auth.currentUser;
       if (user) {
         setResult('✅ Sessione attiva: ' + JSON.stringify({
           user_id: user.uid,
@@ -107,7 +90,6 @@ export default function TestLogin() {
     } catch (err) {
       setResult('💥 Errore controllo sessione: ' + (err as Error).message);
     }
-
     setLoading(false);
   };
 
@@ -196,6 +178,11 @@ export default function TestLogin() {
             </pre>
           </div>
         )}
+          <div style={{ marginTop: 16 }}>
+            <a href="/forgot-password" style={{ color: '#0070f3', textDecoration: 'underline' }}>
+              Password dimenticata?
+            </a>
+          </div>
       </div>
     </div>
   );

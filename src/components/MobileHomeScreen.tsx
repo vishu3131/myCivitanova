@@ -25,6 +25,7 @@ import { WeatherWidget } from './WeatherWidget';
 import EventsCarousel from './EventsCarousel';
 import LazyRender from './LazyRender';
 import TutorialDebugOverlay from './TutorialDebugOverlay';
+import ScontiWidget from './ScontiWidget';
 
 // Lazy-loaded components for performance
 const DynamicMarketplaceWidget = dynamic(() => import('./MarketplaceWidget'), {
@@ -214,7 +215,7 @@ export function MobileHomeScreen() {
   const [showLabs, setShowLabs] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
   const [showDiscover, setShowDiscover] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -523,10 +524,9 @@ export function MobileHomeScreen() {
               </LazyRender>
             </div>
             <div className="col-span-1">
-              <div className="h-full bg-dark-300/50 backdrop-blur-sm rounded-xl p-2 sm:p-3 card-glow border border-white/10 flex items-center justify-center relative overflow-hidden group prossimamente-widget">
-                <div className="text-white/60 text-xs sm:text-sm relative z-10">Prossimamente</div>
-                <div className="prossimamente-overlay"></div>
-              </div>
+              <LazyRender fallback={<div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
+                <ScontiWidget />
+              </LazyRender>
             </div>
           </div>
         </Section>

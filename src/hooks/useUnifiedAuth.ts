@@ -37,6 +37,7 @@ export interface AuthState {
 export interface AuthActions {
   // Operazioni principali
   login: (data: LoginData) => Promise<AuthResult>;
+  loginWithGoogle: () => Promise<AuthResult>;
   register: (data: RegisterData) => Promise<AuthResult>;
   logout: () => Promise<AuthResult>;
   
@@ -127,7 +128,7 @@ export function useUnifiedAuth(): AuthState & AuthActions {
   }, [updateState]);
 
   /**
-   * Effettua il login
+   * Effettua il login con Google
    */
   const login = useCallback(async (data: LoginData): Promise<AuthResult> => {
     updateState({ isAuthenticating: true, error: null });
@@ -177,6 +178,35 @@ export function useUnifiedAuth(): AuthState & AuthActions {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Errore durante la registrazione';
+      updateState({ error: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      updateState({ isAuthenticating: false });
+    }
+  }, [updateState]);
+
+  /**
+   * Effettua il login con Google
+   */
+  const loginWithGoogle = useCallback(async (): Promise<AuthResult> => {
+    updateState({ isAuthenticating: true, error: null });
+    
+    try {
+      const result = await unifiedAuthService.loginWithGoogle();
+      
+      if (result.success && result.user) {
+        updateState({
+          user: result.user,
+          isAuthenticated: true,
+          isEmailVerified: result.firebaseUser?.emailVerified || false
+        });
+      } else {
+        updateState({ error: result.error || 'Errore durante il login con Google' });
+      }
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante il login con Google';
       updateState({ error: errorMessage });
       return { success: false, error: errorMessage };
     } finally {
@@ -335,6 +365,7 @@ export function useUnifiedAuth(): AuthState & AuthActions {
     
     // Azioni
     login,
+    loginWithGoogle,
     register,
     logout,
     updateProfile,
@@ -342,8 +373,7 @@ export function useUnifiedAuth(): AuthState & AuthActions {
     resetPassword,
     resendVerificationEmail,
     forceSyncUser,
-    clearError,
-    initialize
+    clearError
   };
 }
 
@@ -376,6 +406,7 @@ export function useAuthState() {
 export function useAuthActions() {
   const { 
     login, 
+    loginWithGoogle,
     register, 
     logout, 
     updateProfile, 
@@ -387,6 +418,7 @@ export function useAuthActions() {
 
   return {
     login,
+    loginWithGoogle,
     register,
     logout,
     updateProfile,
