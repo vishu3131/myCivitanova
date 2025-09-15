@@ -93,16 +93,16 @@ const nextConfig = {
   },
 
   // Redirect per canonicalizzazione dominio (www -> apex)
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.mycivitanova.it' }],
-        destination: 'https://mycivitanova.it/:path*',
-        permanent: true,
-      },
-    ];
-  },
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: '/:path*',
+  //       has: [{ type: 'host', value: 'www.mycivitanova.it' }],
+  //       destination: 'https://mycivitanova.it/:path*',
+  //       permanent: true,
+  //     },
+  //   ];
+  // },
   
   // Rimossa configurazione webpack personalizzata per CSS
   // Next.js gestisce automaticamente CSS e PostCSS

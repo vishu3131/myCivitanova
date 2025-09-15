@@ -5,7 +5,7 @@ import { useXPSystem } from '@/hooks/useXPSystem';
 
 interface TutorialWidgetProps {
   userId?: string;
-  onStartTutorial: () => void;
+  onStartTutorial?: () => void;
   className?: string;
 }
 
@@ -21,14 +21,15 @@ const TUTORIAL_XP_REWARD = 100;
 
 import TutorialIntroVideo from './TutorialIntroVideo';
 
-export function TutorialWidget({ userId, onStartTutorial, className = '' }: TutorialWidgetProps) {
+export function TutorialWidget({ userId, onStartTutorial = () => {}, className = '' }: TutorialWidgetProps) {
   const [tutorialState, setTutorialState] = useState<TutorialState>({
     isCompleted: false,
     totalViews: 0
   });
   const [shouldPulse, setShouldPulse] = useState(false);
   const [showIntroVideo, setShowIntroVideo] = useState(false);
-  const { addXP } = useXPSystem(userId, { autoDailyLogin: false });
+  const xpSystem = useXPSystem(userId, { autoDailyLogin: false });
+  const addXP = xpSystem?.addXP ?? (async () => null);
 
   // Carica stato
   useEffect(() => {
