@@ -10,7 +10,7 @@ import {
   fetchUserConversations,
   fetchListingById
 } from "@/services/marketplace";
-import { MarketplaceConversation, ListingExpanded } from "@/types/marketplace";
+import type { MarketplaceConversation, ListingExpanded } from "@/types/marketplace";
 
 interface ConversationWithListing extends MarketplaceConversation {
   listing?: ListingExpanded;

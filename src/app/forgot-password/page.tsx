@@ -2,37 +2,45 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import useUnifiedAuth from '@/hooks/useUnifiedAuth';
+import { useAuthActions } from '@/hooks/useUnifiedAuth'; // Importa solo le azioni
+import { AuthResult } from '@/services/unifiedAuthService'; // Importa il tipo
+
+// Definisci uno stato per la pagina
+type PageStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [status, setStatus] = useState<PageStatus>('idle');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
 
-  const { sendPasswordResetEmail } = useUnifiedAuth();
+  const { resetPassword } = useAuthActions(); // Usa l'hook per le azioni
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Inserisci un indirizzo email valido');
+      setStatus('error');
+      setFeedbackMessage('Inserisci un indirizzo email valido');
       return;
     }
 
-    setLoading(true);
-    setError('');
-    setMessage('');
+    setStatus('loading');
+    setFeedbackMessage('');
 
-    try {
-      await sendPasswordResetEmail(email);
-      setMessage('Email di recupero inviata con successo!');
-      setIsSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || 'Errore durante l\'invio dell\'email di recupero');
-    } finally {
-      setLoading(false);
+    const result: AuthResult = await resetPassword(email);
+
+    if (result.success) {
+      setStatus('success');
+      setFeedbackMessage('Email di recupero inviata con successo!');
+    } else {
+      setStatus('error');
+      setFeedbackMessage(result.error || "Errore durante l'invio dell'email di recupero");
     }
+  };
+
+  const handleReset = () => {
+    setEmail('');
+    setStatus('idle');
+    setFeedbackMessage('');
   };
 
   return (
@@ -49,16 +57,16 @@ export default function ForgotPasswordPage() {
             Recupera Password
           </h1>
           <p className="text-gray-400 text-lg">
-            {!isSubmitted
+            {status !== 'success'
               ? 'Inserisci la tua email per ricevere il link di recupero'
               : 'Controlla la tua casella di posta'
             }
           </p>
         </div>
 
-        {/* Form */}
+        {/* Form o Messaggio di Successo */}
         <div className="space-y-6">
-          {!isSubmitted ? (
+          {status !== 'success' ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Input */}
               <div className="relative">
@@ -69,26 +77,27 @@ export default function ForgotPasswordPage() {
                   placeholder="Inserisci la tua email"
                   className="w-full px-4 py-3 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   required
+                  disabled={status === 'loading'}
                 />
               </div>
 
               {/* Error Message */}
-              {error && (
+              {status === 'error' && feedbackMessage && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg flex items-center">
                   <svg className="h-5 w-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  {error}
+                  {feedbackMessage}
                 </div>
               )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !email.trim()}
+                disabled={status === 'loading' || !email.trim()}
                 className="w-full px-4 py-3 font-bold text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? (
+                {status === 'loading' ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                     Invio in corso...
@@ -114,31 +123,16 @@ export default function ForgotPasswordPage() {
               <div>
                 <h3 className="text-xl font-semibold text-white mb-2">Email Inviata!</h3>
                 <p className="text-gray-400">
-                  Abbiamo inviato un link di recupero alla tua email.<br />
+                  {feedbackMessage}<br />
                   Controlla anche la cartella spam.
                 </p>
               </div>
               <button
-                onClick={() => {
-                  setIsSubmitted(false);
-                  setEmail('');
-                  setMessage('');
-                  setError('');
-                }}
+                onClick={handleReset}
                 className="text-teal-400 hover:text-teal-300 transition-colors font-medium"
               >
                 Invia un'altra email
               </button>
-            </div>
-          )}
-
-          {/* Success Message */}
-          {message && !isSubmitted && (
-            <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg flex items-center">
-              <svg className="h-5 w-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              {message}
             </div>
           )}
 

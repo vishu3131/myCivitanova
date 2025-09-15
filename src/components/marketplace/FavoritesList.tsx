@@ -5,7 +5,7 @@ import { Heart, MapPin, Euro, Calendar } from 'lucide-react';
 import { fetchUserFavorites, toggleFavorite } from '@/services/marketplace';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-hot-toast';
-import { Listing } from '@/services/marketplace';
+import type { ListingExpanded } from '@/types/marketplace';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -14,7 +14,7 @@ interface FavoritesListProps {
 }
 
 export default function FavoritesList({ className = '' }: FavoritesListProps) {
-  const [favorites, setFavorites] = useState<Listing[]>([]);
+  const [favorites, setFavorites] = useState<ListingExpanded[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -27,8 +27,20 @@ export default function FavoritesList({ className = '' }: FavoritesListProps) {
   const loadFavorites = async () => {
     setLoading(true);
     try {
-      const favoritesData = await fetchUserFavorites();
-      setFavorites(favoritesData);
+      if (!user) return;
+      const favoritesData = await fetchUserFavorites(user.id);
+      // favoritesData può essere un array di ListingExpanded o di record con nesting; normalizziamo se necessario
+      const normalized = (favoritesData as any[]).map((f: any) => {
+        // se arriva { listing: {..., listing_images: [...] } }
+        if (f?.listing) {
+          return {
+            ...f.listing,
+            listing_images: f.listing.listing_images || [],
+          } as ListingExpanded;
+        }
+        return f as ListingExpanded;
+      });
+      setFavorites(normalized);
     } catch (error) {
       console.error('Error loading favorites:', error);
       toast.error('Errore nel caricamento dei preferiti');
@@ -136,9 +148,9 @@ export default function FavoritesList({ className = '' }: FavoritesListProps) {
             <div className="relative">
               <Link href={`/marketplace/${listing.id}`}>
                 <div className="h-48 bg-gray-200 relative overflow-hidden">
-                  {listing.images && listing.images.length > 0 ? (
+                  {listing.listing_images && listing.listing_images.length > 0 ? (
                     <Image
-                      src={listing.images[0].url}
+                      src={listing.listing_images[0].url}
                       alt={listing.title}
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-300"
@@ -203,14 +215,12 @@ export default function FavoritesList({ className = '' }: FavoritesListProps) {
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                 <span className={`
                   px-2 py-1 text-xs rounded-full
-                  ${listing.type === 'sell' 
+                  ${listing.type === 'beni' 
                     ? 'bg-green-100 text-green-800' 
-                    : listing.type === 'buy'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-purple-100 text-purple-800'
+                    : 'bg-blue-100 text-blue-800'
                   }
                 `}>
-                  {listing.type === 'sell' ? 'Vendo' : listing.type === 'buy' ? 'Cerco' : 'Scambio'}
+                  {listing.type === 'beni' ? 'Beni' : 'Servizi'}
                 </span>
                 
                 <div className="flex items-center gap-3 text-xs text-gray-500">

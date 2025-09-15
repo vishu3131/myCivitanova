@@ -174,7 +174,7 @@ export async function uploadMultipleImages(listingId: string, files: File[]) {
 
 // ===== LISTING CRUD OPERATIONS =====
 
-export async function fetchListingById(id: string): Promise<Listing | null> {
+export async function fetchListingById(id: string): Promise<ListingExpanded | null> {
   const { data, error } = await supabase.direct
     .from('listings')
     .select('*')
@@ -182,10 +182,41 @@ export async function fetchListingById(id: string): Promise<Listing | null> {
     .eq('status', 'active')
     .single();
   if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
+    // PGRST116: No rows found
+    if ((error as any).code === 'PGRST116') return null;
     throw error;
   }
-  return data as Listing;
+
+  const base = data as Listing;
+
+  // Fetch related images
+  let listing_images: ListingImage[] | undefined = undefined;
+  try {
+    listing_images = await fetchListingImages(base.id);
+  } catch (_) {
+    // Keep images undefined on failure; not critical for detail view rendering
+  }
+
+  // Fetch author profile
+  let author: ListingExpanded['author'] = undefined;
+  try {
+    const { data: authorData } = await supabase.direct
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .eq('id', base.user_id)
+      .single();
+    if (authorData) {
+      author = {
+        id: authorData.id,
+        full_name: (authorData as any).full_name ?? null,
+        avatar_url: (authorData as any).avatar_url ?? null,
+      };
+    }
+  } catch (_) {
+    // author remains undefined if fetch fails
+  }
+
+  return { ...base, listing_images, author } as ListingExpanded;
 }
 
 export async function updateListing(id: string, updates: Partial<Listing>) {
@@ -210,7 +241,10 @@ export async function deleteListing(id: string) {
 export async function fetchUserListings(userId: string, status?: string) {
   let query = supabase.direct
     .from('listings')
-    .select('*')
+    .select(`
+      *,
+      listing_images:listing_images(*)
+    `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   
@@ -220,7 +254,11 @@ export async function fetchUserListings(userId: string, status?: string) {
   
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []) as Listing[];
+  const results = (data || []).map((l: any) => ({
+    ...l,
+    listing_images: l.listing_images || [],
+  })) as ListingExpanded[];
+  return results;
 }
 
 // ===== FAVORITES OPERATIONS =====
@@ -260,14 +298,20 @@ export async function fetchUserFavorites(userId: string) {
   const { data, error } = await supabase.direct
     .from('listing_favorites')
     .select(`
-      *,
-      listing:listings(*)
+      listing:listings(
+        *,
+        listing_images:listing_images(*)
+      )
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return (data || []) as (ListingFavorite & { listing: Listing })[];
+  const results = (data || []).map((row: any) => ({
+    ...row.listing,
+    listing_images: row.listing?.listing_images || [],
+  })) as ListingExpanded[];
+  return results;
 }
 
 // ===== REVIEWS OPERATIONS =====
@@ -622,7 +666,7 @@ export async function searchListings(searchTerm: string, filters?: AdvancedSearc
     .from('listings')
     .select(`
       *,
-      listing_images(id, image_url, position),
+      listing_images(id, url, position),
       listing_reviews(id, rating)
     `)
     .eq('status', 'active');

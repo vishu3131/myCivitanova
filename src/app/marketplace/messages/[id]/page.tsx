@@ -12,7 +12,7 @@ import {
   markMessagesAsRead,
   fetchListingById
 } from "@/services/marketplace";
-import { MarketplaceConversation, MarketplaceMessage, ListingExpanded } from "@/types/marketplace";
+import type { MarketplaceConversation, MarketplaceMessage, ListingExpanded } from "@/types/marketplace";
 import Image from "next/image";
 
 export default function ConversationPage() {

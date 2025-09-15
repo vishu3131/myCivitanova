@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import MarketplaceClient from "../../components/MarketplaceClient";
+import MarketplaceClient from "@/components/MarketplaceClient";
 
 export default function MarketplacePage() {
   return (

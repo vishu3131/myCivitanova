@@ -45,6 +45,16 @@ const EventsManagement = () => {
     fetchEvents();
   }, []);
 
+  const getIdToken = async (): Promise<string | null> => {
+    try {
+      const { supabase } = await import('@/utils/supabaseClient');
+      const { data: { session } } = await supabase.auth.getSession();
+      return (session as any)?.access_token || null;
+    } catch {
+      return null;
+    }
+  };
+
   const fetchEvents = async () => {
     try {
       const response = await fetch('/api/events');
@@ -61,85 +71,9 @@ const EventsManagement = () => {
     }
   };
 
-  const createEvent = async () => {
-    try {
-      const response = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-        title, 
-        description, 
-        date, 
-        location, 
-        imageUrl, 
-        category, 
-        status, 
-        isFeatured, 
-        organizer, 
-        endDate, 
-        startTime, 
-        endTime, 
-        maxAttendees: maxAttendees ? parseInt(maxAttendees) : null, 
-        price: price ? parseFloat(price) : null 
-      }),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create event');
-      }
 
-      fetchEvents();
-      resetForm();
-      alert('Evento creato con successo!');
-    } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Errore nella creazione dell\'evento: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  };
 
-  const updateEvent = async () => {
-    try {
-      const response = await fetch('/api/events', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-        id: selectedEventId, 
-        title, 
-        description, 
-        date, 
-        location, 
-        imageUrl, 
-        category, 
-        status, 
-        isFeatured, 
-        organizer, 
-        endDate, 
-        startTime, 
-        endTime, 
-        maxAttendees: maxAttendees ? parseInt(maxAttendees) : null, 
-        price: price ? parseFloat(price) : null 
-      }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update event');
-      }
-
-      fetchEvents();
-      resetForm();
-      setSelectedEventId(null);
-      alert('Evento aggiornato con successo!');
-    } catch (error) {
-      console.error('Error updating event:', error);
-      alert('Errore nell\'aggiornamento dell\'evento: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  };
 
   const deleteEvent = async (id: string) => {
     const confirmed = window.confirm('Sei sicuro di voler eliminare questo evento? Questa azione non può essere annullata.');
@@ -147,10 +81,13 @@ const EventsManagement = () => {
     if (!confirmed) return;
     
     try {
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error('Autenticazione richiesta');
       const response = await fetch('/api/events', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ id }),
       });
@@ -229,11 +166,13 @@ const EventsManagement = () => {
     }
 
     try {
+      const idToken = await getIdToken();
       const formData = new FormData();
       formData.append('file', file);
       
       const response = await fetch('/api/upload', {
         method: 'POST',
+        headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         body: formData,
       });
 
@@ -271,10 +210,13 @@ const EventsManagement = () => {
 
   const createEvent = async (finalImageUrl: string) => {
     try {
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error('Autenticazione richiesta');
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ 
           title, 
@@ -310,10 +252,13 @@ const EventsManagement = () => {
 
   const updateEvent = async (finalImageUrl: string) => {
     try {
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error('Autenticazione richiesta');
       const response = await fetch('/api/events', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ 
           id: selectedEventId, 

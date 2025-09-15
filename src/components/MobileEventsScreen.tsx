@@ -288,15 +288,30 @@ export function MobileEventsScreen() {
     try {
       setLoading(true);
       setError(null);
+
+      let mapped: any[] = [];
+
+      // Primo tentativo: solo eventi in arrivo
       const res = await fetch('/api/events?upcoming=true', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Errore nel recupero degli eventi');
-      const data = await res.json();
-      const mapped = Array.isArray(data) ? data.map(mapEvent) : [];
+      if (res.ok) {
+        const data = await res.json();
+        mapped = Array.isArray(data) ? data.map(mapEvent) : [];
+      }
+
+      // Fallback: se vuoto o errore, prendi una lista generale
+      if (!res.ok || mapped.length === 0) {
+        const resAll = await fetch('/api/events?limit=20', { cache: 'no-store' });
+        if (!resAll.ok) throw new Error('Errore nel recupero degli eventi');
+        const dataAll = await resAll.json();
+        mapped = Array.isArray(dataAll) ? dataAll.map(mapEvent) : [];
+      }
+
       mapped.sort((a, b) => {
         const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
         const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
         return aDate.getTime() - bDate.getTime();
       });
+
       setEventsData(mapped);
     } catch (e) {
       console.error(e);

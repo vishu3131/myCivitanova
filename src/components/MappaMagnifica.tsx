@@ -75,8 +75,38 @@ const MappaMagnifica = () => {
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [demoMode, setDemoMode] = useState<boolean>(true);
 
-  const [mapKey, setMapKey] = useState(Date.now()); // forza re-render
+  // Genera una chiave iniziale unica per forzare un container DOM diverso tra i mount in Strict Mode
+  const initialMapKey = useMemo(() => `${Date.now()}-${Math.random()}` as const, []);
+  const [mapKey, setMapKey] = useState<string>(initialMapKey);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+
+  // Ritarda il mount del MapContainer per evitare doppio init in Strict Mode (reappear layout effects)
+  const [renderMap, setRenderMap] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setRenderMap(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // (rimosso wrapper key dinamico, manteniamo solo il mount ritardato)
+
+  // Cleanup esplicito della mappa per gestire doppio mount in Strict Mode
+  useEffect(() => {
+    const map = mapInstance;
+    return () => {
+      if (map) {
+        try {
+          map.off();
+          map.remove();
+          const container = (map as any).getContainer?.() || (map as any)._container;
+          if (container && (container as any)._leaflet_id) {
+            delete (container as any)._leaflet_id;
+          }
+        } catch (_) {
+          // ignore cleanup errors
+        }
+      }
+    };
+  }, [mapInstance]);
 
   // User location and heading
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
@@ -182,7 +212,7 @@ const MappaMagnifica = () => {
     setDemoMode(true);
 
     // Force MapContainer re-mount (resets center/zoom and all leaflet internals)
-    setMapKey(Date.now());
+    setMapKey(`${Date.now()}-${Math.random()}`);
 
     // Reload data will be triggered by demoMode change effect
   };
@@ -306,44 +336,47 @@ const MappaMagnifica = () => {
 
   return (
     <div className="relative h-screen">
-      <MapContainer
-        key={mapKey}
-        center={civitanovaPosition}
-        zoom={14}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-        whenCreated={setMapInstance}
-      >
-        <TileLayer url={tileUrl} attribution={tileAttribution} />
+      {renderMap && (
+          <MapContainer
+            key={mapKey}
+            id={`leaflet-map-${mapKey}`}
+            center={civitanovaPosition}
+            zoom={14}
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
+            whenCreated={setMapInstance}
+          >
+            <TileLayer url={tileUrl} attribution={tileAttribution} />
 
-        {/* Route preview */}
-        {routeCoords.length > 0 && (
-          <Polyline positions={routeCoords} pathOptions={{ color: '#C6FF00', weight: 5, opacity: 0.8 }} />
-        )}
-
-        {/* User position */}
-        {userPosition && (
-          <>
-            {typeof accuracy === 'number' && (
-              <Circle center={userPosition} radius={Math.max(accuracy, 10)} pathOptions={{ color: '#22d3ee', fillColor: '#22d3ee', fillOpacity: 0.15, weight: 1 }} />
+            {/* Route preview */}
+            {routeCoords.length > 0 && (
+              <Polyline positions={routeCoords} pathOptions={{ color: '#C6FF00', weight: 5, opacity: 0.8 }} />
             )}
-            <Marker position={userPosition} icon={defaultIcon} />
-          </>
-        )}
 
-        <MarkerClusterGroup key={activeCategory + searchTerm}>
-          {filteredPois.map(poi => (
-            <Marker
-              key={poi.id}
-              position={poi.position as [number, number]}
-              icon={getIconForPoi(poi.category)}
-              eventHandlers={{
-                click: () => handleMarkerClick(poi),
-              }}
-            />
-          ))}
-        </MarkerClusterGroup>
-      </MapContainer>
+            {/* User position */}
+            {userPosition && (
+              <>
+                {typeof accuracy === 'number' && (
+                  <Circle center={userPosition} radius={Math.max(accuracy, 10)} pathOptions={{ color: '#22d3ee', fillColor: '#22d3ee', fillOpacity: 0.15, weight: 1 }} />
+                )}
+                <Marker position={userPosition} icon={defaultIcon} />
+              </>
+            )}
+
+            <MarkerClusterGroup key={activeCategory + searchTerm}>
+              {filteredPois.map(poi => (
+                <Marker
+                  key={poi.id}
+                  position={poi.position as [number, number]}
+                  icon={getIconForPoi(poi.category)}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(poi),
+                  }}
+                />
+              ))}
+            </MarkerClusterGroup>
+          </MapContainer>
+      )}
 
       {/* Top chips - quick category filters */}
       <div className="absolute top-4 left-4 right-4 z-[600]">

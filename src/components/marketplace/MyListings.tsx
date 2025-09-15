@@ -5,7 +5,7 @@ import { Edit2, Trash2, Eye, Heart, MessageCircle, Plus, Package } from 'lucide-
 import { fetchUserListings, deleteListing } from '@/services/marketplace';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-hot-toast';
-import { Listing } from '@/services/marketplace';
+import type { Listing, ListingExpanded } from '@/types/marketplace';
 import Link from 'next/link';
 import Image from 'next/image';
 import ListingForm from './ListingForm';
@@ -15,7 +15,7 @@ interface MyListingsProps {
 }
 
 export default function MyListings({ className = '' }: MyListingsProps) {
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<ListingExpanded[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -30,8 +30,9 @@ export default function MyListings({ className = '' }: MyListingsProps) {
   const loadListings = async () => {
     setLoading(true);
     try {
-      const listingsData = await fetchUserListings();
-      setListings(listingsData);
+      if (!user) return;
+      const listingsData = await fetchUserListings(user.id);
+      setListings(listingsData as ListingExpanded[]);
     } catch (error) {
       console.error('Error loading listings:', error);
       toast.error('Errore nel caricamento degli annunci');
@@ -222,9 +223,9 @@ export default function MyListings({ className = '' }: MyListingsProps) {
                 <div className="flex gap-4">
                   {/* Immagine */}
                   <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    {listing.images && listing.images.length > 0 ? (
+                    {listing.listing_images && listing.listing_images.length > 0 ? (
                       <Image
-                        src={listing.images[0].url}
+                        src={listing.listing_images[0].url}
                         alt={listing.title}
                         width={96}
                         height={96}
@@ -256,14 +257,12 @@ export default function MyListings({ className = '' }: MyListingsProps) {
                         
                         <span className={`
                           px-2 py-1 text-xs rounded-full
-                          ${listing.type === 'sell' 
+                          ${listing.type === 'beni' 
                             ? 'bg-green-100 text-green-800' 
-                            : listing.type === 'buy'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
                           }
                         `}>
-                          {listing.type === 'sell' ? 'Vendo' : listing.type === 'buy' ? 'Cerco' : 'Scambio'}
+                          {listing.type === 'beni' ? 'Beni' : 'Servizi'}
                         </span>
                       </div>
                     </div>

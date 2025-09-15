@@ -56,6 +56,11 @@ const nextConfig = {
     optimizeCss: true, // Ottimizza il CSS
     optimizePackageImports: ['lucide-react', '@heroicons/react'], // Ottimizza le importazioni
   },
+
+  // Configurazione Turbopack (root assoluta del progetto)
+  turbopack: {
+    root: process.cwd(),
+  },
   
   // Configurazione per il caching
   onDemandEntries: {

@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import type { Event as DBEvent } from '@/lib/database';
+import { getSupabaseAdmin } from '@/utils/supabaseServer';
+import { verifyFirebaseIdToken } from '@/utils/firebaseAdmin';
 
 interface Event {
   id: string;
@@ -140,11 +142,33 @@ export async function GET(request: Request) {
   }
 }
 
+async function requireAdmin(req: NextRequest) {
+  const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+    return { error: new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } }) };
+  }
+  const idToken = authHeader.split(' ')[1];
+  const decoded = await verifyFirebaseIdToken(idToken);
+  const supabase = getSupabaseAdmin();
+  const { data: requester } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('firebase_uid', decoded.uid)
+    .single();
+  if (!requester || !['admin', 'moderator'].includes(requester.role)) {
+    return { error: new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } }) };
+  }
+  return { ok: true } as const;
+}
+
 // POST -> crea evento su Supabase
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if ('error' in auth) return auth.error;
+
     const body = await request.json();
-    const { title, description, date, location, category } = body as Partial<Event>;
+    const { title, description, date, location, category, maxAttendees, price, status } = body as Partial<Event>;
 
     // Validazione minima compatibile con la UI
     if (!title || !description || !date || !location || !category) {
@@ -169,6 +193,37 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validazione categoria ammessa
+    const allowedCategories: DBEvent['category'][] = ['culturale', 'sportivo', 'musicale', 'gastronomico', 'educativo', 'sociale', 'religioso', 'commerciale'];
+    if (!allowedCategories.includes(category as DBEvent['category'])) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'Categoria non valida' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validazioni numeriche
+    if (typeof maxAttendees === 'number' && maxAttendees < 0) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'maxAttendees deve essere >= 0' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (typeof price === 'number' && price < 0) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'price deve essere >= 0' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validazione status compatibile con UI
+    if (status && !['draft', 'published', 'cancelled'].includes(status)) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'status non valido' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const payload = apiPayloadToDb(body);
     const created = await DatabaseService.createEvent(payload);
     return NextResponse.json(dbEventToApi(created), { status: 201 });
@@ -185,10 +240,13 @@ export async function POST(request: Request) {
 }
 
 // PUT -> aggiorna evento su Supabase
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if ('error' in auth) return auth.error;
+
     const body = await request.json();
-    const { id } = body as Partial<Event>;
+    const { id, maxAttendees, price, status, category } = body as Partial<Event>;
 
     if (!id) {
       return new NextResponse(
@@ -196,6 +254,33 @@ export async function PUT(request: Request) {
           message: 'Validation error', 
           error: 'Event ID is required' 
         }), 
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validazioni extra opzionali
+    const allowedCategories: DBEvent['category'][] = ['culturale', 'sportivo', 'musicale', 'gastronomico', 'educativo', 'sociale', 'religioso', 'commerciale'];
+    if (category && !allowedCategories.includes(category as DBEvent['category'])) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'Categoria non valida' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (typeof maxAttendees === 'number' && maxAttendees < 0) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'maxAttendees deve essere >= 0' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (typeof price === 'number' && price < 0) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'price deve essere >= 0' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (status && !['draft', 'published', 'cancelled'].includes(status)) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Validation error', error: 'status non valido' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -220,8 +305,11 @@ export async function PUT(request: Request) {
 }
 
 // DELETE -> elimina evento su Supabase
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if ('error' in auth) return auth.error;
+
     const { id } = await request.json();
 
     if (!id) {
