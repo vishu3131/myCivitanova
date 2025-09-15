@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useLoading } from '@/context/LoadingContext';
 
 interface PageTransitionProps {
@@ -10,31 +11,30 @@ interface PageTransitionProps {
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const { stopLoading } = useLoading();
 
   useEffect(() => {
-    setIsTransitioning(true);
-    
-    const timer = setTimeout(() => {
-      setIsTransitioning(false);
-      // Ferma il loading globale quando la transizione è completata
-      stopLoading();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [pathname, stopLoading]);
+    // Porta la pagina in alto ad ogni cambio rotta per una migliore UX
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pathname]);
 
   return (
     <div className="relative">
-      {/* Page Content */}
-      <div
-        className={`transition-all duration-300 ${
-          isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-        }`}
-      >
-        {children}
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 12, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.985 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          onAnimationComplete={() => stopLoading()}
+          className="transition-all duration-300 will-change-transform"
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

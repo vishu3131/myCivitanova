@@ -279,6 +279,8 @@ const OptimizedAdminPage: React.FC = () => {
             { name: 'Contenuti', href: '/admin/content', icon: '📝' },
             { name: 'Eventi', href: '/admin/events', icon: '📅' },
             { name: 'POI', href: '/admin/pois', icon: '📍' },
+            { name: 'Merchants', href: '/admin/merchants', icon: '🏪' },
+            { name: 'Coupon', href: '/admin/coupons', icon: '🏷️' },
             { name: 'Segnalazioni', href: '/admin/reports', icon: '🚨' },
             { name: 'Impostazioni', href: '/admin/settings', icon: '⚙️' },
           ].map((link) => (

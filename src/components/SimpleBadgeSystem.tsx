@@ -30,7 +30,7 @@ interface SimpleBadgeSystemProps {
 }
 
 export function SimpleBadgeSystem({ userId, compact = false }: SimpleBadgeSystemProps) {
-  const { userStats, loading, xpNotification, quickActions } = useXPSystem(userId);
+  const { userStats, loading, xpNotification, quickActions } = useXPSystem(userId, { autoDailyLogin: false });
   const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<UserStats | null>(null);

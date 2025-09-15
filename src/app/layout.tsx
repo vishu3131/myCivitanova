@@ -1,17 +1,15 @@
 import './globals.css';
-import '../styles/quartieri.css';
-import '../styles/search-input.css';
-import { Inter, Space_Grotesk } from 'next/font/google';
-import { PageTransition } from '@/components/PageTransition';
-import { CircularDevNavigation } from '@/components/CircularDevNavigation';
-import BottomNavbarClientWrapper from '@/components/BottomNavbarClientWrapper';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Inter } from 'next/font/google';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { FirebaseSupabaseSyncProvider } from '@/components/FirebaseSupabaseSyncProvider';
+import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import BottomNavbarClientWrapper from '@/components/BottomNavbarClientWrapper';
 import { LoadingProvider } from '@/context/LoadingContext';
 import { GlobalLoader } from '@/components/GlobalLoader';
-import IntroOverlay from '@/components/IntroOverlay';
-import { Toaster } from 'react-hot-toast';
-import { FirebaseSupabaseSyncProvider } from '@/components/FirebaseSupabaseSyncProvider';
+import { PageTransition } from '@/components/PageTransition';
+import ToasterClient from '@/components/ToasterClient';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,35 +17,30 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-space-grotesk',
-});
-
 export const metadata = {
-  title: 'Civitanova Marche App',
+  title: 'MyCivitanova',
   description: 'Applicazione ufficiale della città di Civitanova Marche',
-  'apple-mobile-web-app-capable': 'yes',
-  'apple-touch-fullscreen': 'yes',
+  metadataBase: new URL('https://mycivitanova.it'),
+  alternates: {
+    canonical: '/',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'MyCivitanova',
+  },
   icons: {
-    icon: [
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any' }
-    ],
-    shortcut: '/favicon.ico',
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
-    ],
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 
 export const viewport = {
   width: 'device-width',
-  initialScale: 1.0,
-  maximumScale: 1.0,
+  initialScale: 1,
+  maximumScale: 1,
   userScalable: false,
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -55,73 +48,42 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Firebase configuration will be handled in components that need it
-
+  const isProd = process.env.NODE_ENV === 'production';
   return (
-    <html lang="it" className={`${inter?.variable || ''} ${spaceGrotesk?.variable || ''}`}>
+    <html lang="it" className={inter?.variable || ''}>
       <head>
-        {/* Network preconnects to reduce handshake latency */}
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        {/* Firebase preconnects will be handled automatically */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Canonical come fallback se non gestito per-route */}
+        <link rel="canonical" href="https://mycivitanova.it" />
       </head>
       <body className="font-sans bg-black text-white">
-        <ErrorBoundary>
-          <LoadingProvider>
-            <SidebarProvider>
-              <FirebaseSupabaseSyncProvider
-                options={{
-                  autoSync: true,
-                  refreshInterval: 30000,
-                  enableNotifications: false,
-                  realtimeSync: true,
-                  realtimeSyncOptions: {
-                    enableAuthSync: true,
-                    enableProfileSync: true,
-                    enableBatchSync: false,
-                    debounceDelay: 1000,
-                    maxRetries: 3,
-                    retryDelay: 2000
-                  }
-                }}
-              >
-                <IntroOverlay />
-                <GlobalLoader />
-                <PageTransition>
-                  {children}
-                </PageTransition>
-                <div>
-                  <BottomNavbarClientWrapper />
-                  {/* <CircularDevNavigation /> */}
-                </div>
-                <Toaster
-                  position="top-center"
-                  toastOptions={{
-                    duration: 4000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                    },
-                    success: {
-                      duration: 3000,
-                      iconTheme: {
-                        primary: '#4ade80',
-                        secondary: '#fff',
-                      },
-                    },
-                    error: {
-                      duration: 4000,
-                      iconTheme: {
-                        primary: '#ef4444',
-                        secondary: '#fff',
-                      },
-                    },
-                  }}
-                />
-              </FirebaseSupabaseSyncProvider>
-            </SidebarProvider>
-          </LoadingProvider>
-        </ErrorBoundary>
+        <LoadingProvider>
+          <SidebarProvider>
+            <FirebaseSupabaseSyncProvider
+              autoSync={true}
+              syncOnMount={true}
+              realtimeSync={true}
+              showNotifications={false}
+              realtimeSyncOptions={{
+                enableAuthSync: true,
+                enableProfileSync: true,
+                enableBatchSync: false,
+                debounceDelay: 1000,
+                maxRetries: 3
+              }}
+            >
+              <GlobalLoader />
+              <PageTransition>
+                {children}
+              </PageTransition>
+              <BottomNavbarClientWrapper />
+              <ToasterClient />
+              {isProd && <Analytics />}
+              {isProd && <SpeedInsights />}
+            </FirebaseSupabaseSyncProvider>
+          </SidebarProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

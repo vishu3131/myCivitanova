@@ -20,7 +20,7 @@ export default function TutorialSlidePage({ params }: TutorialSlidePageProps) {
 
   // TODO: Replace with actual user ID from auth context/session
   const userId = 'some_user_id';
-  const { addXP } = useXPSystem(userId);
+  const { addXP } = useXPSystem(userId, { autoDailyLogin: false });
 
   // Resolve current slideId, index and slide data
   const slideId = params?.slideId;

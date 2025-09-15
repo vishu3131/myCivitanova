@@ -1,56 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-
-type Coupon = {
-  id: string;
-  title: string;
-  description: string;
-  discount: string; // e.g. "-20%" o "2x1"
-  expiresAt: string; // ISO string
-  category: string; // e.g. "Ristoranti", "Shopping", "Tempo Libero"
-  code: string; // codice mostrato in cassa
-};
-
-const demoCoupons: Coupon[] = [
-  {
-    id: "mc-1",
-    title: "Burger Gourmet",
-    description: "Menu Burger + Patatine + Bibita",
-    discount: "-30%",
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(), // +3 giorni
-    category: "Ristoranti",
-    code: "CIVI-BURGER-30",
-  },
-  {
-    id: "shop-1",
-    title: "Sneaker Store",
-    description: "Su tutte le nuove collezioni",
-    discount: "-20%",
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).toISOString(), // +10 giorni
-    category: "Shopping",
-    code: "CIVI-SNK-20",
-  },
-  {
-    id: "fun-1",
-    title: "Cinema Downtown",
-    description: "Biglietto 2x1 dal lunedì al giovedì",
-    discount: "2x1",
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1).toISOString(), // +1 giorno
-    category: "Tempo Libero",
-    code: "CIVI-CINE-2X1",
-  },
-  {
-    id: "food-2",
-    title: "Pizzeria Bella Vita",
-    description: "Pizza + Bibita",
-    discount: "-25%",
-    expiresAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // scaduto 2 giorni fa
-    category: "Ristoranti",
-    code: "CIVI-PIZZA-25",
-  },
-];
+import { useAuthWithRole } from "@/hooks/useAuthWithRole";
 
 function formatDateShort(iso: string) {
   try {
@@ -61,39 +13,145 @@ function formatDateShort(iso: string) {
   }
 }
 
-function isExpired(iso: string) {
+function isExpired(iso?: string | null) {
+  if (!iso) return false;
   return new Date(iso).getTime() < Date.now();
 }
 
+type ApiCoupon = {
+  id: string;
+  merchant_id: string;
+  merchant?: { id: string; name: string; slug: string; category?: string; logo_url?: string };
+  title: string;
+  description?: string;
+  category?: string;
+  type: "percent" | "fixed_price" | "promo";
+  discount_percent?: number | null;
+  fixed_price?: number | null;
+  currency?: string | null;
+  max_per_user: number;
+  starts_at?: string | null;
+  expires_at?: string | null;
+};
+
 export default function ScontiPage() {
+  const { user, loading } = useAuthWithRole();
+  const [coupons, setCoupons] = useState<ApiCoupon[]>([]);
   const [activeTab, setActiveTab] = useState<"attivi" | "usati" | "scaduti">("attivi");
   const [usedIds, setUsedIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Tutto");
-  const [openCoupon, setOpenCoupon] = useState<Coupon | null>(null);
+  const [open, setOpen] = useState<{ coupon: ApiCoupon; code: string } | null>(null);
+  const [loadingList, setLoadingList] = useState(false);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  const categories = useMemo(() => ["Tutto", ...Array.from(new Set(demoCoupons.map(c => c.category)))], []);
+  useEffect(() => {
+    if (!user) return;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        setLoadingList(true);
+        const { supabase } = await import("@/utils/supabaseClient");
+        const { data: { session } } = await supabase.auth.getSession();
+        const idToken = (session as any)?.access_token || null;
+        if (!idToken) return;
+        const res = await fetch(`/api/coupons`, { signal: controller.signal, headers: { Authorization: `Bearer ${idToken}` } });
+        const data = await res.json();
+        setCoupons(data.coupons || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingList(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [user]);
+
+  const categories = useMemo(() => [
+    "Tutto",
+    ...Array.from(new Set((coupons || []).map((c) => c.category).filter(Boolean))) as string[],
+  ], [coupons]);
 
   const filtered = useMemo(() => {
-    const base = demoCoupons.filter((c) => {
-      const matchQuery = `${c.title} ${c.description} ${c.discount}`.toLowerCase().includes(query.toLowerCase());
+    const base = (coupons || []).filter((c) => {
+      const text = `${c.title} ${c.description ?? ''}`.toLowerCase();
+      const matchQuery = text.includes(query.toLowerCase());
       const matchCat = category === "Tutto" || c.category === category;
       return matchQuery && matchCat;
     });
 
-    if (activeTab === "attivi") return base.filter((c) => !isExpired(c.expiresAt) && !usedIds.includes(c.id));
     if (activeTab === "usati") return base.filter((c) => usedIds.includes(c.id));
-    return base.filter((c) => isExpired(c.expiresAt)); // scaduti
-  }, [activeTab, query, category, usedIds]);
+    if (activeTab === "scaduti") return base.filter((c) => isExpired(c.expires_at));
+    return base.filter((c) => !isExpired(c.expires_at) && !usedIds.includes(c.id));
+  }, [activeTab, query, category, usedIds, coupons]);
 
-  const onUse = (coupon: Coupon) => {
-    setOpenCoupon(coupon);
-  };
+  async function claim(coupon: ApiCoupon) {
+    try {
+      setClaimingId(coupon.id);
+      const { supabase } = await import("@/utils/supabaseClient");
+      const { data: { session } } = await supabase.auth.getSession();
+      const idToken = (session as any)?.access_token || null;
+      if (!idToken) throw new Error('Devi effettuare il login');
 
-  const confirmUse = () => {
-    if (openCoupon) setUsedIds((prev) => Array.from(new Set([...prev, openCoupon.id])));
-    setOpenCoupon(null);
-  };
+      const res = await fetch(`/api/coupons/${coupon.id}/claim`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Impossibile ottenere il codice');
+      setOpen({ coupon, code: data.code });
+    } catch (e: any) {
+      alert(e.message || 'Errore durante l\'operazione');
+    } finally {
+      setClaimingId(null);
+    }
+  }
+
+  async function confirmUse() {
+    if (!open) return;
+    try {
+      const { supabase } = await import("@/utils/supabaseClient");
+      const { data: { session } } = await supabase.auth.getSession();
+      const idToken = (session as any)?.access_token || null;
+      if (!idToken) throw new Error('Devi effettuare il login');
+
+      const res = await fetch(`/api/coupons/${open.coupon.id}/redeem`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ code: open.code })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Errore durante il redeem');
+      setUsedIds((prev) => Array.from(new Set([...prev, open.coupon.id])));
+      setOpen(null);
+    } catch (e: any) {
+      alert(e.message || 'Errore durante il redeem');
+    }
+  }
+
+  if (loading) {
+    return <div className="min-h-screen bg-black text-white p-4">Caricamento...</div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <div className="sticky top-0 z-20 bg-black/70 backdrop-blur border-b border-white/10">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Link href="/" className="text-white/70 hover:text-white">←</Link>
+            <h1 className="text-lg font-semibold tracking-wide">Sconti</h1>
+            <div className="ml-auto text-xs text-white/50">Offerte & Coupon</div>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto p-6 text-center">
+          <div className="text-3xl mb-2">🔒</div>
+          <h2 className="text-xl font-semibold">Accedi per vedere i coupon</h2>
+          <p className="text-white/70 mt-2">I codici sono riservati agli utenti registrati.</p>
+          <Link href="/login" className="inline-block mt-4 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 font-semibold">Accedi</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -166,13 +224,15 @@ export default function ScontiPage() {
 
       {/* List */}
       <div className="max-w-4xl mx-auto px-4 mt-4 pb-24 space-y-3">
-        {filtered.length === 0 ? (
+        {loadingList && <div className="text-center text-white/60 py-4">Caricamento coupon...</div>}
+        {!loadingList && filtered.length === 0 ? (
           <div className="text-center text-white/60 py-10">Nessun coupon da mostrare.</div>
         ) : null}
 
         {filtered.map((c) => {
-          const expired = isExpired(c.expiresAt);
+          const expired = isExpired(c.expires_at);
           const used = usedIds.includes(c.id);
+          const discountLabel = c.type === 'percent' && c.discount_percent ? `-${c.discount_percent}%` : c.type === 'fixed_price' && c.fixed_price ? `${c.fixed_price}€` : 'Promo';
           return (
             <div key={c.id} className={`relative overflow-hidden rounded-2xl border backdrop-blur p-4 ${
               expired
@@ -183,7 +243,7 @@ export default function ScontiPage() {
             }`}>
               <div className="flex items-start gap-3">
                 <div className="text-3xl select-none" aria-hidden>
-                  {c.category === "Ristoranti" ? "🍔" : c.category === "Shopping" ? "🛍️" : "🎉"}
+                  {c.category === "Ristoranti" ? "🍸" : c.category === "Shopping" ? "🛍️" : "🎉"}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
@@ -192,8 +252,10 @@ export default function ScontiPage() {
                       <div className="text-white/70 text-sm">{c.description}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-extrabold text-purple-300">{c.discount}</div>
-                      <div className="text-[11px] text-white/60">Scade il {formatDateShort(c.expiresAt)}</div>
+                      <div className="text-xl font-extrabold text-purple-300">{discountLabel}</div>
+                      {c.expires_at ? (
+                        <div className="text-[11px] text-white/60">Scade il {formatDateShort(c.expires_at)}</div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -205,15 +267,16 @@ export default function ScontiPage() {
                         ? "text-white/70 border-white/10"
                         : "text-purple-300 border-purple-500/40"
                     }`}>
-                      {c.category}
+                      {c.merchant?.name || c.category || 'Coupon'}
                     </div>
                     <div className="flex items-center gap-2">
                       {!expired && !used ? (
                         <button
-                          onClick={() => onUse(c)}
-                          className="px-3 py-2 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-700 transition-colors"
+                          onClick={() => claim(c)}
+                          disabled={claimingId === c.id}
+                          className="px-3 py-2 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-60"
                         >
-                          Usa ora
+                          {claimingId === c.id ? 'Richiesta...' : 'Ottieni codice'}
                         </button>
                       ) : (
                         <button
@@ -237,34 +300,36 @@ export default function ScontiPage() {
         })}
       </div>
 
-      {/* Modal utilizzo coupon */}
-      {openCoupon ? (
+      {/* Modal codice */}
+      {open ? (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/70 backdrop-blur" />
           <div className="relative z-10 max-w-md mx-auto mt-16 px-4">
             <div className="rounded-2xl border border-white/10 bg-black p-4">
               <div className="flex items-start gap-3">
                 <div className="text-3xl select-none" aria-hidden>
-                  {openCoupon.category === "Ristoranti" ? "🍔" : openCoupon.category === "Shopping" ? "🛍️" : "🎉"}
+                  {open.coupon.category === "Ristoranti" ? "🍸" : open.coupon.category === "Shopping" ? "🛍️" : "🎉"}
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-lg leading-tight">{openCoupon.title}</div>
-                  <div className="text-white/70 text-sm">{openCoupon.description}</div>
+                  <div className="font-semibold text-lg leading-tight">{open.coupon.title}</div>
+                  <div className="text-white/70 text-sm">{open.coupon.description}</div>
                 </div>
               </div>
 
               <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-center">
                 <div className="text-xs text-white/60">Codice da mostrare in cassa</div>
-                <div className="mt-1 text-2xl font-mono tracking-wider">{openCoupon.code}</div>
-                <div className="mt-2 text-[11px] text-white/50">Valido fino al {formatDateShort(openCoupon.expiresAt)}</div>
+                <div className="mt-1 text-2xl font-mono tracking-wider">{open.code}</div>
+                {open.coupon.expires_at ? (
+                  <div className="mt-2 text-[11px] text-white/50">Valido fino al {formatDateShort(open.coupon.expires_at)}</div>
+                ) : null}
               </div>
 
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
-                  onClick={() => setOpenCoupon(null)}
+                  onClick={() => setOpen(null)}
                   className="px-3 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 hover:bg-white/10"
                 >
-                  Annulla
+                  Chiudi
                 </button>
                 <button
                   onClick={confirmUse}

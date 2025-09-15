@@ -18,6 +18,16 @@ interface UserStats {
   rank_position: number;
 }
 
+// Default locale per evitare errori quando il DB non è disponibile
+const DEFAULT_USER_STATS: UserStats = {
+  total_xp: 0,
+  current_level: 1,
+  level_progress: 0,
+  badges_count: 0,
+  badges_list: [],
+  rank_position: 999,
+};
+
 export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolean }) {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,7 +43,17 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_user_stats', {
+      // Se il client diretto di Supabase non è configurato, evita RPC e usa fallback
+      const canUseRpc = typeof (supabase as any)?.rpc === 'function';
+      if (!canUseRpc) {
+        console.warn('[XP] Supabase RPC non disponibile: uso dati locali di default', {
+          hasDirectClient: !!(supabase as any)?.direct,
+        });
+        setUserStats(DEFAULT_USER_STATS);
+        return;
+      }
+
+      const { data, error } = await (supabase as any).rpc('get_user_stats', {
         p_user_id: userId
       });
 
@@ -43,13 +63,13 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         const stats = data[0];
         
         // Ottieni la lista dei badge separatamente
-        const { data: badgesData } = await supabase
+        const { data: badgesData, error: badgesError } = await supabase
           .from('user_badges')
           .select('badge_name')
           .eq('user_id', userId)
           .not('earned_at', 'is', null);
         
-        const badgesList = badgesData ? badgesData.map(b => b.badge_name) : [];
+        const badgesList = !badgesError && badgesData ? badgesData.map((b: any) => b.badge_name) : [];
         
         setUserStats({
           total_xp: stats.total_xp || 0,
@@ -61,36 +81,25 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         });
       } else {
         // Utente nuovo - inizializza con dati base
-        setUserStats({
-          total_xp: 0,
-          current_level: 1,
-          level_progress: 0,
-          badges_count: 0,
-          badges_list: [],
-          rank_position: 999
-        });
+        setUserStats(DEFAULT_USER_STATS);
       }
-    } catch (error) {
-      // Log solo se l'errore ha contenuto significativo
-      if (error && (error.message || error.code || error.details)) {
-        console.error('Errore caricamento statistiche XP:', {
-          error: error,
-          message: error?.message || 'Errore sconosciuto',
-          code: error?.code || 'Nessun codice',
-          details: error?.details || 'Nessun dettaglio',
-          userId: userId,
-          function: 'get_user_stats'
-        });
+    } catch (error: unknown) {
+      // Normalizza l'errore per evitare output vuoti {}
+      const e = error as any;
+      const info = {
+        message: e?.message || e?.error_description || e?.error || 'Errore sconosciuto',
+        code: e?.code || e?.status || 'Nessun codice',
+        details: e?.details || e?.hint || 'Nessun dettaglio',
+        keys: e && typeof e === 'object' ? Object.keys(e) : [],
+        userId,
+        function: 'get_user_stats',
+      };
+      // Log solo se c'è qualche contenuto informativo
+      if (info.message !== 'Errore sconosciuto' || info.code !== 'Nessun codice' || info.details !== 'Nessun dettaglio') {
+        console.error('Errore caricamento statistiche XP:', info);
       }
       // Fallback ai dati demo
-      setUserStats({
-        total_xp: 0,
-        current_level: 1,
-        level_progress: 0,
-        badges_count: 0,
-        badges_list: [],
-        rank_position: 999
-      });
+      setUserStats(DEFAULT_USER_STATS);
     } finally {
       setLoading(false);
     }
@@ -104,7 +113,15 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     if (!userId) return null;
     
     try {
-      const { data, error } = await supabase.rpc('add_xp_simple', {
+      const canUseRpc = typeof (supabase as any)?.rpc === 'function';
+      if (!canUseRpc) {
+        // Mostra comunque la notifica locale e termina senza errore
+        setXpNotification({ xp: amount });
+        setTimeout(() => setXpNotification(null), 3000);
+        return null;
+      }
+
+      const { data, error } = await (supabase as any).rpc('add_xp_simple', {
         p_user_id: userId,
         p_activity_type: activityType,
         p_xp_amount: amount,
@@ -129,15 +146,21 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         // Ricarica statistiche
         await loadUserStats();
         
+        // Notifica globale per sincronizzare altri widget
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('xp-updated', { detail: { userId, type: 'addXP', amount } }));
+        }
+        
         return result;
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const e = error as any;
       const errorInfo = {
-        errorType: typeof error,
-        errorString: String(error),
-        errorMessage: error?.message || 'Nessun messaggio di errore',
-        errorCode: error?.code || 'Nessun codice errore',
-        errorDetails: error?.details || 'Nessun dettaglio',
+        errorType: typeof e,
+        errorString: String(e),
+        errorMessage: e?.message || 'Nessun messaggio di errore',
+        errorCode: e?.code || 'Nessun codice errore',
+        errorDetails: e?.details || 'Nessun dettaglio',
         userId: userId,
         activityType: activityType,
         amount: amount,
@@ -147,9 +170,9 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         supabaseConnected: !!supabase
       };
       // Log solo se l'errore ha contenuto significativo
-      if (error && (error.message || error.code || error.details)) {
+      if (e && (e.message || e.code || e.details)) {
         console.error('Errore aggiunta XP:', errorInfo);
-        console.error('Errore originale:', error);
+        console.error('Errore originale:', e);
       }
       
       // Fallback: mostra comunque la notifica XP
@@ -165,7 +188,12 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     if (!userId) return null;
     
     try {
-      const { data, error } = await supabase.rpc('daily_login_xp', {
+      const canUseRpc = typeof (supabase as any)?.rpc === 'function';
+      if (!canUseRpc) {
+        return null;
+      }
+
+      const { data, error } = await (supabase as any).rpc('daily_login_xp', {
         p_user_id: userId
       });
 
@@ -182,54 +210,95 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
           setTimeout(() => setXpNotification(null), 3000);
           
           await loadUserStats();
+          // Notifica globale per sincronizzare altri widget
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('xp-updated', { detail: { userId, type: 'daily', amount: result.xp_earned } }));
+          }
         }
         
         return result;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Log solo se l'errore ha contenuto significativo (allineato con addXP)
-      if (error && (error.message || error.code || error.details)) {
+      const e = error as any;
+      if (e && (e.message || e.code || e.details)) {
         const errorInfo = {
-          errorType: typeof error,
-          errorString: error ? String(error) : 'Error is null/undefined',
-          errorMessage: error?.message || 'Nessun messaggio di errore',
-          errorCode: error?.code || 'Nessun codice errore',
-          errorDetails: error?.details || 'Nessun dettaglio',
-          errorKeys: error && typeof error === 'object' ? Object.keys(error) : [],
+          errorType: typeof e,
+          errorString: String(e),
+          errorMessage: e?.message || 'Nessun messaggio di errore',
+          errorCode: e?.code || 'Nessun codice errore',
+          errorDetails: e?.details || 'Nessun dettaglio',
+          errorKeys: e && typeof e === 'object' ? Object.keys(e) : [],
           userId: userId,
           rpcFunction: 'daily_login_xp',
           timestamp: new Date().toISOString(),
           hasUserId: !!userId,
           supabaseConnected: !!supabase,
         };
-        console.error('Errore login giornaliero - Info dettagliate:', errorInfo);
-        console.error('Errore login giornaliero - Oggetto originale:', error);
+        const hasMeaningful =
+          errorInfo.errorMessage !== 'Nessun messaggio di errore' ||
+          errorInfo.errorCode !== 'Nessun codice errore' ||
+          errorInfo.errorDetails !== 'Nessun dettaglio' ||
+          (errorInfo.errorKeys && errorInfo.errorKeys.length > 0);
+        if (hasMeaningful && process.env.NODE_ENV !== 'production') {
+          console.warn('XP: dailyLogin non critico, procedo offline. Dettagli:', errorInfo);
+        }
       }
     }
-    
+
     return null;
   }, [userId, loadUserStats]);
 
   useEffect(() => {
-    if (userId) {
-      loadUserStats();
-      if (options?.autoDailyLogin !== false) {
-        dailyLogin(); // Automatico al caricamento
+    if (!userId) return;
+    const handler = (e: any) => {
+      try {
+        const detail = e?.detail;
+        if (!detail || detail.userId !== userId) return;
+        // Ricarica le statistiche quando altri componenti aggiornano gli XP
+        loadUserStats();
+      } catch {
+        // ignora
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('xp-updated', handler as EventListener);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('xp-updated', handler as EventListener);
+      }
+    };
+  }, [userId, loadUserStats]);
+  // Inizializzazione al cambio utente: evita side-effect durante il render
+  useEffect(() => {
+    if (!userId) return;
+    loadUserStats();
+    if (options?.autoDailyLogin !== false) {
+      // Guardia once-per-session per evitare invocazioni multiple automatiche nello stesso tab
+      if (typeof window !== 'undefined') {
+        try {
+          const sessionKey = `xp:autoDailyLogin:attempted:${userId}`;
+          const alreadyAttempted = sessionStorage.getItem(sessionKey);
+          if (!alreadyAttempted) {
+            sessionStorage.setItem(sessionKey, '1');
+            dailyLogin(); // Automatico al caricamento (solo una volta per sessione)
+          } else {
+            // opzionale: debug
+            // console.debug('[XP] Auto dailyLogin già tentato in questa sessione per', userId);
+          }
+        } catch {
+          // In caso di errori con lo storage, fallback: prova comunque una sola volta
+          dailyLogin();
+        }
+      } else {
+        // Ambiente senza window: fallback
+        dailyLogin();
       }
     }
   }, [userId, loadUserStats, dailyLogin, options?.autoDailyLogin]);
 
-  // Azioni rapide predefinite
-  const quickActions = {
-    share: () => addXP('share_content', 5, { source: 'quick_action' }),
-    explore: () => addXP('location_visit', 30, { location: 'quick_explore' }),
-    report: () => addXP('submit_report', 25, { source: 'quick_action' }),
-    comment: () => addXP('helpful_comment', 15, { source: 'quick_action' }),
-    event: () => addXP('event_participation', 75, { source: 'quick_action' }),
-    survey: () => addXP('survey_complete', 40, { source: 'quick_action' })
-  };
-
-
+  // IMPORTANTISSIMO: ritorniamo l'API dell'hook per evitare undefined durante il destructuring
   return {
     userStats,
     loading,
@@ -237,58 +306,18 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
     addXP,
     dailyLogin,
     loadUserStats,
-    quickActions
   };
 }
 
-// Hook semplificato per componenti che necessitano solo delle statistiche
 export function useUserStats(userId?: string) {
-  const { userStats, loading, loadUserStats } = useXPSystem(userId);
-  
-  return {
-    userStats,
-    loading,
-    refresh: loadUserStats
-  };
+  const { userStats, loading } = useXPSystem(userId, { autoDailyLogin: false });
+  return { userStats, loading };
 }
 
-// Hook per notifiche XP globali
 export function useXPNotifications() {
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    xp: number;
-    levelUp?: boolean;
-    newBadges?: string[];
-    timestamp: number;
-  }>>([]);
-
-  const addNotification = useCallback((notification: {
-    xp: number;
-    levelUp?: boolean;
-    newBadges?: string[];
-  }) => {
-    const id = Date.now().toString();
-    const newNotification = {
-      ...notification,
-      id,
-      timestamp: Date.now()
-    };
-    
-    setNotifications(prev => [...prev, newNotification]);
-    
-    // Rimuovi automaticamente dopo 3 secondi
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 3000);
+  const [notification, setNotification] = useState<{xp: number; levelUp?: boolean; newBadges?: string[]} | null>(null);
+  useEffect(() => {
+    // Placeholder per future migliorie (event bus, ecc.)
   }, []);
-
-  const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
-
-  return {
-    notifications,
-    addNotification,
-    removeNotification
-  };
+  return { notification, setNotification };
 }

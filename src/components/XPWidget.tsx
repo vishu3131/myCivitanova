@@ -11,7 +11,7 @@ interface XPWidgetProps {
 }
 
 export function XPWidget({ userId, onClick }: XPWidgetProps) {
-  const { userStats, loading, xpNotification } = useXPSystem(userId);
+  const { userStats, loading, xpNotification } = useXPSystem(userId, { autoDailyLogin: false });
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
   const [demoNotification, setDemoNotification] = useState<any>(null);
@@ -222,7 +222,7 @@ export function XPWidget({ userId, onClick }: XPWidgetProps) {
 
 // Widget XP compatto per spazi più piccoli
 export function XPWidgetCompact({ userId, onClick }: XPWidgetProps) {
-  const { userStats, loading, xpNotification } = useXPSystem(userId);
+  const { userStats, loading, xpNotification } = useXPSystem(userId, { autoDailyLogin: false });
   const [demoMode, setDemoMode] = useState(false);
   const [demoStats, setDemoStats] = useState<any>(null);
 

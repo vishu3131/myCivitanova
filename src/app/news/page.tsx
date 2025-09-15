@@ -1,4 +1,3 @@
-import { BottomNavbar } from "../../components/BottomNavbar";
 import { StatusBar } from "../../components/StatusBar";
 import { NewsCarousel } from "../../components/NewsCarousel";
 import { NewsFeed } from "../../components/NewsFeed"; // Supponendo che questo componente verrà creato o modificato
@@ -70,7 +69,7 @@ export default function NewsPage() {
       </div>
 
       {/* Navigazione inferiore */}
-      <BottomNavbar />
+      
     </div>
   );
 }

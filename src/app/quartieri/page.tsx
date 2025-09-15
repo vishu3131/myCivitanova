@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Header } from '@/components/Header';
-import { BottomNavbar } from '@/components/BottomNavbar';
+
 import { quartieriData, Quartiere, QuartiereEvent, QuartierePark } from '@/data/quartieriData';
 import { QuartieriCarousel3D } from '@/components/QuartieriCarousel3D';
 import { PhotoGallery3D } from '@/components/PhotoGallery3D';
@@ -310,7 +310,7 @@ const QuartieriPage = () => {
         </div>
       </div>
 
-      <BottomNavbar />
+      
     </div>
   );
 };

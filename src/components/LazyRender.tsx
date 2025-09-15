@@ -25,8 +25,16 @@ const LazyRender: React.FC<LazyRenderProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
+    if (!isClient) return;
+    
     const node = ref.current;
     if (!node) return;
     if (visible && once) return;
@@ -63,9 +71,9 @@ const LazyRender: React.FC<LazyRenderProps> = ({
         if (observer) observer.disconnect();
       } catch {}
     };
-  }, [rootMargin, threshold, once, visible]);
+  }, [isClient, rootMargin, threshold, once, visible]);
 
-  return <div ref={ref}>{visible ? children : fallback}</div>;
+  return <div ref={ref}>{(isClient && visible) ? children : fallback}</div>;
 };
 
 export default LazyRender;

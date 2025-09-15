@@ -28,7 +28,7 @@ export function TutorialWidget({ userId, onStartTutorial, className = '' }: Tuto
   });
   const [shouldPulse, setShouldPulse] = useState(false);
   const [showIntroVideo, setShowIntroVideo] = useState(false);
-  const { addXP } = useXPSystem(userId);
+  const { addXP } = useXPSystem(userId, { autoDailyLogin: false });
 
   // Carica stato
   useEffect(() => {

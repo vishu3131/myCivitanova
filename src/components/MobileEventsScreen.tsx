@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, Clock, Users, Heart, Share2, MapPin, ArrowRight } from 'lucide-react';
-import { BottomNavbar } from './BottomNavbar';
+
 import { PullToRefresh } from './PullToRefresh';
 import { useToast } from './Toast';
 import EventPopup from './EventPopup';
@@ -319,7 +319,7 @@ export function MobileEventsScreen() {
             <span>Caricamento eventi...</span>
           </div>
         </div>
-        <BottomNavbar />
+        
       </div>
     );
   }
@@ -432,7 +432,7 @@ export function MobileEventsScreen() {
             <span>Caricamento eventi...</span>
           </div>
         </div>
-        <BottomNavbar />
+        
       </div>
     );
   }
@@ -446,7 +446,7 @@ export function MobileEventsScreen() {
             <button onClick={fetchEvents} className="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20">Riprova</button>
           </div>
         </div>
-        <BottomNavbar />
+        
         <ToastContainer />
       </div>
     );
@@ -458,7 +458,7 @@ export function MobileEventsScreen() {
         <div className="flex-1 flex items-center justify-center px-6">
           <p className="text-white/70">Nessun evento disponibile</p>
         </div>
-        <BottomNavbar />
+        
         <ToastContainer />
       </div>
     );
@@ -824,7 +824,7 @@ export function MobileEventsScreen() {
         </div>
       </PullToRefresh>
 
-      <BottomNavbar />
+      
 
       {isPopupOpen && selectedEvent && (
         <EventPopup event={selectedEvent} onClose={closePopup} />

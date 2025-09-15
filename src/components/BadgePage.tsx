@@ -123,7 +123,35 @@ function LeaderboardComponent({ userId }: { userId?: string }) {
 
       if (error) throw error;
 
-      setLeaderboardData(data || []);
+      // Normalizza la risposta RPC per ottenere un array di utenti
+      let leaderboardArray: any[] = [];
+      if (Array.isArray(data)) {
+        if (data.length > 0) {
+          const first = (data as any)[0];
+          if (first && Array.isArray(first)) {
+            leaderboardArray = first as any[];
+          } else if (first && typeof first === 'object' && 'get_leaderboard' in first && Array.isArray((first as any).get_leaderboard)) {
+            leaderboardArray = (first as any).get_leaderboard;
+          } else {
+            leaderboardArray = data as any[];
+          }
+        } else {
+          leaderboardArray = [];
+        }
+      } else if (data && typeof data === 'object' && 'get_leaderboard' in (data as any) && Array.isArray((data as any).get_leaderboard)) {
+        leaderboardArray = (data as any).get_leaderboard;
+      } else {
+        leaderboardArray = [];
+      }
+
+      // Aggiungi rank se mancante e filtra per >= 100 XP
+      const ranked = leaderboardArray.map((user: any, index: number) => ({
+        ...user,
+        rank: user?.rank ?? index + 1,
+      }));
+      const filtered = ranked.filter((u: any) => (u?.total_xp ?? 0) >= 100);
+
+      setLeaderboardData(filtered);
     } catch (error) {
       console.error('Errore nel caricamento della classifica:', error);
       // Fallback con dati demo se il database non è disponibile
@@ -137,6 +165,17 @@ function LeaderboardComponent({ userId }: { userId?: string }) {
 
   useEffect(() => {
     loadLeaderboard();
+  }, [loadLeaderboard]);
+
+  // Aggiorna la classifica quando arrivano aggiornamenti XP globali
+  useEffect(() => {
+    const handler = () => {
+      loadLeaderboard();
+    };
+    window.addEventListener('xp-updated', handler as EventListener);
+    return () => {
+      window.removeEventListener('xp-updated', handler as EventListener);
+    };
   }, [loadLeaderboard]);
 
   if (loading) {

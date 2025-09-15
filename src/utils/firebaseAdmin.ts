@@ -12,7 +12,8 @@ function initFirebaseAdmin() {
   // Normalizza eventuali \n nella chiave privata
   const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
 
-  if (projectId && clientEmail && privateKey) {
+  if (projectId && clientEmail && privateKey && privateKey.trim() !== '') {
+    console.log('🔧 Inizializzazione Firebase Admin con credenziali certificate');
     initializeApp({
       credential: cert({
         projectId,
@@ -21,10 +22,18 @@ function initFirebaseAdmin() {
       }),
     });
   } else {
-    // Fallback a ADC solo in ambienti locali dove configurato
-    initializeApp({
-      credential: applicationDefault(),
-    });
+    console.warn('⚠️ Credenziali Firebase Admin non configurate, tentativo con ADC');
+    console.warn('📝 Per configurare: aggiungi FIREBASE_CLIENT_EMAIL e FIREBASE_PRIVATE_KEY al file .env.local');
+    try {
+      // Fallback a ADC solo in ambienti locali dove configurato
+      initializeApp({
+        credential: applicationDefault(),
+      });
+      console.log('✅ Firebase Admin inizializzato con ADC');
+    } catch (error) {
+      console.error('❌ Impossibile inizializzare Firebase Admin:', error);
+      throw new Error('Firebase Admin non configurato correttamente. Verifica le credenziali nel file .env.local');
+    }
   }
 }
 

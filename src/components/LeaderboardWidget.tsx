@@ -69,17 +69,14 @@ export default function LeaderboardWidget({
         throw error;
       }
 
-      // La funzione restituisce un array di oggetti, prendiamo il primo elemento
-      let leaderboardArray = [];
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        // Controlla se i dati sono nella struttura attesa
-        if (data[0] && data[0].get_leaderboard) {
-          leaderboardArray = data[0].get_leaderboard;
-        } else if (Array.isArray(data[0])) {
-          // Fallback se i dati sono direttamente un array
-          leaderboardArray = data;
-        }
+      // Normalizza la risposta RPC: gestione sia dell'array diretto che di possibili wrapper
+      let leaderboardArray: any[] = [];
+      if (Array.isArray(data)) {
+        leaderboardArray = data as any[];
+      } else if (data && typeof data === 'object' && (data as any).get_leaderboard && Array.isArray((data as any).get_leaderboard)) {
+        leaderboardArray = (data as any).get_leaderboard as any[];
+      } else if (Array.isArray((data as any)?.[0]?.get_leaderboard)) {
+        leaderboardArray = (data as any)[0].get_leaderboard as any[];
       }
       
       // Aggiungiamo il rank a ogni utente se non è già presente
@@ -88,7 +85,10 @@ export default function LeaderboardWidget({
         rank: user.rank || index + 1
       }));
       
-      setLeaderboardData(rankedData);
+      // Filtro XP: mostra solo utenti con almeno 100 XP
+      const filtered = rankedData.filter((u: any) => (u.total_xp ?? 0) >= 100);
+      
+      setLeaderboardData(filtered);
     } catch (error) {
       console.error('Errore nel caricamento della classifica:', error);
       setError('Impossibile caricare la classifica');
@@ -112,6 +112,23 @@ export default function LeaderboardWidget({
 
   useEffect(() => {
     loadLeaderboard();
+  }, [loadLeaderboard]);
+
+  // Ricarica la classifica quando viene emesso un evento globale di aggiornamento XP
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail || {};
+        // Possiamo ricaricare sempre; opzionalmente si potrebbe filtrare per utente
+        loadLeaderboard();
+      } catch {
+        loadLeaderboard();
+      }
+    };
+    window.addEventListener('xp-updated', handler as EventListener);
+    return () => {
+      window.removeEventListener('xp-updated', handler as EventListener);
+    };
   }, [loadLeaderboard]);
 
   const getRankIcon = (rank: number) => {

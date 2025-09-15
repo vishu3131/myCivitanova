@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { StatusBar } from './StatusBar';
-import { BottomNavbar } from './BottomNavbar';
+
 import { SearchModal } from './SearchModal';
 import { ArrowLeft, Search, Filter, Star, MapPin, Globe, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -327,7 +327,7 @@ export function MobileExploreScreen() {
         onSearch={(query) => setSearchQuery(query)}
       />
 
-      <BottomNavbar />
+      
 
       <style jsx>{`
         .shopping-pill {

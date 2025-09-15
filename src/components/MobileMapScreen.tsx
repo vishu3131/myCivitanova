@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { StatusBar } from './StatusBar';
-import { BottomNavbar } from './BottomNavbar';
+
 import { ArrowLeft, Search, Filter, Navigation, MapPin, Star, Clock, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -231,7 +231,7 @@ export function MobileMapScreen() {
           )}
         </div>
       </div>
-      <BottomNavbar />
+      
     </div>
   );
 }

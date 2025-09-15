@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from './StatusBar';
-import { BottomNavbar } from './BottomNavbar';
+
 import { ArrowLeft, Search, FileText, CreditCard, Phone, MapPin, Clock, ChevronRight, AlertCircle, Navigation, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BusWidget from './BusWidget';
@@ -538,7 +538,7 @@ export function MobileServicesScreen() {
 
 
 
-      <BottomNavbar />
+      
     </div>
   );
 }

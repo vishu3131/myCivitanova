@@ -53,7 +53,7 @@ export function Sidebar() {
       {/* Sidebar principale */}
       <div 
         className={`
-          fixed left-0 top-0 h-screen flex flex-col 
+          hidden md:flex fixed left-0 top-0 h-screen flex flex-col 
           bg-[#0E0E0E]/95 backdrop-blur-sm text-white z-20 py-4 md:py-6
           rounded-tr-3xl rounded-br-3xl shadow-[4px_0_12px_rgba(0,0,0,0.2)]
           transition-all duration-500 ease-in-out
@@ -142,7 +142,7 @@ export function Sidebar() {
       {/* Pulsante fluttuante per riaprire la sidebar quando è chiusa */}
       <div 
         className={`
-          fixed left-0 top-20 md:top-1/2 md:-translate-y-1/2 z-10
+          hidden md:block fixed left-0 top-20 md:top-1/2 md:-translate-y-1/2 z-10
           transition-all duration-500 ease-in-out
           ${isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}
         `}

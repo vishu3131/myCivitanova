@@ -547,9 +547,18 @@ div.navbar-fixed {
   right: 0 !important;
 }
 
-/* Prevent content from going under navbar */
-.content-with-navbar {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+/* Prevent content from going under navbar (mobile only) */
+@media (max-width: 767px) {
+  .content-with-navbar {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* On tablet/desktop, no extra bottom padding */
+@media (min-width: 768px) {
+  .content-with-navbar {
+    padding-bottom: 0 !important;
+  }
 }
 
 /* Ensure status bar is always visible */
@@ -766,7 +775,46 @@ div.navbar-fixed {
   animation: menu-slide-up 0.3s ease-out forwards;
 }
 
+/* Radial menu optimizations for mobile */
+.radial-menu-container {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
 
+.radial-menu-item {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-origin: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.radial-menu-item:active {
+  transform: scale(0.95);
+}
+
+.radial-menu-label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Improved touch targets for mobile */
+@media (max-width: 480px) {
+  .radial-menu-item {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .radial-menu-label {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}
 
 /* Smooth transitions for all interactive elements */
 .nav-item-transition {

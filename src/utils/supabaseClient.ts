@@ -92,9 +92,13 @@ export const supabase = {
           .from('profiles')
           .select('*')
           .eq('firebase_uid', currentUser.id) // Use currentUser.id from AuthUser
-          .single();
+          .maybeSingle();
 
         if (error) {
+          // Se l'errore è dovuto a nessuna riga trovata, ritorna semplicemente null senza rumore in console
+          if ((error as any)?.code === 'PGRST116' || (error as any)?.details?.includes('Results contain 0 rows')) {
+            return null;
+          }
           console.error('Errore nel recupero profilo sincronizzato:', error);
           return null;
         }

@@ -26,13 +26,34 @@ import EventsCarousel from './EventsCarousel';
 import LazyRender from './LazyRender';
 import TutorialDebugOverlay from './TutorialDebugOverlay';
 import ScontiWidget from './ScontiWidget';
+import { ErrorBoundary } from './ErrorBoundary';
+
+
+// Helper per retry sugli import dinamici per mitigare ChunkLoadError
+function importWithRetry<T>(factory: () => Promise<T>, retries = 2, delayMs = 500): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const attempt = (n: number) => {
+      factory()
+        .then(resolve)
+        .catch((err) => {
+          const isChunkError = err && (err.name === 'ChunkLoadError' || /Loading chunk .* failed/i.test(String(err?.message)));
+          if (n > 0 && isChunkError) {
+            setTimeout(() => attempt(n - 1), delayMs);
+          } else {
+            reject(err);
+          }
+        });
+    };
+    attempt(retries);
+  });
+}
 
 // Lazy-loaded components for performance
-const DynamicMarketplaceWidget = dynamic(() => import('./MarketplaceWidget'), {
+const DynamicMarketplaceWidget = dynamic(() => importWithRetry(() => import('./MarketplaceWidget')), {
   ssr: false,
   loading: () => (
     <div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
+  )
 });
 const DynamicSocialWidgetsContainer = dynamic(() => import('./SocialWidgetsContainer'), {
   ssr: false,
@@ -181,6 +202,9 @@ export function MobileHomeScreen() {
     // Check if tutorial has been hidden before and intro is complete
     const checkTutorial = () => {
       try {
+        // Ensure we're on the client side
+        if (typeof window === 'undefined') return;
+        
         const introComplete = localStorage.getItem('introUnlockedV1') === '1';
         const tutorialHidden = isHomeTutorialHidden();
         
@@ -510,7 +534,16 @@ export function MobileHomeScreen() {
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-1">
               <LazyRender fallback={<div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>}>
-                <DynamicMarketplaceWidget />
+                <ErrorBoundary
+                  fallback={
+                    <div className="h-[80px] bg-white/5 border border-white/10 rounded-xl flex items-center justify-between px-3">
+                      <span className="text-xs text-white/70">Impossibile caricare il Marketplace. Riprova a ricaricare.</span>
+                      <button onClick={() => window.location.reload()} className="text-[11px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white">Ricarica</button>
+                    </div>
+                  }
+                >
+                  <DynamicMarketplaceWidget />
+                </ErrorBoundary>
               </LazyRender>
             </div>
             <div className="col-span-1">
@@ -1751,6 +1784,7 @@ export function MobileHomeScreen() {
           onClose={() => setShowCityReport(false)}
         />
       ) : null}
+      
     </div>
   );
 }

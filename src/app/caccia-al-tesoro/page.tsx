@@ -130,7 +130,7 @@ export default function TreasureHuntPage() {
     );
   });
   const [userId, setUserId] = useState<string | undefined>(undefined);
-  const { addXP } = useXPSystem(userId);
+  const { addXP } = useXPSystem(userId, { autoDailyLogin: false });
   const { triggerHaptic } = useHapticFeedback();
 
   // Geo state

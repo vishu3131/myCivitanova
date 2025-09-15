@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/utils/supabaseServer';
 import { verifyFirebaseIdToken, adminFirestore, adminAuth } from '@/utils/firebaseAdmin';
+import { randomUUID } from 'crypto';
 // Simple in-memory rate limiting per IP (best-effort, per runtime instance)
 const RATE_LIMIT = 20;
 const WINDOW_MS = 60_000; // 1 minuto
@@ -102,7 +103,8 @@ export async function POST(req: Request) {
           profileId = upd.data.id;
           syncType = 'update';
         } else {
-          const insertData = { ...baseData, created_at: nowIso };
+          // Genera sempre un UUID lato server per evitare id null se la colonna non ha default
+          const insertData = { id: randomUUID(), ...baseData, created_at: nowIso };
           const ins = await supabase.from('profiles').insert(insertData).select('id').single();
           if (ins.error) throw ins.error;
           profileId = ins.data.id;

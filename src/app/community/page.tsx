@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 import { Sidebar } from '@/components/Sidebar';
-import { BottomNavbar } from '@/components/BottomNavbar';
+
 import { CreatePostModal } from '@/components/CreatePostModal';
 import { CommunityPostCard } from '@/components/CommunityPostCard';
 import { CategoryFilter } from '@/components/community/CategoryFilter';
@@ -463,7 +463,7 @@ const CommunityPage = () => {
       {/* Toast Container */}
       <ToastContainer />
 
-      <BottomNavbar />
+      
     </div>
   );
 };
