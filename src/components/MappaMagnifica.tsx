@@ -3,23 +3,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+// import 'leaflet.markercluster/dist/MarkerCluster.css';
+// import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import L from 'leaflet';
-import dynamic from 'next/dynamic';
 import { SlidersHorizontal, RefreshCw, Navigation, Compass, Moon, SunMedium, Beaker } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MapControlWidget from './MapControlWidget';
 import { ACTIVITY_CATEGORIES } from '@/data/poiCategories';
 import PoiDetailCard from './PoiDetailCard';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
-
-const MarkerClusterGroup: React.ComponentType<any> = dynamic(
-  () => import('react-leaflet-markercluster'),
-  {
-    ssr: false,
-  }
-);
 
 // Fix for default icon issue with Webpack
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -29,10 +21,20 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 
+// Risolvi in modo compatibile l'URL delle icone tra Webpack/Turbopack
+const resolveIconUrl = (img: any): string => (typeof img === 'string' ? img : img?.src ?? img?.default ?? '');
+const FALLBACK_ICON = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
+const FALLBACK_ICON_2X = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
+const FALLBACK_SHADOW = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
+
+const markerIconUrl = resolveIconUrl(markerIcon) || FALLBACK_ICON;
+const markerIcon2xUrl = resolveIconUrl(markerIcon2x) || FALLBACK_ICON_2X;
+const markerShadowUrl = resolveIconUrl(markerShadow) || FALLBACK_SHADOW;
+
 const defaultIcon = L.icon({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -56,9 +58,9 @@ const getIconForPoi = (category: string) => {
 };
 
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
 });
 
 const MappaMagnifica = () => {
@@ -363,7 +365,8 @@ const MappaMagnifica = () => {
               </>
             )}
 
-            <MarkerClusterGroup key={activeCategory + searchTerm}>
+            {/* POIs (no clustering per compatibilità v5) */}
+            <>
               {filteredPois.map(poi => (
                 <Marker
                   key={poi.id}
@@ -374,7 +377,7 @@ const MappaMagnifica = () => {
                   }}
                 />
               ))}
-            </MarkerClusterGroup>
+            </>
           </MapContainer>
       )}
 

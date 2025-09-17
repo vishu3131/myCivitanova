@@ -362,7 +362,7 @@ export function BottomNavbar() {
                   const angle = geom.arcStart + (i * (geom.arcEnd - geom.arcStart)) / (total - 1);
                   const rad = (angle * Math.PI) / 180;
                   const radius = geom.r;
-                  const x = Math.cos(rad) * radius;
+                  const x = Math.cos(rad) * radius - 20; // Sposta leggermente a sinistra
                   const y = Math.sin(rad) * radius;
 
                   // Algoritmo migliorato per posizionamento label con controllo collisioni
@@ -429,14 +429,6 @@ export function BottomNavbar() {
                          >
                            <Icon className="w-5 h-5" />
                          </motion.div>
-                         <span
-                            className="text-white text-xs font-medium opacity-90 group-hover:opacity-100 radial-menu-label whitespace-nowrap"
-                            style={{
-                              transform: `translate(${labelOffsetX}px, ${labelOffsetY}px)`,
-                            }}
-                          >
-                            {item.label}
-                          </span>
                        </Link>
                      </motion.div>
                    );

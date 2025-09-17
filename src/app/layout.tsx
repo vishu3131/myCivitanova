@@ -10,6 +10,7 @@ import { LoadingProvider } from '@/context/LoadingContext';
 import { GlobalLoader } from '@/components/GlobalLoader';
 import { PageTransition } from '@/components/PageTransition';
 import ToasterClient from '@/components/ToasterClient';
+import IntroOverlay from '@/components/IntroOverlay';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -74,6 +75,7 @@ export default function RootLayout({
               }}
             >
               <GlobalLoader />
+              <IntroOverlay />
               <PageTransition>
                 {children}
               </PageTransition>

@@ -6,6 +6,7 @@ import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Eye, Star } from 'lucide-r
 import { NewsItem } from '@/types/news';
 import { newsService } from '@/services/newsService';
 import { supabase } from '@/utils/supabaseClient';
+import SafeImage from '@/components/SafeImage';
 
 interface NewsItemComponentProps {
   news: NewsItem;
@@ -174,6 +175,12 @@ function NewsItemComponent({ news, currentUserId, onView, onReaction }: NewsItem
           {news.description && (
             <p className="text-sm text-gray-300 mb-2 line-clamp-2">{news.description}</p>
           )}
+
+          {news.image_url && (
+            <div className="mt-2 mb-2 overflow-hidden rounded-md border border-white/10">
+              <SafeImage src={news.image_url} alt={news.title} width={1200} height={675} className="w-full h-40 object-cover" />
+            </div>
+          )}
           
           <div className="flex items-center text-gray-500 text-xs">
             <span>{formatTimestamp(news.published_at || news.created_at)}</span>
@@ -253,6 +260,11 @@ export function NewsFeed() {
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'news' | 'event'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [category, setCategory] = useState<string | 'tutte'>('tutte');
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(10);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -283,25 +295,171 @@ export function NewsFeed() {
     loadCurrentUser();
   }, []);
 
-  useEffect(() => {
-    const loadNews = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const filters = activeFilter !== 'all' ? { type: activeFilter, limit: 10 } : { limit: 10 };
-        const newsData = await newsService.getNews(filters);
-        setNews(newsData);
-      } catch (error) {
-        console.error('Errore nel caricamento delle news:', error);
-        setError('Errore nel caricamento delle news');
-      } finally {
-        setLoading(false);
-      }
+  // Helper: mapping DB -> NewsItem
+  const mapNewsRow = (row: any): NewsItem => {
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.excerpt ?? undefined,
+      content: row.content ?? undefined,
+      type: row.is_featured ? 'urgent' : 'news',
+      status: row.status ?? 'published',
+      author_id: row.author_id ?? undefined,
+      source: row.category ? `Categoria: ${row.category}` : undefined,
+      image_url: row.featured_image ?? undefined,
+      tags: undefined,
+      likes_count: row.likes_count ?? 0,
+      dislikes_count: 0,
+      comments_count: row.comments_count ?? 0,
+      views_count: row.views_count ?? 0,
+      featured: !!row.is_featured,
+      published_at: row.published_at ?? undefined,
+      created_at: row.created_at ?? new Date().toISOString(),
+      updated_at: row.updated_at ?? new Date().toISOString(),
     };
+  };
 
-    loadNews();
-  }, [activeFilter]);
+  const mapEventRow = (row: any): NewsItem => {
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.short_description ?? undefined,
+      content: row.description ?? undefined,
+      type: 'event',
+      status: 'published',
+      author_id: undefined,
+      source: row.category ? `Evento: ${row.category}` : 'Evento',
+      image_url: row.featured_image ?? undefined,
+      tags: undefined,
+      likes_count: 0,
+      dislikes_count: 0,
+      comments_count: 0,
+      views_count: 0,
+      featured: !!row.is_featured,
+      published_at: row.start_date ?? undefined,
+      created_at: row.created_at ?? new Date().toISOString(),
+      updated_at: row.updated_at ?? new Date().toISOString(),
+    };
+  };
+
+  const fetchFromSupabase = async (reset = false) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const isEvents = activeFilter === 'event';
+      const isUrgent = activeFilter === 'urgent';
+      const table = isEvents ? 'events' : 'news';
+
+      let query = supabase
+        .from(table)
+        .select(isEvents 
+          ? 'id,title,short_description,description,featured_image,category,is_featured,status,start_date,created_at,updated_at' 
+          : 'id,title,excerpt,content,featured_image,category,status,is_featured,author_id,views_count,likes_count,comments_count,published_at,created_at,updated_at'
+        );
+
+      if (!isEvents) {
+        query = query.eq('status', 'published');
+        if (isUrgent) query = query.eq('is_featured', true);
+      } else {
+        // Eventi: mostra "ongoing" e "upcoming"
+        query = query.in('status', ['upcoming','ongoing']);
+      }
+
+      if (category && category !== 'tutte') {
+        query = query.eq('category', category);
+      }
+      
+      if (searchTerm.trim()) {
+        const term = `%${searchTerm.trim()}%`;
+        query = query.or(isEvents 
+          ? `title.ilike.${term},description.ilike.${term}`
+          : `title.ilike.${term},content.ilike.${term},excerpt.ilike.${term}`
+        );
+      }
+
+      // Ordinamento e paginazione
+      query = isEvents 
+        ? query.order('start_date', { ascending: true, nullsFirst: false })
+        : query.order('published_at', { ascending: false, nullsFirst: false });
+
+      const from = reset ? 0 : page * pageSize;
+      const to = reset ? pageSize - 1 : from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error: sbError } = await query;
+      if (sbError) throw sbError;
+
+      const mapped = (data || []).map(row => isEvents ? mapEventRow(row) : mapNewsRow(row));
+      setNews(prev => reset ? mapped : [...prev, ...mapped]);
+      setHasMore((data || []).length === pageSize);
+    } catch (e: any) {
+      console.error('Errore Supabase:', e?.message || e);
+      // Fallback ai mock
+      try {
+        const filters = activeFilter !== 'all' ? { type: activeFilter as any, limit: pageSize } : { limit: pageSize };
+        const mock = await newsService.getNews(filters);
+        setNews(prev => prev.length && !e ? prev : mock);
+        setHasMore(false);
+      } catch (err) {
+        setError('Errore nel caricamento delle news');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Primo caricamento e quando cambiano filtri/ricerca/categoria
+  useEffect(() => {
+    setPage(0);
+    fetchFromSupabase(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilter, searchTerm, category]);
+
+  // Paginazione: carica altri
+  const loadMore = () => {
+    if (!hasMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchFromSupabase(false);
+  };
+
+  // Realtime subscribe a news ed eventi
+  useEffect(() => {
+    const newsChannel = supabase.channel('realtime-news')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          const row = payload.new;
+          if (row.status === 'published') {
+            setNews(prev => [mapNewsRow(row), ...prev]);
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const row = payload.new;
+          setNews(prev => prev.map(n => n.id === row.id ? mapNewsRow(row) : n));
+        } else if (payload.eventType === 'DELETE') {
+          const row = payload.old;
+          setNews(prev => prev.filter(n => n.id !== row.id));
+        }
+      })
+      .subscribe();
+
+    const eventsChannel = supabase.channel('realtime-events')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          setNews(prev => [mapEventRow(payload.new), ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setNews(prev => prev.map(n => n.id === payload.new.id ? mapEventRow(payload.new) : n));
+        } else if (payload.eventType === 'DELETE') {
+          setNews(prev => prev.filter(n => n.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(newsChannel);
+      supabase.removeChannel(eventsChannel);
+    };
+  }, []);
 
   const handleViewNews = async (newsItem: NewsItem) => {
     // Registra la visualizzazione
@@ -331,7 +489,8 @@ export function NewsFeed() {
       prevNews.map(item => {
         if (item.id === newsId) {
           const updatedItem = { ...item };
-          // Nota: la logica di aggiornamento è gestita nel servizio
+          // Nota: la logica di aggiornamento è gestita nel servizio/mock
+          if (type === 'like') updatedItem.likes_count = (updatedItem.likes_count || 0) + 1;
           return updatedItem;
         }
         return item;
@@ -343,7 +502,7 @@ export function NewsFeed() {
     setActiveFilter(filter);
   };
 
-  if (loading) {
+  if (loading && page === 0) {
     return (
       <div className="mb-8">
         <div className="flex justify-center items-center py-8">
@@ -360,7 +519,7 @@ export function NewsFeed() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <p className="text-red-400">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => fetchFromSupabase(true)} 
             className="mt-2 text-sm text-red-300 hover:text-red-200"
           >
             Riprova
@@ -376,11 +535,33 @@ export function NewsFeed() {
         <h2 className="text-white text-xl font-heading font-medium">News & Annunci</h2>
         <button 
           className="text-accent text-sm font-medium flex items-center hover:text-accent/80 transition-colors"
-          onClick={() => console.log('Vedi tutte le news')}
+          onClick={() => setActiveFilter('all')}
         >
           Vedi tutti
           <span className="ml-1">→</span>
         </button>
+      </div>
+
+      {/* Barra di ricerca e categorie */}
+      <div className="mb-3 flex flex-col md:flex-row gap-2 md:items-center">
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Cerca nelle notizie..."
+          className="w-full md:w-1/2 rounded-md bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20"
+        />
+        <div className="flex gap-2 overflow-x-auto">
+          {['tutte','generale','eventi','servizi','trasporti','cultura','sport','amministrazione'].map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat as any)}
+              className={`text-xs px-3 py-1 rounded-full whitespace-nowrap ${category === cat ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
+            >
+              {cat.charAt(0).toUpperCase() + cat.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
       
       {/* Filtri */}
@@ -429,22 +610,37 @@ export function NewsFeed() {
       
       {/* Lista delle news */}
       <div className="space-y-3">
-        {news.length > 0 ? (
-          news.map((newsItem) => (
-            <NewsItemComponent
-              key={newsItem.id}
-              news={newsItem}
-              currentUserId={currentUser?.id}
-              onView={handleViewNews}
-              onReaction={handleReaction}
-            />
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-400">
-            <p>Nessuna news disponibile per il filtro selezionato.</p>
-          </div>
-        )}
+        <AnimatePresence>
+          {news.length > 0 ? (
+            news.map((newsItem) => (
+              <NewsItemComponent
+                key={newsItem.id}
+                news={newsItem}
+                currentUserId={currentUser?.id}
+                onView={handleViewNews}
+                onReaction={handleReaction}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <p>Nessuna news disponibile per i filtri selezionati.</p>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Carica altri */}
+      {hasMore && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={loadMore}
+            disabled={loading}
+            className="px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+          >
+            {loading ? 'Caricamento...' : 'Carica altri'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

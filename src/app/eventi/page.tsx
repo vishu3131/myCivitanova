@@ -16,3 +16,7 @@ export default function EventiPage() {
     </>
   );
 }
+
+export async function __ensureServerManifest() {
+  'use server';
+}
