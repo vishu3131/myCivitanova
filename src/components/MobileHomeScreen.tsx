@@ -17,8 +17,8 @@ import { useAuthWithRole } from '@/hooks/useAuthWithRole';
 import Link from 'next/link';
 import TreasureHuntWidget from './TreasureHuntWidget';
 import FundraisingWidget from './FundraisingWidget';
-import dynamic from 'next/dynamic';
-import HomeTutorial, { isHomeTutorialHidden } from './HomeTutorial'; // Import HomeTutorial
+import { DynamicComponents, preloadCriticalComponents } from '../utils/dynamicImports';
+import HomeTutorial, { isHomeTutorialHidden } from './HomeTutorial';
 import { PullToRefresh } from './PullToRefresh';
 import { NewsCarousel } from './NewsCarousel';
 import { WeatherWidget } from './WeatherWidget';
@@ -28,71 +28,15 @@ import TutorialDebugOverlay from './TutorialDebugOverlay';
 import ScontiWidget from './ScontiWidget';
 import { ErrorBoundary } from './ErrorBoundary';
 
-
-// Helper per retry sugli import dinamici per mitigare ChunkLoadError
-function importWithRetry<T>(factory: () => Promise<T>, retries = 2, delayMs = 500): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const attempt = (n: number) => {
-      factory()
-        .then(resolve)
-        .catch((err) => {
-          const isChunkError = err && (err.name === 'ChunkLoadError' || /Loading chunk .* failed/i.test(String(err?.message)));
-          if (n > 0 && isChunkError) {
-            setTimeout(() => attempt(n - 1), delayMs);
-          } else {
-            reject(err);
-          }
-        });
-    };
-    attempt(retries);
-  });
-}
-
-// Lazy-loaded components for performance
-const DynamicMarketplaceWidget = dynamic(() => importWithRetry(() => import('./MarketplaceWidget')), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[80px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  )
-});
-const DynamicSocialWidgetsContainer = dynamic(() => import('./SocialWidgetsContainer'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[120px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
-});
-const DynamicTourARWidget = dynamic(() => import('./TourARWidget').then(m => m.TourARWidget), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[140px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
-});
-const DynamicSimpleBadgeSystem = dynamic(() => import('./SimpleBadgeSystem').then(m => m.SimpleBadgeSystem), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
-});
-
-// Aggiunta: import dinamici per alleggerire il bundle iniziale
-const DynamicLeaderboardWidget = dynamic(() => import('./LeaderboardWidget'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[180px] md:h-[200px] bg-white/5 border border-white/10 rounded-xl animate-pulse" aria-hidden="true"></div>
-  ),
-});
-
-const DynamicSearchModal = dynamic(() => import('./SearchModal').then(m => m.SearchModal), {
-  ssr: false,
-});
-
-const DynamicReportModal = dynamic(() => import('./CommunityReportModal'), {
-  ssr: false,
-});
-
-const DynamicCityReportModal = dynamic(() => import('./CityReportModal'), {
-  ssr: false,
-});
+// Componenti dinamici ottimizzati
+const DynamicMarketplaceWidget = DynamicComponents.MarketplaceWidget;
+const DynamicSocialWidgetsContainer = DynamicComponents.SocialWidgetsContainer;
+const DynamicTourARWidget = DynamicComponents.TourARWidget;
+const DynamicSimpleBadgeSystem = DynamicComponents.SimpleBadgeSystem;
+const DynamicLeaderboardWidget = DynamicComponents.LeaderboardWidget;
+const DynamicSearchModal = DynamicComponents.SearchModal;
+const DynamicReportModal = DynamicComponents.CommunityReportModal;
+const DynamicCityReportModal = DynamicComponents.CityReportModal;
 
 // Reusable Section component with optional collapsible behavior
 interface SectionProps {
@@ -198,6 +142,12 @@ export function MobileHomeScreen() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
 
+  // Preload componenti critici
+  useEffect(() => {
+    // Preload componenti che potrebbero essere utilizzati
+    preloadCriticalComponents();
+  }, []);
+
   useEffect(() => {
     // Check if tutorial has been hidden before and intro is complete
     const checkTutorial = () => {
@@ -250,7 +200,7 @@ export function MobileHomeScreen() {
           const run = async () => {
             const { count, error } = await supabase
               .from('users')
-              .select('*', { count: 'exact', head: true });
+              .select('id', { count: 'exact', head: true });
             if (!error) setUserCount(count ?? 0);
           };
           if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -303,7 +253,7 @@ export function MobileHomeScreen() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
           const { count, error } = await supabase
             .from('users')
-            .select('*', { count: 'exact', head: true });
+            .select('id', { count: 'exact', head: true });
           if (!error) setUserCount(count ?? 0);
         })
         .subscribe();
@@ -1775,6 +1725,7 @@ export function MobileHomeScreen() {
         <DynamicReportModal
           isOpen={showReport}
           onClose={() => setShowReport(false)}
+          onSubmit={() => setShowReport(false)}
         />
       ) : null}
       
@@ -1782,6 +1733,7 @@ export function MobileHomeScreen() {
         <DynamicCityReportModal
           isOpen={showCityReport}
           onClose={() => setShowCityReport(false)}
+          onSubmit={() => setShowCityReport(false)}
         />
       ) : null}
       
