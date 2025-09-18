@@ -110,12 +110,12 @@ export function FuturisticUserStats({ userId, isVisible }: FuturisticUserStatsPr
 
       // Get user stats using RPC function
       const { data: userStats, error: statsError } = await supabase
-        .rpc('get_user_stats', { p_user_id: userId });
+        .rpc('get_user_stats', { user_uuid: userId });
 
       if (statsError) throw statsError;
 
-      if (userStats && userStats.length > 0) {
-        setStats(userStats[0]);
+      if (userStats) {
+        setStats(userStats as any);
       }
 
       // Get recent XP activities

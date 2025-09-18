@@ -53,17 +53,18 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         return;
       }
 
+      // get_user_stats accetta il parametro user_uuid e ritorna un JSON (oggetto)
       const { data, error } = await (supabase as any).rpc('get_user_stats', {
-        p_user_id: userId
+        user_uuid: userId,
       });
 
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        const stats = data[0];
-        
-        // Ottieni la lista dei badge separatamente
-        const { data: badgesData, error: badgesError } = await supabase
+      if (data) {
+        const stats = data as any;
+
+        // Ottieni la lista dei badge separatamente (best-effort)
+        const { data: badgesData, error: badgesError } = await (supabase as any)
           .from('user_badges')
           .select('badge_name')
           .eq('user_id', userId)
@@ -74,10 +75,11 @@ export function useXPSystem(userId?: string, options?: { autoDailyLogin?: boolea
         setUserStats({
           total_xp: stats.total_xp || 0,
           current_level: stats.current_level || 1,
-          level_progress: stats.level_progress || 0,
+          // il progress viene calcolato localmente (0-100)
+          level_progress: ((stats.total_xp || 0) % 100),
           badges_count: stats.badges_count || 0,
           badges_list: badgesList,
-          rank_position: stats.rank_position || 999
+          rank_position: 999,
         });
       } else {
         // Utente nuovo - inizializza con dati base
