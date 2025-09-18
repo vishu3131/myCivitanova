@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:turbo": "next dev --turbo",
+    "dev:turbo:3004": "next dev --turbo -p 3004",
+    "dev:clean": "rimraf .next .turbo",
+    "dev:fresh": "npm run dev:clean && npm run dev:turbo:3004",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
@@ -73,6 +76,7 @@
     "eslint-config-next": "^14.2.3",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.1.1",
+    "rimraf": "^6.0.1",
     "sass": "^1.69.0",
     "sass-loader": "^13.3.2",
     "style-loader": "^4.0.0",

@@ -27,15 +27,58 @@ export default function LoginPage() {
     logout,
     resetPassword,
     updateProfile,
+    resendVerificationEmail,
     error: authError,
+    isEmailVerified,
   } = useUnifiedAuth();
 
   useEffect(() => {
     if (user) {
-      // Se l'utente è già autenticato, reindirizza al profilo
-      router.replace('/profilo');
+      if (isEmailVerified) {
+        router.replace('/profilo');
+      } else {
+        setSuccessMessage(
+          "Il tuo account non è ancora verificato. Ti abbiamo inviato un'email di verifica. Controlla la posta o reinvia l'email di verifica."
+        );
+      }
     }
-  }, [user, router]);
+  }, [user, isEmailVerified, router]);
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validateForm = () => {
+    const email = formData.email.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
+    const fullName = formData.fullName.trim();
+
+    if (!validateEmail(email)) {
+      setError("Inserisci un'email valida.");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError('La password deve contenere almeno 6 caratteri.');
+      return false;
+    }
+
+    if (!isLogin) {
+      if (fullName.length < 2) {
+        setError('Inserisci il tuo nome completo.');
+        return false;
+      }
+      if (password !== confirmPassword) {
+        setError('Le password non coincidono.');
+        return false;
+      }
+    }
+
+    setError(null);
+    return true;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,29 +90,45 @@ export default function LoginPage() {
     setError(null);
     setSuccessMessage(null);
 
+    // Validazione lato client prima di procedere
+    if (!validateForm()) return;
+
     try {
       if (isLogin) {
-        const res = await login({ email: formData.email, password: formData.password });
+        const res = await login({ email: formData.email.trim(), password: formData.password });
         if (!res.success) throw new Error(res.error || 'Errore durante il login');
+
+        if (res.firebaseUser && !res.firebaseUser.emailVerified) {
+          await resendVerificationEmail();
+          setSuccessMessage(
+            "Accesso riuscito. Ti abbiamo inviato un'email per verificare il tuo indirizzo. Controlla la casella di posta."
+          );
+          return; // non reindirizzare finché non è verificata
+        }
+
         setSuccessMessage('Accesso effettuato! Reindirizzamento in corso...');
         setTimeout(() => router.push('/profilo'), 800);
       } else {
-        if (formData.password !== formData.confirmPassword) {
-          setError('Le password non coincidono.');
-          return;
-        }
         const res = await register({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
-          fullName: formData.fullName,
-          username: formData.username,
-          phone: formData.phone,
+          fullName: formData.fullName.trim(),
+          username: formData.username.trim(),
+          phone: formData.phone.trim(),
         });
         if (!res.success) throw new Error(res.error || 'Errore durante la registrazione');
 
         // Facoltativo: eventuale aggiornamento profilo aggiuntivo
         if (formData.username || formData.phone) {
-          await updateProfile({ username: formData.username, phone: formData.phone });
+          await updateProfile({ username: formData.username.trim(), phone: formData.phone.trim() });
+        }
+
+        if (res.firebaseUser && !res.firebaseUser.emailVerified) {
+          // La registrazione invia già l'email di verifica, ma offriamo comunque feedback e la possibilità di reinvio
+          setSuccessMessage(
+            "Registrazione completata. Ti abbiamo inviato un'email di verifica. Controlla la posta per completare l'attivazione."
+          );
+          return; // non reindirizzare finché non è verificata
         }
 
         setSuccessMessage('Registrazione completata! Reindirizzamento al profilo...');
@@ -92,6 +151,13 @@ export default function LoginPage() {
     try {
       const res = await loginWithGoogle();
       if (!res.success) throw new Error(res.error || 'Errore durante il login con Google');
+
+      if (res.firebaseUser && !res.firebaseUser.emailVerified) {
+        await resendVerificationEmail();
+        setSuccessMessage('Accesso con Google riuscito. Verifica il tuo indirizzo email per continuare.');
+        return; // non reindirizzare finché non è verificata
+      }
+
       setSuccessMessage('Accesso effettuato con Google! Reindirizzamento in corso...');
       setTimeout(() => router.push('/profilo'), 800);
     } catch (err: any) {
@@ -106,7 +172,7 @@ export default function LoginPage() {
           {isLogin ? 'Accedi' : 'Registrati'}
         </h2>
         {!user ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {!isLogin && (
               <>
                 <div className="relative">
@@ -118,6 +184,7 @@ export default function LoginPage() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
+                    minLength={2}
                   />
                 </div>
                 <div className="relative">
@@ -162,6 +229,7 @@ export default function LoginPage() {
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
+                minLength={6}
               />
             </div>
             {!isLogin && (
@@ -174,6 +242,7 @@ export default function LoginPage() {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
+                  minLength={6}
                 />
               </div>
             )}
@@ -204,7 +273,32 @@ export default function LoginPage() {
           </form>
         ) : (
           <div className="space-y-4 text-center">
-            <p>Sei già autenticato. Reindirizzamento in corso...</p>
+            {isEmailVerified ? (
+              <p>Sei già autenticato. Reindirizzamento in corso...</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-yellow-400">Il tuo account non è verificato. Controlla la tua email per il link di verifica.</p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const r = await resendVerificationEmail();
+                      if (r.success) {
+                        setSuccessMessage("Email di verifica reinviata! Controlla la tua casella di posta (anche Spam).");
+                      } else {
+                        setError(r.error || "Impossibile reinviare l'email di verifica.");
+                      }
+                    } catch (e: any) {
+                      setError(e.message || "Errore durante il reinvio dell'email.");
+                    }
+                  }}
+                  className="px-4 py-2 font-semibold text-white bg-teal-600 rounded-md hover:bg-teal-700"
+                >
+                  Reinvio email di verifica
+                </button>
+                {successMessage && <p className="text-green-500 text-sm">{successMessage}</p>}
+                {authError && <p className="text-red-500 text-sm">{authError}</p>}
+              </div>
+            )}
           </div>
         )}
 

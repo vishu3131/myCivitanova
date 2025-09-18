@@ -26,7 +26,6 @@ export function HeroSection() {
           className="object-cover scale-105"
           style={{
             transform: `translateY(${scrollY * 0.5}px)`,
-            transition: 'transform 0.1s ease-out',
           }}
           priority
         />

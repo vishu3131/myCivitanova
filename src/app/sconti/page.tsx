@@ -164,17 +164,19 @@ export default function ScontiPage() {
         </div>
       </div>
 
-      {/* Hero banner */}
+      {/* Intro Framer */}
       <div className="max-w-4xl mx-auto px-4 pt-4">
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-purple-600/20 via-cyan-500/10 to-indigo-600/20 p-4">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🏷️</div>
-            <div>
-              <div className="text-white/90 text-sm">Scopri le migliori offerte in città</div>
-              <div className="font-semibold text-xl">Coupon esclusivi per te</div>
-            </div>
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
+          <div style={{ aspectRatio: '16 / 9' }}>
+            <iframe
+              src="https://framer.com/m/Metal-Card-SefC?embed=1"
+              title="Intro Sconti — Metal Card (Framer)"
+              loading="lazy"
+              className="w-full h-full"
+              allow="fullscreen; autoplay; clipboard-write; encrypted-media"
+              style={{ border: '0' }}
+            />
           </div>
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true" style={{ background: "radial-gradient(600px 120px at 20% -20%, rgba(255,255,255,0.08), transparent), radial-gradient(600px 120px at 80% 120%, rgba(255,255,255,0.06), transparent)" }} />
         </div>
       </div>
 

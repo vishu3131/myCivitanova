@@ -12,28 +12,35 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<PageStatus>('idle');
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const { resetPassword } = useAuthActions(); // Usa l'hook per le azioni
+  const { resetPassword } = useAuthActions();
+
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim().toLowerCase());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    if (status === 'loading') return; // evita submit multipli
+
+    const normalized = email.trim();
+    if (!isValidEmail(normalized)) {
       setStatus('error');
-      setFeedbackMessage('Inserisci un indirizzo email valido');
+      setFeedbackMessage("Inserisci un indirizzo email valido.");
       return;
     }
 
     setStatus('loading');
     setFeedbackMessage('');
 
-    const result: AuthResult = await resetPassword(email);
+    const result: AuthResult = await resetPassword(normalized);
 
     if (result.success) {
       setStatus('success');
-      setFeedbackMessage('Email di recupero inviata con successo!');
+      setSubmitted(true);
+      setFeedbackMessage("Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.");
     } else {
       setStatus('error');
-      setFeedbackMessage(result.error || "Errore durante l'invio dell'email di recupero");
+      setFeedbackMessage(result.error || "Errore durante l'invio dell'email di recupero.");
     }
   };
 
@@ -94,22 +101,10 @@ export default function ForgotPasswordPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={status === 'loading' || !email.trim()}
-                className="w-full px-4 py-3 font-bold text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={status === 'loading'}
+                className="w-full px-4 py-2 font-bold text-white bg-teal-600 rounded-md hover:bg-teal-700 disabled:opacity-50"
               >
-                {status === 'loading' ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                    Invio in corso...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    Invia Link di Recupero
-                  </div>
-                )}
+                {status === 'loading' ? 'Invio in corso...' : 'Invia email di recupero'}
               </button>
             </form>
           ) : (

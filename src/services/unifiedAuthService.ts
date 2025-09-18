@@ -11,6 +11,7 @@ import { auth, db as firestore } from '../utils/firebaseClient';
 import { supabase, SyncedUserProfile } from '../utils/supabaseClient';
 import { firebaseSupabaseSync } from './firebaseSupabaseSync';
 import { realtimeSyncTriggers } from './realtimeSyncTriggers';
+import type { FirebaseError } from 'firebase/app';
 
 // Interfaccia per i dati di registrazione
 export interface RegisterData {
@@ -41,6 +42,44 @@ export interface AuthResult {
   user?: SyncedUserProfile;
   firebaseUser?: User;
   error?: string;
+}
+
+// Mapper per errori Firebase/Supabase -> messaggi utente (IT)
+function mapAuthError(err: unknown): string {
+  const fallback = 'Si è verificato un errore. Riprova più tardi.';
+  const e = err as Partial<FirebaseError> & { message?: string; code?: string };
+  const code = (e && typeof e.code === 'string') ? e.code : '';
+
+  switch (code) {
+    case 'auth/invalid-email':
+      return 'Email non valida.';
+    case 'auth/user-disabled':
+      return 'Questo account è stato disabilitato.';
+    case 'auth/user-not-found':
+      return 'Utente non trovato. Verifica l\'email o registrati.';
+    case 'auth/wrong-password':
+      return 'Password errata. Riprova.';
+    case 'auth/too-many-requests':
+      return 'Troppi tentativi. Attendi qualche minuto e riprova.';
+    case 'auth/email-already-in-use':
+      return 'Questa email è già in uso.';
+    case 'auth/weak-password':
+      return 'Password troppo debole (minimo 6 caratteri).';
+    case 'auth/popup-closed-by-user':
+      return 'Finestra di accesso chiusa prima del completamento.';
+    case 'auth/cancelled-popup-request':
+      return 'Richiesta di accesso annullata.';
+    case 'auth/network-request-failed':
+      return 'Problema di rete. Controlla la connessione e riprova.';
+    case 'auth/popup-blocked':
+      return 'Popup bloccato dal browser. Abilita i popup e riprova.';
+    case 'auth/operation-not-allowed':
+      return 'Operazione non consentita. Contatta il supporto.';
+    case 'auth/requires-recent-login':
+      return 'Per questa operazione è richiesto un login recente.';
+    default:
+      return e?.message || fallback;
+  }
 }
 
 class UnifiedAuthService {
@@ -161,7 +200,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante la registrazione'
+        error: mapAuthError(error)
       };
     }
   }
@@ -206,7 +245,7 @@ class UnifiedAuthService {
       
       // 4. Aggiorna ultimo accesso in Firestore
       try {
-  await updateDoc(doc(firestore!, 'profiles', firebaseUser.uid), {
+        await updateDoc(doc(firestore!, 'profiles', firebaseUser.uid), {
           lastLoginAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -227,7 +266,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante il login'
+        error: mapAuthError(error)
       };
     }
   }
@@ -310,7 +349,7 @@ class UnifiedAuthService {
       console.error('❌ Errore login con Google:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante il login con Google',
+        error: mapAuthError(error),
       };
     }
   }
@@ -338,7 +377,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante il logout'
+        error: mapAuthError(error)
       };
     }
   }
@@ -348,9 +387,9 @@ class UnifiedAuthService {
    */
   async updateProfile(updates: ProfileUpdateData): Promise<AuthResult> {
     try {
-  if (!auth) throw new Error('Firebase Auth not initialized');
-  if (!firestore) throw new Error('Firestore not initialized');
-  const currentUser = auth.currentUser;
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      if (!firestore) throw new Error('Firestore not initialized');
+      const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('Nessun utente autenticato');
       }
@@ -400,7 +439,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante l\'aggiornamento del profilo'
+        error: mapAuthError(error)
       };
     }
   }
@@ -410,9 +449,9 @@ class UnifiedAuthService {
    */
   async resetPassword(email: string): Promise<AuthResult> {
     try {
-  console.log(`📧 Invio email reset password per: ${email}`);
-  if (!auth) throw new Error('Firebase Auth not initialized');
-  await sendPasswordResetEmail(auth, email);
+      console.log(`📧 Invio email reset password per: ${email}`);
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      await sendPasswordResetEmail(auth, email);
       
       console.log('✅ Email reset password inviata');
       
@@ -423,7 +462,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante l\'invio dell\'email di reset'
+        error: mapAuthError(error)
       };
     }
   }
@@ -452,7 +491,7 @@ class UnifiedAuthService {
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Errore durante il reinvio dell\'email di verifica'
+        error: mapAuthError(error)
       };
     }
   }
@@ -473,16 +512,16 @@ class UnifiedAuthService {
    * Verifica se l'utente è autenticato
    */
   isAuthenticated(): boolean {
-  if (!auth) return false;
-  return !!auth.currentUser;
+    if (!auth) return false;
+    return !!auth.currentUser;
   }
 
   /**
    * Ottiene l'utente Firebase corrente
    */
   getCurrentFirebaseUser(): User | null {
-  if (!auth) return null;
-  return auth.currentUser;
+    if (!auth) return null;
+    return auth.currentUser;
   }
 
   /**
@@ -490,8 +529,8 @@ class UnifiedAuthService {
    */
   async forceSyncCurrentUser(): Promise<boolean> {
     try {
-  if (!auth) throw new Error('Firebase Auth not initialized');
-  const currentUser = auth.currentUser;
+      if (!auth) throw new Error('Firebase Auth not initialized');
+      const currentUser = auth.currentUser;
       if (!currentUser) {
         console.warn('Nessun utente autenticato per la sincronizzazione');
         return false;
