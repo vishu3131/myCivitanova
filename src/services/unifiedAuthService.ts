@@ -11,6 +11,7 @@ import { auth, db as firestore } from '../utils/firebaseClient';
 import { supabase, SyncedUserProfile } from '../utils/supabaseClient';
 import { firebaseSupabaseSync } from './firebaseSupabaseSync';
 import { realtimeSyncTriggers } from './realtimeSyncTriggers';
+import { authLogger } from '@/lib/authLogger';
 import type { FirebaseError } from 'firebase/app';
 
 // Interfaccia per i dati di registrazione
@@ -124,12 +125,24 @@ class UnifiedAuthService {
    * Registra un nuovo utente
    */
   async register(data: RegisterData): Promise<AuthResult> {
+    const startTime = Date.now();
     try {
       if (!auth) throw new Error('Firebase Auth not initialized');
       if (!firestore) throw new Error('Firestore not initialized');
+      
       console.log(`👤 Registrazione nuovo utente: ${data.email}`);
       
-      // 1. Crea utente in Firebase Auth
+      // 1. Validazione dati lato server
+      const validationResult = this.validateRegistrationData(data);
+      if (!validationResult.isValid) {
+        await authLogger.logRegistration('', '', false, `Validazione fallita: ${validationResult.errors.join(', ')}`);
+        return {
+          success: false,
+          error: `Dati non validi: ${validationResult.errors.join(', ')}`
+        };
+      }
+      
+      // 2. Crea utente in Firebase Auth
       const userCredential: UserCredential = await createUserWithEmailAndPassword(
         auth, 
         data.email, 
@@ -138,12 +151,12 @@ class UnifiedAuthService {
       
       const firebaseUser = userCredential.user;
       
-      // 2. Aggiorna il profilo Firebase con il nome
+      // 3. Aggiorna il profilo Firebase con il nome
       await updateProfile(firebaseUser, {
         displayName: data.fullName
       });
       
-      // 3. Crea il profilo in Firestore
+      // 4. Crea il profilo in Firestore con dati più completi
       const firebaseProfileData = {
         email: data.email,
         fullName: data.fullName,
@@ -157,37 +170,68 @@ class UnifiedAuthService {
         levelProgress: 0,
         badgesCount: 0,
         badgesList: [],
+        registrationSource: 'web',
+        registrationMetadata: {
+          userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown',
+          timestamp: serverTimestamp(),
+          validationPassed: true
+        },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
       
       await setDoc(doc(firestore, 'profiles', firebaseUser.uid), firebaseProfileData);
       
-      // 4. Sincronizza con Supabase (server-side via API con service_role)
+      // 5. Sincronizza con Supabase (server-side via API con service_role)
       try {
         const idToken = await firebaseUser.getIdToken();
-        await fetch('/api/sync/user', {
+        const syncResponse = await fetch('/api/sync/user', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+            'X-Sync-Trigger': 'registration'
           },
         });
+        
+        if (!syncResponse.ok) {
+          console.warn('⚠️ Errore sincronizzazione durante registrazione');
+        }
       } catch (syncApiErr) {
         console.warn('⚠️ Errore chiamata API di sincronizzazione server-side:', syncApiErr);
       }
       
-      // 5. Ottieni il profilo sincronizzato da Supabase
+      // 6. Ottieni il profilo sincronizzato da Supabase
       const supabaseProfile = await supabase.sync.getCurrentUserProfile();
       
-      // 6. Invia email di verifica
+      // 7. Invia email di verifica con retry
       try {
         await sendEmailVerification(firebaseUser);
         console.log('📧 Email di verifica inviata');
+        
+        // Log successful email verification send
+        await authLogger.logEmailVerification(supabaseProfile?.id || '', firebaseUser.uid, true);
       } catch (emailError) {
         console.warn('⚠️ Errore invio email verifica:', emailError);
+        await authLogger.logEmailVerification(supabaseProfile?.id || '', firebaseUser.uid, false, 
+          emailError instanceof Error ? emailError.message : 'Errore invio email');
       }
       
-      console.log(`✅ Registrazione completata per ${data.email}`);
+      // 8. Log della registrazione successful
+      await authLogger.logRegistration(
+        supabaseProfile?.id || '',
+        firebaseUser.uid,
+        true,
+        undefined,
+        {
+          registrationDuration: Date.now() - startTime,
+          hasUsername: !!data.username,
+          hasPhone: !!data.phone,
+          source: 'web'
+        }
+      );
+      
+      console.log(`✅ Registrazione completata per ${data.email} in ${Date.now() - startTime}ms`);
       
       return {
         success: true,
@@ -197,6 +241,18 @@ class UnifiedAuthService {
       
     } catch (error) {
       console.error('❌ Errore registrazione:', error);
+      
+      // Log dell'errore
+      await authLogger.logRegistration(
+        '',
+        '',
+        false,
+        error instanceof Error ? error.message : 'Errore sconosciuto',
+        {
+          registrationDuration: Date.now() - startTime,
+          email: data.email
+        }
+      );
       
       return {
         success: false,
@@ -209,6 +265,7 @@ class UnifiedAuthService {
    * Effettua il login
    */
   async login(data: LoginData): Promise<AuthResult> {
+    const startTime = Date.now();
     try {
       if (!auth) throw new Error('Firebase Auth not initialized');
       if (!firestore) console.warn('Firestore not initialized; profile update will be skipped');
@@ -223,37 +280,112 @@ class UnifiedAuthService {
       
       const firebaseUser = userCredential.user;
       
-      // 2. Verifica e sincronizza il profilo (server-side via API con service_role)
-      try {
-        const idToken = await firebaseUser.getIdToken();
-        await fetch('/api/sync/user', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-          },
-        });
-      } catch (syncApiErr) {
-        console.warn('⚠️ Errore chiamata API di sincronizzazione server-side:', syncApiErr);
+      // 2. Sincronizzazione potenziata con retry
+      let syncSuccess = false;
+      const maxSyncAttempts = 3;
+      
+      for (let attempt = 1; attempt <= maxSyncAttempts; attempt++) {
+        try {
+          console.log(`🔄 Tentativo sincronizzazione ${attempt}/${maxSyncAttempts}`);
+          const idToken = await firebaseUser.getIdToken();
+          const syncResponse = await fetch('/api/sync/user', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json',
+              'X-Sync-Trigger': 'login'
+            },
+          });
+          
+          if (syncResponse.ok) {
+            const syncResult = await syncResponse.json();
+            console.log(`✅ Sincronizzazione completata:`, syncResult);
+            syncSuccess = true;
+            break;
+          } else {
+            const errorText = await syncResponse.text();
+            console.warn(`⚠️ Errore sincronizzazione (tentativo ${attempt}):`, errorText);
+            
+            if (attempt < maxSyncAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+          }
+        } catch (syncApiErr) {
+          console.warn(`⚠️ Errore chiamata API sincronizzazione (tentativo ${attempt}):`, syncApiErr);
+          
+          if (attempt < maxSyncAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
       }
       
-      // 3. Ottieni il profilo da Supabase
-      const supabaseProfile = await supabase.sync.getCurrentUserProfile();
+      // 3. Ottieni il profilo da Supabase con retry
+      let supabaseProfile = null;
+      const maxProfileAttempts = 3;
+      
+      for (let attempt = 1; attempt <= maxProfileAttempts; attempt++) {
+        try {
+          console.log(`👤 Tentativo caricamento profilo ${attempt}/${maxProfileAttempts}`);
+          supabaseProfile = await supabase.sync.getCurrentUserProfile();
+          
+          if (supabaseProfile) {
+            console.log(`✅ Profilo caricato:`, supabaseProfile);
+            break;
+          } else {
+            console.warn(`⚠️ Profilo non trovato (tentativo ${attempt})`);
+            if (attempt < maxProfileAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
+            }
+          }
+        } catch (profileErr) {
+          console.warn(`⚠️ Errore caricamento profilo (tentativo ${attempt}):`, profileErr);
+          if (attempt < maxProfileAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
+          }
+        }
+      }
       
       if (!supabaseProfile) {
+        console.error('❌ Impossibile caricare il profilo dopo tutti i tentativi');
         throw new Error('Profilo utente non trovato in Supabase');
       }
       
       // 4. Aggiorna ultimo accesso in Firestore
       try {
+        const loginCount = (supabaseProfile as any).loginCount || 0;
         await updateDoc(doc(firestore!, 'profiles', firebaseUser.uid), {
           lastLoginAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          loginCount: loginCount + 1,
+          lastLoginMetadata: {
+            timestamp: serverTimestamp(),
+            userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown',
+            duration: Date.now() - startTime,
+            syncSuccess
+          }
         });
       } catch (updateError) {
         console.warn('⚠️ Errore aggiornamento ultimo accesso:', updateError);
       }
       
-      console.log(`✅ Login completato per ${data.email}`);
+      // 5. Log del login successful
+      await authLogger.logLogin(supabaseProfile.id, firebaseUser.uid, true);
+      
+      // 6. Trigger evento per aggiornamento componenti
+      if (typeof window !== 'undefined' && syncSuccess) {
+        console.log(`🎯 Trigger evento profile-sync-complete`);
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('profile-sync-complete', { 
+            detail: { 
+              userId: supabaseProfile.id,
+              loginTime: Date.now(),
+              syncDuration: Date.now() - startTime
+            } 
+          }));
+        }, 500);
+      }
+      
+      console.log(`✅ Login completato per ${data.email} in ${Date.now() - startTime}ms`);
       
       return {
         success: true,
@@ -263,6 +395,14 @@ class UnifiedAuthService {
       
     } catch (error) {
       console.error('❌ Errore login:', error);
+      
+      // Log dell'errore
+      await authLogger.logLogin(
+        '',
+        '',
+        false,
+        error instanceof Error ? error.message : 'Errore sconosciuto'
+      );
       
       return {
         success: false,
@@ -360,7 +500,19 @@ class UnifiedAuthService {
   async logout(): Promise<AuthResult> {
     try {
       if (!auth) throw new Error('Firebase Auth not initialized');
+      const currentUser = auth.currentUser;
+      const userInfo = currentUser ? {
+        uid: currentUser.uid,
+        email: currentUser.email
+      } : null;
+      
       console.log('🚪 Logout utente...');
+      
+      // Log logout before actually logging out
+      if (userInfo) {
+        const supabaseProfile = await supabase.sync.getCurrentUserProfile();
+        await authLogger.logLogout(supabaseProfile?.id || '', userInfo.uid);
+      }
       
       // Pulisci i trigger di sincronizzazione
       realtimeSyncTriggers.cleanup();
@@ -451,7 +603,11 @@ class UnifiedAuthService {
     try {
       console.log(`📧 Invio email reset password per: ${email}`);
       if (!auth) throw new Error('Firebase Auth not initialized');
+      
       await sendPasswordResetEmail(auth, email);
+      
+      // Log successful password reset request
+      await authLogger.logPasswordReset(email, true);
       
       console.log('✅ Email reset password inviata');
       
@@ -459,6 +615,13 @@ class UnifiedAuthService {
       
     } catch (error) {
       console.error('❌ Errore reset password:', error);
+      
+      // Log failed password reset request
+      await authLogger.logPasswordReset(
+        email,
+        false,
+        error instanceof Error ? error.message : 'Errore sconosciuto'
+      );
       
       return {
         success: false,
@@ -542,6 +705,56 @@ class UnifiedAuthService {
       console.error('❌ Errore sincronizzazione forzata:', error);
       return false;
     }
+  }
+
+  /**
+   * Valida i dati di registrazione
+   */
+  private validateRegistrationData(data: RegisterData): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    // Validazione email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      errors.push('Email non valida');
+    }
+    
+    // Validazione password
+    if (data.password.length < 8) {
+      errors.push('Password deve contenere almeno 8 caratteri');
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(data.password)) {
+      errors.push('Password deve contenere almeno una lettera minuscola, una maiuscola e un numero');
+    }
+    
+    // Validazione nome
+    if (data.fullName.length < 2 || data.fullName.length > 100) {
+      errors.push('Nome completo deve essere tra 2 e 100 caratteri');
+    }
+    
+    // Validazione username opzionale
+    if (data.username) {
+      if (data.username.length < 3 || data.username.length > 30) {
+        errors.push('Username deve essere tra 3 e 30 caratteri');
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(data.username)) {
+        errors.push('Username può contenere solo lettere, numeri e underscore');
+      }
+    }
+    
+    // Validazione telefono opzionale
+    if (data.phone) {
+      const phoneRegex = /^[\+]?[1-9][\d]{8,15}$/;
+      const cleanPhone = data.phone.replace(/[\s\-\(\)]/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.push('Formato telefono non valido');
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
   /**

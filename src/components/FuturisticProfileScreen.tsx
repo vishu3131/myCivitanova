@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, X, Camera } from 'lucide-react';
+import { LogOut, X, Camera, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -110,10 +110,13 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
   }, [user, updateProfile]);
   
   // Loading state
-  if (isLoading) {
+  if (isLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <LoadingSpinner />
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="text-white mt-4">Caricamento profilo e dati XP...</p>
+        </div>
       </div>
     );
   }
@@ -207,6 +210,31 @@ export function FuturisticProfileScreen({ onClose }: FuturisticProfileScreenProp
                onAvatarClick={() => setShowAvatarModal(true)}
              />
            )}
+
+          {/* XP Status Alert if stats not loaded */}
+          {profileUser && !userStats && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6"
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <p className="text-yellow-200 font-medium">Statistiche XP in caricamento</p>
+                  <p className="text-yellow-300/80 text-sm">
+                    I tuoi dati di gamificazione stanno ancora caricando. Ricarica la pagina se il problema persiste.
+                  </p>
+                </div>
+                <button
+                  onClick={refreshProfile}
+                  className="ml-auto px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 rounded-lg text-sm transition-colors"
+                >
+                  Ricarica
+                </button>
+              </div>
+            </motion.div>
+          )}
           
           {/* Navigation Tabs */}
           <ProfileTabs

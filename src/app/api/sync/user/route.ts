@@ -83,6 +83,10 @@ export async function POST(req: Request) {
       last_sync_at: nowIso,
       sync_status: 'synced',
       updated_at: nowIso,
+      // Assicuriamo che i campi XP siano sempre inclusi nella sincronizzazione
+      total_xp: existingProfile?.total_xp || firestoreProfile.totalXp || 0,
+      current_level: existingProfile?.current_level || firestoreProfile.currentLevel || 1,
+      badges_count: existingProfile?.badges_count || firestoreProfile.badgesCount || 0,
     };
 
     let profileId: string | null = null;
@@ -129,6 +133,167 @@ export async function POST(req: Request) {
         }
         // backoff semplice
         await new Promise(r => setTimeout(r, 200 * attempt));
+      }
+    }
+
+    // Dopo la sincronizzazione del profilo, assicuriamo che esista un record user_stats
+    if (profileId) {
+      try {
+        console.log(`🎯 Verificando/creando record user_stats per ${profileId}`);
+        
+        // Verifica se esiste già un record user_stats
+        const { data: existingStats, error: statsCheckError } = await supabase
+          .from('user_stats')
+          .select('user_id, total_xp, current_level, badges_count')
+          .eq('user_id', profileId)
+          .maybeSingle();
+
+        if (statsCheckError && statsCheckError.code !== 'PGRST116') {
+          console.warn('Errore verifica user_stats:', statsCheckError);
+        }
+
+        if (!existingStats) {
+          // Crea un nuovo record user_stats con valori di default
+          const defaultStats = {
+            user_id: profileId,
+            total_xp: baseData.total_xp || 0,
+            current_level: baseData.current_level || 1,
+            level_progress: 0,
+            badges_count: baseData.badges_count || 0,
+            badges_list: [],
+            rank_position: 999,
+            weekly_xp: 0,
+            monthly_xp: 0,
+            xp_to_next_level: (baseData.current_level || 1) * 100,
+            activities_completed: 0,
+            streak_days: 0,
+            created_at: nowIso,
+            updated_at: nowIso
+          };
+
+          const { error: statsInsertError } = await supabase
+            .from('user_stats')
+            .insert(defaultStats);
+
+          if (statsInsertError) {
+            console.warn('Impossibile creare record user_stats:', statsInsertError);
+          } else {
+            console.log(`✅ Record user_stats creato per ${profileId}`);
+          }
+        } else {
+          // Aggiorna il record esistente se necessario
+          const updates: any = {
+            updated_at: nowIso
+          };
+          
+          // Sincronizza i valori dal profilo se sono più recenti
+          if (baseData.total_xp > existingStats.total_xp) {
+            updates.total_xp = baseData.total_xp;
+          }
+          if (baseData.current_level > existingStats.current_level) {
+            updates.current_level = baseData.current_level;
+          }
+          if (baseData.badges_count > existingStats.badges_count) {
+            updates.badges_count = baseData.badges_count;
+          }
+
+          if (Object.keys(updates).length > 1) { // più di solo updated_at
+            const { error: updateError } = await supabase
+              .from('user_stats')
+              .update(updates)
+              .eq('user_id', profileId);
+
+            if (updateError) {
+              console.warn('Errore aggiornamento user_stats:', updateError);
+            } else {
+              console.log(`✅ Record user_stats aggiornato per ${profileId}`);
+            }
+          }
+        }
+      } catch (statsErr) {
+        console.warn('Errore gestione user_stats:', statsErr);
+      }
+    }
+
+    // Aggiorna mapping UID
+    try {
+      await supabase
+        .from('firebase_user_mapping')
+        .upsert({ firebase_uid: uid, supabase_uuid: profileId, updated_at: nowIso }, { onConflict: 'firebase_uid' });
+    } catch {}
+
+    // Log di sincronizzazione
+    try {
+      await supabase.from('sync_logs').insert({
+        firebase_uid: uid,
+        profile_id: profileId,
+        sync_type: syncType,
+        sync_status: 'success',
+        firebase_data: {
+          uid,
+          email,
+          emailVerified,
+          hasFirestoreProfile: Object.keys(firestoreProfile).length > 0,
+        },
+        supabase_data: {
+          profileId,
+          syncType,
+          userAgent,
+          forwardedFor,
+          trigger,
+        },
+        sync_duration_ms: Date.now() - startedAt,
+        created_at: nowIso,
+      });
+    } catch {}
+
+    // Aggiorna last login info nel profilo se disponibile da Admin SDK
+    try {
+      const userRecord = await adminAuth().getUser(uid);
+      if (userRecord?.metadata) {
+        await supabase.from('profiles')
+          .update({ firebase_created_at: userRecord.metadata.creationTime, firebase_last_sign_in: userRecord.metadata.lastSignInTime })
+          .eq('id', profileId as string);
+      }
+    } catch {}
+
+    return NextResponse.json({ success: true, profileId, syncType });
+  } catch (error: any) {
+    const message = error?.message || 'Errore interno';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}        } else {
+          // Aggiorna il record esistente se necessario
+          const updates: any = {
+            updated_at: nowIso
+          };
+          
+          // Sincronizza i valori dal profilo se sono più recenti
+          if (baseData.total_xp > existingStats.total_xp) {
+            updates.total_xp = baseData.total_xp;
+          }
+          if (baseData.current_level > existingStats.current_level) {
+            updates.current_level = baseData.current_level;
+          }
+          if (baseData.badges_count > existingStats.badges_count) {
+            updates.badges_count = baseData.badges_count;
+          }
+
+          if (Object.keys(updates).length > 1) { // più di solo updated_at
+            const { error: updateError } = await supabase
+              .from('user_stats')
+              .update(updates)
+              .eq('user_id', profileId);
+
+            if (updateError) {
+              console.warn('Errore aggiornamento user_stats:', updateError);
+            } else {
+              console.log(`✅ Record user_stats aggiornato per ${profileId}`);
+            }
+          }
+        }
+      } catch (statsErr) {
+        console.warn('Errore gestione user_stats:', statsErr);
       }
     }
 

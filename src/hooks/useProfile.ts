@@ -33,44 +33,178 @@ export const useProfile = (): ProfileHookReturn => {
   const [recentBadges, setRecentBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
 
   /**
-   * Carica le statistiche utente
+   * Carica le statistiche utente con retry automatico e fallback multipli
    */
-  const loadUserStats = useCallback(async () => {
+  const loadUserStats = useCallback(async (attempt: number = 1): Promise<void> => {
     if (!user?.id) return;
     
+    const maxAttempts = 3;
+    const retryDelay = 1000 * attempt; // Delay crescente
+
     try {
-      const { data, error } = await supabase
+      console.log(`📊 Caricamento user_stats per ${user.id} (tentativo ${attempt}/${maxAttempts})`);
+      
+      // Strategia 1: Carica direttamente dalla tabella user_stats
+      let { data: statsData, error: statsError } = await supabase
         .from('user_stats')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        console.error('Error loading user stats:', error);
-        setUserStats(createDefaultStats());
-        return;
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.warn('Errore caricamento da user_stats:', statsError);
       }
 
-      if (data) {
-        const validatedStats = validateUserStats(data);
-        setUserStats(validatedStats);
+      // Strategia 2: Se non trovato, prova con RPC function
+      if (!statsData) {
+        try {
+          const canUseRpc = typeof (supabase as any)?.rpc === 'function';
+          if (canUseRpc) {
+            console.log(`🔧 Tentativo caricamento via RPC get_user_stats`);
+            const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_user_stats', {
+              user_uuid: user.id,
+            });
+            
+            if (!rpcError && rpcData) {
+              console.log(`✅ Dati ottenuti via RPC:`, rpcData);
+              statsData = {
+                user_id: user.id,
+                total_xp: rpcData.total_xp || 0,
+                current_level: rpcData.current_level || 1,
+                level_progress: ((rpcData.total_xp || 0) % 100),
+                badges_count: rpcData.badges_count || 0,
+                badges_list: rpcData.badges_list || [],
+                rank_position: rpcData.rank_position || 999,
+                weekly_xp: rpcData.weekly_xp || 0,
+                monthly_xp: rpcData.monthly_xp || 0,
+                xp_to_next_level: (rpcData.current_level || 1) * 100 - (rpcData.total_xp || 0),
+                activities_completed: rpcData.activities_completed || 0,
+                streak_days: rpcData.streak_days || 0
+              };
+            } else if (rpcError) {
+              console.warn('Errore RPC get_user_stats:', rpcError);
+            }
+          }
+        } catch (rpcErr) {
+          console.warn('RPC non disponibile o errore:', rpcErr);
+        }
       }
+
+      // Strategia 3: Se ancora nessun dato, prova a estrarre dal profilo
+      if (!statsData) {
+        console.log(`📋 Tentativo caricamento dati XP dal profilo`);
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('total_xp, current_level, badges_count')
+          .eq('id', user.id)
+          .single();
+
+        if (!profileError && profileData) {
+          statsData = {
+            user_id: user.id,
+            total_xp: profileData.total_xp || 0,
+            current_level: profileData.current_level || 1,
+            level_progress: ((profileData.total_xp || 0) % 100),
+            badges_count: profileData.badges_count || 0,
+            badges_list: [],
+            rank_position: 999,
+            weekly_xp: 0,
+            monthly_xp: 0,
+            xp_to_next_level: (profileData.current_level || 1) * 100 - (profileData.total_xp || 0),
+            activities_completed: 0,
+            streak_days: 0
+          };
+          console.log(`✅ Dati estratti dal profilo:`, statsData);
+        }
+      }
+
+      // Strategia 4: Crea e inserisci dati di default se ancora mancanti
+      if (!statsData) {
+        console.log(`🆕 Creazione record user_stats di default`);
+        const defaultStats = createDefaultStats();
+        
+        try {
+          const insertData = {
+            user_id: user.id,
+            ...defaultStats,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          // Usa il client diretto se disponibile, altrimenti fallback al wrapper
+          const client = supabase.direct || supabase;
+          if (client && typeof client.from === 'function') {
+            const { data: insertedStats, error: insertError } = await client
+              .from('user_stats')
+              .insert(insertData)
+              .select('*')
+              .single();
+
+            if (!insertError && insertedStats) {
+              statsData = insertedStats;
+              console.log(`✅ Record user_stats creato:`, statsData);
+            } else {
+              console.warn('Impossibile creare record user_stats:', insertError);
+              // Usa comunque i dati default localmente
+              statsData = { user_id: user.id, ...defaultStats };
+            }
+          } else {
+            console.warn('Client Supabase non disponibile per inserimento');
+            statsData = { user_id: user.id, ...defaultStats };
+          }
+        } catch (insertErr) {
+          console.warn('Errore inserimento stats default:', insertErr);
+          statsData = { user_id: user.id, ...createDefaultStats() };
+        }
+      }
+
+      if (statsData) {
+        const validatedStats = validateUserStats(statsData);
+        setUserStats(validatedStats);
+        setRetryCount(0); // Reset retry count su successo
+        console.log(`✅ User stats caricati con successo:`, validatedStats);
+      } else {
+        throw new Error('Impossibile ottenere dati user_stats da tutte le strategie');
+      }
+
     } catch (error) {
-      console.error('Error loading user stats:', error);
-      toast.error('Errore nel caricamento delle statistiche utente.');
+      console.error(`❌ Errore caricamento user stats (tentativo ${attempt}):`, error);
+      
+      // Retry automatico se non abbiamo raggiunto il massimo
+      if (attempt < maxAttempts) {
+        console.log(`🔄 Retry automatico in ${retryDelay}ms...`);
+        setRetryCount(attempt);
+        setTimeout(() => {
+          loadUserStats(attempt + 1);
+        }, retryDelay);
+        return;
+      }
+      
+      // Ultimo tentativo fallito - usa dati di default e notifica errore
+      console.error('❌ Tutti i tentativi di caricamento falliti, uso dati default');
       setUserStats(createDefaultStats());
+      setRetryCount(0);
+      
+      if (attempt === maxAttempts) {
+        toast.error('Impossibile caricare le statistiche utente. Riprova più tardi.');
+      }
     }
   }, [user?.id]);
 
   /**
-   * Carica i badge utente
+   * Carica i badge utente con retry
    */
-  const loadBadges = useCallback(async () => {
+  const loadBadges = useCallback(async (attempt: number = 1): Promise<void> => {
     if (!user?.id) return;
     
+    const maxAttempts = 2;
+    
     try {
+      console.log(`🏆 Caricamento badges per ${user.id} (tentativo ${attempt}/${maxAttempts})`);
+      
       const { data, error } = await supabase
         .from('user_badges')
         .select('*, badges(*)')
@@ -78,11 +212,12 @@ export const useProfile = (): ProfileHookReturn => {
         .order('earned_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading badges:', error);
-        toast.error('Errore nel caricamento dei badge.');
-        setBadges([]);
-        setRecentBadges([]);
-        return;
+        console.error('Errore caricamento badges:', error);
+        if (attempt < maxAttempts) {
+          setTimeout(() => loadBadges(attempt + 1), 1000 * attempt);
+          return;
+        }
+        throw error;
       }
 
       if (data && Array.isArray(data)) {
@@ -96,15 +231,19 @@ export const useProfile = (): ProfileHookReturn => {
         const validatedBadges = validateBadges(earnedBadges);
         setBadges(validatedBadges);
         setRecentBadges(validatedBadges.slice(0, 3));
+        console.log(`✅ ${validatedBadges.length} badges caricati`);
       } else {
         setBadges([]);
         setRecentBadges([]);
+        console.log(`📝 Nessun badge trovato per l'utente`);
       }
     } catch (error) {
-      console.error('Unexpected error loading badges:', error);
-      toast.error('Errore imprevisto nel caricamento dei badge.');
+      console.error('Errore definitivo caricamento badges:', error);
       setBadges([]);
       setRecentBadges([]);
+      if (attempt === maxAttempts) {
+        toast.error('Errore nel caricamento dei badge.');
+      }
     }
   }, [user?.id]);
 
@@ -185,38 +324,50 @@ export const useProfile = (): ProfileHookReturn => {
   }, [user?.id, saveToCache]);
 
   /**
-   * Carica il profilo completo
+   * Carica il profilo completo con gestione avanzata degli errori
    */
   const loadUserProfile = useCallback(async () => {
     if (!user?.id) return;
 
     setLoading(true);
+    console.log(`👤 Inizio caricamento profilo completo per ${user.id}`);
     
     try {
-      // Prova prima la cache
+      // Strategia cache-first con validazione età
       const cachedResult = loadFromCache();
       
       if (cachedResult) {
+        console.log(`💾 Dati trovati in cache, età: ${cachedResult.shouldRefresh ? 'vecchi' : 'freschi'}`);
         setProfileUser(cachedResult.data);
         setLastUpdated(new Date().toLocaleString());
         
-        // Carica dati aggiuntivi
-        await Promise.all([
+        // Carica dati aggiuntivi in parallelo
+        const additionalDataPromises = [
           loadUserStats(),
           loadBadges()
-        ]);
+        ];
         
-        // Aggiorna in background se necessario
+        // Non aspettiamo che finiscano tutti per mostrare il profilo
+        Promise.allSettled(additionalDataPromises).then(results => {
+          const failedOperations = results.filter(r => r.status === 'rejected').length;
+          if (failedOperations > 0) {
+            console.warn(`⚠️ ${failedOperations} operazioni di caricamento fallite`);
+          }
+        });
+        
+        // Refresh in background se necessario
         if (cachedResult.shouldRefresh) {
+          console.log(`🔄 Refresh in background...`);
           setTimeout(async () => {
             const freshProfile = await loadFreshProfile();
             if (freshProfile) {
               setProfileUser(freshProfile);
               setLastUpdated(new Date().toLocaleString());
             }
-          }, 0);
+          }, 100);
         }
       } else {
+        console.log(`🌐 Caricamento da database...`);
         // Carica dal database
         const freshProfile = await loadFreshProfile();
         if (freshProfile) {
@@ -224,16 +375,17 @@ export const useProfile = (): ProfileHookReturn => {
           setLastUpdated(new Date().toLocaleString());
           
           // Carica dati aggiuntivi
-          await Promise.all([
+          await Promise.allSettled([
             loadUserStats(),
             loadBadges()
           ]);
+        } else {
+          throw new Error('Impossibile caricare il profilo dal database');
         }
       }
 
-      // Daily login gestito automaticamente da useXPSystem (guardia one-per-session)
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('❌ Errore caricamento profilo completo:', error);
       toast.error('Errore nel caricamento del profilo.');
     } finally {
       setLoading(false);
@@ -249,13 +401,19 @@ export const useProfile = (): ProfileHookReturn => {
     try {
       const updatedProfile = { ...profileUser, ...updates, updated_at: new Date().toISOString() };
       
-      // Aggiorna nel database
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
+      // Usa il client diretto se disponibile, altrimenti fallback al wrapper
+      const client = supabase.direct || supabase;
+      if (client && typeof client.from === 'function') {
+        const { error } = await client
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        console.warn('Client Supabase non disponibile per aggiornamento profilo');
+        throw new Error('Client database non disponibile');
+      }
 
       // Aggiorna stato locale e cache
       setProfileUser(updatedProfile);
@@ -285,6 +443,37 @@ export const useProfile = (): ProfileHookReturn => {
       await loadUserProfile();
     }
   }, [user?.id, loadUserProfile]);
+
+  // Listener per eventi di sincronizzazione completata
+  useEffect(() => {
+    const handleSyncComplete = (event: any) => {
+      if (event.detail?.userId === user?.id) {
+        console.log('🔄 Sincronizzazione completata, ricarico profilo...');
+        setTimeout(() => {
+          loadUserProfile();
+        }, 500); // Piccolo delay per assicurarsi che la sync sia propagata
+      }
+    };
+
+    const handleXPUpdate = (event: any) => {
+      if (event.detail?.userId === user?.id) {
+        console.log('💎 XP aggiornato, ricarico statistiche...');
+        loadUserStats();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('profile-sync-complete', handleSyncComplete);
+      window.addEventListener('xp-updated', handleXPUpdate);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('profile-sync-complete', handleSyncComplete);
+        window.removeEventListener('xp-updated', handleXPUpdate);
+      }
+    };
+  }, [user?.id, loadUserProfile, loadUserStats]);
 
   // Effect per caricare il profilo quando l'utente cambia
   useEffect(() => {
